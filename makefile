@@ -18,10 +18,14 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 # ドキュメント生成
 docs:
+	mkdir -p docs/doxygen
 	doxygen
+	mkdir -p docs-src/doxybook2
+	# TODO: パスチェック (インストール済であれば、それを使う)
+	bin/doxybook2/bin/doxybook2 -i docs/doxygen/xml/ -o docs-src/doxybook2/ --config doxybook-config.json
 
 # クリーンアップ
 clean:
-	rm -rf $(BUILD_DIR) calculator docs/html docs/latex
+	rm -rf $(BUILD_DIR) calculator docs/html docs-src/doxybook2
 
 .PHONY: all clean docs
