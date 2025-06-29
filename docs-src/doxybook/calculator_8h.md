@@ -37,6 +37,8 @@ int subtract (
 
 **Return**: 減算結果 
 
+**Todo**: 単項目の Todo 
+
 
 ### multiply
 ```cpp
@@ -75,9 +77,12 @@ double divide (
 
 **Return**: 除算結果 
 
+**Note**: 特別な注意事項を示します。 
+
 **Warning**: b が 0 の場合、結果は未定義です 
 
-**Figure**: 
+**Details**:
+
 
 ```plantuml
 @startuml
@@ -111,7 +116,32 @@ int add (
   * [in] b 第二オペランド 
 
 
-**Return**: 加算結果 
+**Deprecated**: 
+
+非推奨の機能であることを示す。 
+
+**Return**: 加算結果
+
+**Since**: いつから利用可能かを示す 
+
+**Todo**: 
+
+* コメントを記載する
+* ログ機能を実装する
+* 将来的に浮動小数点対応を追加する 
+
+**Precondition**: 関数の前提条件。 
+
+**Postcondition**: 関数の後の保証。 
+
+**Remarks**: この関数はスレッド セーフです。 
+
+**Details**:
+
+
+詳細な説明や、特定の使用例などの追加情報を
+ 複数行にわたって記述することができます。 
+
 
 
 
@@ -162,6 +192,8 @@ const char * name;
 ```
 
 
+**Details**:
+
 ユーザー名 
 
 
@@ -172,6 +204,8 @@ const char * name;
 int id;
 ```
 
+
+**Details**:
 
 ユーザーID 
 

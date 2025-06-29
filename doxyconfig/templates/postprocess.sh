@@ -148,5 +148,35 @@ sed 's/\(\*\* *file \[\)[^/]*\/\([^]]*\]\)/\1\2/g' | \
 sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/index_files_new.md
 mv $MARKDOWN_DIR/index_files_new.md $MARKDOWN_DIR/index_files.md
 
+# Todo リストの編集
+# テンプレートでは正しく置換できなかったため、シェルで加工する
+#
+# オリジナル
+# Global [add](group__public__api.md#function-add)  (int a, int b)
+#
+# 編集後
+# Global [add](group__public__api.md)  (int a, int b)
+#
+#cat $MARKDOWN_DIR/todo.md | \
+#sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/todo_new.md
+#mv $MARKDOWN_DIR/todo_new.md $MARKDOWN_DIR/todo.md
+# 不要なので削除する
+rm -f $MARKDOWN_DIR/todo.md
+
+# Deprecated リストの編集
+# テンプレートでは正しく置換できなかったため、シェルで加工する
+#
+# オリジナル
+# Global [add](group__public__api.md#function-add)  (int a, int b)
+#
+# 編集後
+# Global [add](group__public__api.md)  (int a, int b)
+#
+#cat $MARKDOWN_DIR/deprecated.md | \
+#sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/deprecated_new.md
+#mv $MARKDOWN_DIR/deprecated_new.md $MARKDOWN_DIR/deprecated.md
+# 不要なので削除する
+rm -f $MARKDOWN_DIR/deprecated.md
+
 # 処理終了
 exit 0

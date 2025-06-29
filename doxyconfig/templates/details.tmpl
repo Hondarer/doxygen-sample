@@ -141,7 +141,7 @@
 {% endif -%}
 
 {% if exists("remark") %}
-**Remark**: {% if length(remark) == 1 %}{{first(remark)}}{% else %}
+**Remarks**: {% if length(remark) == 1 %}{{first(remark)}}{% else %}
 
 {% for item in remark %}  * {{item}}
 {% endfor %}{% endif %}
@@ -179,6 +179,8 @@
 {% endif -%}
 
 {% if exists("details") %}
+**Details**:
+
 {{details}}
 
 {% endif -%}

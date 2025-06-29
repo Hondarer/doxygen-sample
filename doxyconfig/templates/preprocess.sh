@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # 拡張XML前処理スクリプト
-# 用途: DoxygenのXMLファイル内のPlantUMLタグとパラメータdirection属性を変換
+# 用途: DoxygenのXMLファイル内のPlantUMLタグ、パラメータdirection属性、linebreakタグを変換
 # 使用方法: ./preprocess.sh /path/to/xml/folder
 
 set -e  # エラーで停止
 
 # 使用方法表示関数
 show_usage() {
-    echo "拡張XML前処理スクリプト（PlantUML + Parameter Direction）"
+    echo "拡張XML前処理スクリプト（PlantUML + Parameter Direction + Linebreak）"
     echo ""
     echo "使用方法:"
     echo "  $0 <XMLフォルダパス>"
@@ -18,10 +18,14 @@ show_usage() {
     echo "  1. <plantuml>タグを```plantuml\\n@startumlに変換"
     echo "  2. </plantuml>タグを@enduml\\n```に変換"
     echo "  3. <parametername direction=\"...\">を[direction] prefixに変換"
+    echo "  4. <linebreak/>を\\n（改行）に変換"
     echo ""
-    echo "パラメータdirection変換例:"
+    echo "変換例:"
     echo "  <parametername direction=\"in\">param</parametername>"
     echo "  → <parametername>[in] param</parametername>"
+    echo ""
+    echo "  テキスト1<linebreak/>テキスト2"
+    echo "  → テキスト1\\nテキスト2"
     echo ""
     echo "例:"
     echo "  $0 ./doxygen/xml"
@@ -61,6 +65,7 @@ XML_COUNT=$(echo "$XML_FILES" | wc -l)
 PROCESSED_COUNT=0
 PLANTUML_MODIFIED=0
 DIRECTION_MODIFIED=0
+LINEBREAK_MODIFIED=0
 
 #echo "=== XML前処理開始 ==="
 #echo "対象フォルダ: $XML_FOLDER"
@@ -76,13 +81,14 @@ while IFS= read -r xml_file; do
     # 処理が必要かチェック
     PLANTUML_FOUND=$(grep -c "<plantuml>" "$xml_file" || true)
     DIRECTION_FOUND=$(grep -c 'direction=' "$xml_file" || true)
+    LINEBREAK_FOUND=$(grep -c '<linebreak/>' "$xml_file" || true)
     
-    if [ "$PLANTUML_FOUND" -gt 0 ] || [ "$DIRECTION_FOUND" -gt 0 ]; then
+    if [ "$PLANTUML_FOUND" -gt 0 ] || [ "$DIRECTION_FOUND" -gt 0 ] || [ "$LINEBREAK_FOUND" -gt 0 ]; then
         # 一時ファイル作成
         TEMP_FILE=$(mktemp)
         
         # Step 1: PlantUML変換
-        sed -e 's|\s*<plantuml>|**Figure**: \n\n```plantuml\n@startuml|g' \
+        sed -e 's|\s*<plantuml>|\n```plantuml\n@startuml|g' \
             -e 's|</plantuml>|@enduml\n```|g' \
             "$xml_file" > "$TEMP_FILE"
         
@@ -100,6 +106,14 @@ while IFS= read -r xml_file; do
         # direction="inout" の場合（一部のDoxygenバージョンで使用される）
         sed -i 's|<parametername direction="inout">\([^<]*\)</parametername>|<parametername>[inout] \1</parametername>|g' "$TEMP_FILE"
         
+        # Step 3: linebreak変換
+        # <linebreak/> を改行に変換
+        sed -i 's|<linebreak/>||g' "$TEMP_FILE"
+        
+        # その他のlinebreakバリエーション
+        #sed -i 's|<linebreak />|\n|g' "$TEMP_FILE"
+        #sed -i 's|<linebreak></linebreak>|\n|g' "$TEMP_FILE"
+        
         # 元ファイルを置換
         mv "$TEMP_FILE" "$xml_file"
         
@@ -109,8 +123,11 @@ while IFS= read -r xml_file; do
         if [ "$DIRECTION_FOUND" -gt 0 ]; then
             DIRECTION_MODIFIED=$((DIRECTION_MODIFIED + 1))
         fi
+        if [ "$LINEBREAK_FOUND" -gt 0 ]; then
+            LINEBREAK_MODIFIED=$((LINEBREAK_MODIFIED + 1))
+        fi
         
-        #echo " 変換完了 (PlantUML:$PLANTUML_FOUND, Direction:$DIRECTION_FOUND)"
+        #echo " 変換完了 (PlantUML:$PLANTUML_FOUND, Direction:$DIRECTION_FOUND, Linebreak:$LINEBREAK_FOUND)"
     else
         : #echo " 変換不要"
     fi
@@ -122,12 +139,15 @@ done <<< "$XML_FILES"
 #echo "処理ファイル数: $PROCESSED_COUNT"
 #echo "PlantUML変換ファイル数: $PLANTUML_MODIFIED"
 #echo "Direction変換ファイル数: $DIRECTION_MODIFIED"
+#echo "Linebreak変換ファイル数: $LINEBREAK_MODIFIED"
 #echo "前処理完了"
 
 # 変更されたファイルがある場合の確認メッセージ
-#TOTAL_MODIFIED=$((PLANTUML_MODIFIED + DIRECTION_MODIFIED))
+#TOTAL_MODIFIED=$((PLANTUML_MODIFIED + DIRECTION_MODIFIED + LINEBREAK_MODIFIED))
 #if [ $TOTAL_MODIFIED -gt 0 ]; then
 #    echo ""
 #    echo "doxybook2で処理する準備が整いました"
-#    echo "確認: grep -r \"\\[in\\]\\|\\[out\\]\" $XML_FOLDER/ | head -5"
+#    echo "確認コマンド:"
+#    echo "  grep -r \"\\[in\\]\\|\\[out\\]\" $XML_FOLDER/ | head -5"
+#    echo "  grep -A2 -B2 \"plantuml\" $XML_FOLDER/ | head -10"
 #fi
