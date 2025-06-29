@@ -1,8 +1,16 @@
 /**
  * @file calculator.h
  * @brief 簡単な計算機のヘッダーファイル
+ * @details
+ * 詳細な説明<br>
+ * 詳細な説明 (2 行目)
  * @author あなたの名前
  * @date 2025-06-27
+ * @version バージョン
+ * @copyright コピーライト
+ * @since
+ * - version 1 の説明
+ * - version 2 の説明
  */
 
 #ifndef CALCULATOR_H
