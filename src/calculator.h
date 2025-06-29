@@ -29,9 +29,10 @@
  * @ingroup public_api
  * @brief ユーザー情報を保持する構造体
  */
-typedef struct {
-    int id;             /*!< ユーザーID */
-    const char *name;   /*!< ユーザー名 */
+typedef struct
+{
+    int id;           /*!< ユーザーID */
+    const char *name; /*!< ユーザー名 */
 } UserInfo;
 
 /**

@@ -29,7 +29,8 @@
  * - ログ機能を実装する
  * - 将来的に浮動小数点対応を追加する
  */
-int add(int a, int b) {
+int add(int a, int b)
+{
     return a + b;
 }
 
@@ -41,7 +42,8 @@ int add(int a, int b) {
  * @todo 単項目の Todo
  * @return 減算結果
  */
-int subtract(int a, int b) {
+int subtract(int a, int b)
+{
     return a - b;
 }
 
@@ -52,7 +54,8 @@ int subtract(int a, int b) {
  * @param[in] b 第二因数
  * @return 乗算結果
  */
-int multiply(int a, int b) {
+int multiply(int a, int b)
+{
     return a * b;
 }
 
@@ -78,8 +81,10 @@ int multiply(int a, int b) {
  * @note 特別な注意事項を示します。
  * @warning b が 0 の場合、結果は未定義です
  */
-double divide(int a, int b) {
-    if (b == 0) {
+double divide(int a, int b)
+{
+    if (b == 0)
+    {
         return 0.0; // エラー処理は簡略化
     }
     return (double)a / b;
