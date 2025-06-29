@@ -1,0 +1,21 @@
+{% include "header" -%}
+
+{% if exists("brief") %}{{brief}}{% endif %}{% if hasDetails %} [More...](#detailed-description){% endif %}
+
+{# Markdown 側で目次を生成するため、テーブルは出力しない #}
+{#% include "nonclass_members_tables" -%#}
+
+{% if hasDetails %}## Detailed Description
+
+{% include "details" %}{% endif -%}
+
+{% include "nonclass_members_details" -%}
+
+{# ソースコードの出力は行わない #}
+{# % if exists("programlisting")%}## Source code
+```{{language}}
+{{programlisting}}
+```
+{% endif % #}
+
+{% include "footer" %}

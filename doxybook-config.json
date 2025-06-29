@@ -1,10 +1,20 @@
 {
   "baseUrl": "",
   "indexInFolders": false,
+  "pages": false,
+  "classes": false,
+  "enums": false,
+  "functions": false,
+  "defines": false,
+  "typedefs": false,
   "linkSuffix": ".md",
   "filesFilter": [".h", ".c"],
   "sort": true,
   "useFolders": false,
   "folderCategories": false,
-  "mainPageInRoot": true
+  "mainPageInRoot": false,
+  "filters": {
+    "group": ["public_api"]
+  }
 }
+

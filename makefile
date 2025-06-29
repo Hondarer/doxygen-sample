@@ -22,7 +22,13 @@ docs:
 	doxygen
 	mkdir -p docs-src/doxybook2
 	# TODO: パスチェック (インストール済であれば、それを使う)
-	bin/doxybook2/bin/doxybook2 -i docs/doxygen/xml/ -o docs-src/doxybook2/ --config doxybook-config.json
+	bin/doxybook2/bin/doxybook2 \
+		-i docs/doxygen/xml/ \
+		-o docs-src/doxybook2/ \
+		--config doxybook-config.json \
+		--templates doxybook-templates/grouping_api_doc
+# ポストプロセッシング
+	doxybook-templates/grouping_api_doc/postprocess.sh docs-src/doxybook2
 
 # クリーンアップ
 clean:
