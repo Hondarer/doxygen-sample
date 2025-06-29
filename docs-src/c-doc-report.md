@@ -114,7 +114,7 @@ Linux Kernelは**Sphinx**をドキュメンテーションの中核として採�
  * @note 使用上の重要な注意点
  * @warning 重要な警告
  * @see related_function()
- * @since バージョン情報
+ * @since いつから利用可能か
  */
 ```
 

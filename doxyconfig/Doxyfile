@@ -195,7 +195,8 @@ JAVADOC_AUTOBRIEF      = NO
 # requiring an explicit \brief command for a brief description.)
 # The default value is: NO.
 
-QT_AUTOBRIEF           = NO
+# Enable QT_AUTOBRIEF for brief descriptions using C-style comments
+QT_AUTOBRIEF           = YES
 
 # The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make doxygen treat a
 # multi-line C++ special comment block (i.e. a block of //! or /// comments) as
@@ -2408,8 +2409,8 @@ DIAFILE_DIRS           =
 # PlantUML is not used or called during a preprocessing step. Doxygen will
 # generate a warning when it encounters a \startuml command in this case and
 # will not generate output for the diagram.
-# NOTE: The file name must be "plantuml.jar".
 
+# NOTE: The file name must be "plantuml.jar".
 PLANTUML_JAR_PATH      = /usr/local/bin/plantuml.jar
 
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a

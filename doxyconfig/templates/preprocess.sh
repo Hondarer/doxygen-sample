@@ -88,7 +88,7 @@ while IFS= read -r xml_file; do
         TEMP_FILE=$(mktemp)
         
         # Step 1: PlantUML変換
-        sed -e 's|\s*<plantuml>|\n```plantuml\n@startuml|g' \
+        sed -e 's|\s*<plantuml>|\n\n```plantuml\n@startuml|g' \
             -e 's|</plantuml>|@enduml\n```|g' \
             "$xml_file" > "$TEMP_FILE"
         

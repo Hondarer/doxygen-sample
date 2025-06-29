@@ -1,9 +1,4 @@
 ---
-{% if exists("title") -%}
-title: {% if title == "Files" %}ファイルの一覧{% else  if title == "Modules" %}カテゴリーの一覧{% else %}{{title}}{% endif %}
-{% else if exists("name") -%}
-title: {{name}}
-{% endif -%}
 {% if exists("summary") -%}
 summary: {{summary}}
 {% endif -%}

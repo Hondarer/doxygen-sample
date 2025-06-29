@@ -44,7 +44,7 @@ process_includes() {
             local include_file="${BASH_REMATCH[1]}"
             local include_path
             
-            # 相対パスとして解決（markdownディレクトリを基準）
+            # 相対パスとして解決 (markdownディレクトリを基準)
             if [[ "$include_file" == /* ]]; then
                 # 絶対パス
                 include_path="$include_file"
@@ -84,6 +84,137 @@ process_includes() {
     fi
 }
 
+# YAMLフロントマター内の空行をすべて取り除く関数
+remove_frontmatter_empty_lines() {
+    local file="$1"
+    local temp_file
+    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").frontmatter.XXXXXX") || {
+        echo "エラー: 一時ファイルの作成に失敗しました: $file"
+        return 1
+    }
+    
+    # awkを使用してYAMLフロントマター内の空行を除去
+    awk '
+    BEGIN { 
+        in_frontmatter = 0
+        frontmatter_started = 0
+        line_count = 0
+    }
+    
+    # 最初の行が --- で始まる場合、フロントマターの開始
+    line_count == 0 && /^---[[:space:]]*$/ {
+        frontmatter_started = 1
+        in_frontmatter = 1
+        print $0
+        line_count++
+        next
+    }
+    
+    # フロントマター内で --- が見つかった場合、フロントマターの終了
+    in_frontmatter && /^---[[:space:]]*$/ {
+        in_frontmatter = 0
+        print $0
+        line_count++
+        next
+    }
+    
+    # フロントマター内の処理
+    in_frontmatter {
+        # 空行または空白のみの行をスキップ
+        if (/^[[:space:]]*$/) {
+            line_count++
+            next
+        }
+        # 非空行はそのまま出力
+        print $0
+        line_count++
+        next
+    }
+    
+    # フロントマター外の処理 (通常の行)
+    {
+        print $0
+        line_count++
+    }
+    ' "$file" > "$temp_file"
+    
+    # ファイルを更新
+    if mv "$temp_file" "$file" 2>/dev/null; then
+        return 0
+    else
+        rm -f "$temp_file"
+        return 1
+    fi
+}
+
+# 連続した空行を単一の空行に置換する関数
+remove_consecutive_empty_lines() {
+    local file="$1"
+    local temp_file
+    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").empty_lines.XXXXXX") || {
+        echo "エラー: 一時ファイルの作成に失敗しました: $file"
+        return 1
+    }
+    
+    # awkを使用して処理
+    # - 空白文字のみの行 (空行含む) を空行として扱う
+    # - 連続する空行を1つの空行に置換
+    # - 文末の複数の空行も1つの空行に置換
+    awk '
+    BEGIN { blank_count = 0 }
+    
+    # 空白文字のみの行 (空行含む) をチェック
+    /^[[:space:]]*$/ {
+        blank_count++
+        # 最初の空行のみ保持
+        if (blank_count == 1) {
+            blank_line = ""  # 完全な空行として保存
+        }
+        next
+    }
+    
+    # 非空行の場合
+    {
+        # 前に空行があった場合、1つだけ出力
+        if (blank_count > 0) {
+            print blank_line
+            blank_count = 0
+        }
+        # 現在の行を出力
+        print $0
+    }
+    ' "$file" > "$temp_file"
+    
+    # ファイルを更新
+    if mv "$temp_file" "$file" 2>/dev/null; then
+        return 0
+    else
+        rm -f "$temp_file"
+        return 1
+    fi
+}
+
+# 行末の連続した空白を取り除く関数
+remove_trailing_spaces() {
+    local file="$1"
+    local temp_file
+    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").trailing_spaces.XXXXXX") || {
+        echo "エラー: 一時ファイルの作成に失敗しました: $file"
+        return 1
+    }
+    
+    # sedを使用して行末の空白文字を削除
+    sed 's/[[:space:]]*$//' "$file" > "$temp_file"
+    
+    # ファイルを更新
+    if mv "$temp_file" "$file" 2>/dev/null; then
+        return 0
+    else
+        rm -f "$temp_file"
+        return 1
+    fi
+}
+
 # .mdファイルを配列に収集
 mapfile -t md_files < <(find "$MARKDOWN_DIR" -name "*.md" -type f)
 
@@ -107,6 +238,15 @@ for file in "${md_files[@]}"; do
     else
         : #echo "  -> インクルードディレクティブなし"
     fi
+
+    # YAMLフロントマター内の空行を除去
+    remove_frontmatter_empty_lines "$file"
+
+    # 行末の空白を除去
+    remove_trailing_spaces "$file"
+
+    # 連続した空行を単一の空行に置換
+    remove_consecutive_empty_lines "$file"
 done
 
 #echo ""
