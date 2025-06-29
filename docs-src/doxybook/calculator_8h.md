@@ -3,7 +3,6 @@ title: src/calculator.h
 summary: 簡単な計算機のヘッダーファイル 
 
 toc: true
-toc-depth: 3
 ---
 
 <!-- IMPORTANT: This is an AUTOMATICALLY GENERATED file by doxygen and doxybook. Manual edits are NOT allowed. -->
