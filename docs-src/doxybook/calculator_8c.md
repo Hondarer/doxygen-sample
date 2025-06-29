@@ -1,6 +1,6 @@
 ---
 summary: 計算機の実装ファイル
-author: doxygen & doxybook
+author: doxygen and doxybook
 toc: true
 ---
 

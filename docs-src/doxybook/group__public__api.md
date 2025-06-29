@@ -1,6 +1,6 @@
 ---
 summary: 外部公開するAPI群
-author: doxygen & doxybook
+author: doxygen and doxybook
 toc: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 summary: 簡単な計算機のヘッダーファイル
-author: doxygen & doxybook
+author: doxygen and doxybook
 toc: true
 ---
 
