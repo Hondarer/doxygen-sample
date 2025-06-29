@@ -6,6 +6,14 @@ from [https://claude.ai/public/artifacts/11b194e0-9d53-42e1-bb30-6a81f95bc5b0](h
 
 Doxygen は C/C++、Java、Python 等のソースコードから自動的にドキュメントを生成するツールです。本ガイドでは、Linux で Doxygen を使用して C 言語のソースコードをドキュメント化する手順を詳しく説明します。
 
+## 前提
+
++ `/usr/local/bin/plantuml.jar` が存在すること。
+  上記でない場合は、`Doxyfile` の `PLANTUML_JAR_PATH` を適切に設定する。
+  doxygen の仕様上、ファイル名は `plantuml.jar` 固定のため、注意。
++ `doxybook2` に PATH が通っていること。
+  現段階では、プロジェクトフォルダの `bin/doxybook2/bin` に `doxybook2` が存在することを前提にしているが、最終的には PATH を検索する予定。
+
 ## プロジェクトディレクトリの準備
 
 プロジェクトディレクトリを作成し、サンプルの C 言語ファイルを用意します。

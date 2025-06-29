@@ -21,7 +21,7 @@ if [ ! -d "$MARKDOWN_DIR" ]; then
     exit 1
 fi
 
-echo "Markdownファイルのポストプロセッシング: $MARKDOWN_DIR"
+#echo "Markdownファイルのポストプロセッシング: $MARKDOWN_DIR"
 
 # 一時ディレクトリを作成
 TEMP_DIR=$(mktemp -d)
@@ -111,8 +111,8 @@ done
 
 #echo ""
 #echo "ポストプロセッシング完了"
-echo "  - 対象ファイル数: $total_files"
-echo "  - 処理済みファイル数: $processed_files"
+#echo "  - 対象ファイル数: $total_files"
+#echo "  - 処理済みファイル数: $processed_files"
 
 # 不要ファイルの削除
 # 構造体ファイルは、それぞれに include するので処理後は不要

@@ -21,6 +21,9 @@ docs:
 	mkdir -p docs/doxygen
 	doxygen
 	mkdir -p docs-src/doxybook2
+# プリプロセッシング
+	doxybook-templates/grouping_api_doc/preprocess.sh docs/doxygen/xml
+# xml -> md 変換
 	# TODO: パスチェック (インストール済であれば、それを使う)
 	bin/doxybook2/bin/doxybook2 \
 		-i docs/doxygen/xml/ \

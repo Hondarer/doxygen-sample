@@ -41,6 +41,16 @@ int multiply(int a, int b) {
 /**
  * @ingroup public_api
  * @brief 二つの整数を除算する関数
+   @startuml
+    caption 図のテスト
+    circle a
+    circle b
+    rectangle "a/b" as devide
+    circle return
+    a -> devide : 被除数
+    b -> devide : 除数
+    devide -> return
+   @enduml
  * @param a 被除数
  * @param b 除数
  * @return 除算結果
