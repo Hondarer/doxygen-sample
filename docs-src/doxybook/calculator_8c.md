@@ -2,7 +2,11 @@
 title: src/calculator.c
 summary: 計算機の実装ファイル 
 
+toc: true
+toc-depth: 3
 ---
+
+<!-- IMPORTANT: This is an AUTOMATICALLY GENERATED file by doxygen and doxybook. Manual edits are NOT allowed. -->
 
 # src/calculator.c
 
