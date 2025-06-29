@@ -19,22 +19,22 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 # ドキュメント生成
 docs:
 	mkdir -p docs/doxygen
-	doxygen
-	mkdir -p docs-src/doxybook2
+	doxygen doxyconfig/Doxyfile
+	mkdir -p docs-src/doxybook
 # プリプロセッシング
-	doxybook-templates/grouping_api_doc/preprocess.sh docs/doxygen/xml
+	doxyconfig/templates/preprocess.sh xml
 # xml -> md 変換
 	# TODO: パスチェック (インストール済であれば、それを使う)
-	bin/doxybook2/bin/doxybook2 \
-		-i docs/doxygen/xml/ \
-		-o docs-src/doxybook2/ \
-		--config doxybook-config.json \
-		--templates doxybook-templates/grouping_api_doc
+	bin/doxybook2/doxybook2 \
+		-i xml/ \
+		-o docs-src/doxybook/ \
+		--config doxyconfig/doxybook-config.json \
+		--templates doxyconfig/templates
 # ポストプロセッシング
-	doxybook-templates/grouping_api_doc/postprocess.sh docs-src/doxybook2
+	doxyconfig/templates/postprocess.sh docs-src/doxybook
 
 # クリーンアップ
 clean:
-	rm -rf $(BUILD_DIR) calculator docs/html docs-src/doxybook2
+	rm -rf $(BUILD_DIR) calculator docs/html docs-src/doxybook
 
 .PHONY: all clean docs

@@ -23,9 +23,9 @@ make calculator
 make docs
 ```
 This command:
-1. Creates Doxygen XML output in `docs/doxygen/xml/`
-2. Runs Doxybook2 to convert XML to markdown in `docs-src/doxybook2/`
-3. Uses custom Japanese templates from `doxybook-templates/grouping_api_doc/`
+1. Creates Doxygen XML output in `xml/`
+2. Runs Doxybook2 to convert XML to markdown in `docs-src/doxybook/`
+3. Uses custom Japanese templates from `doxyconfig/templates/`
 4. Runs post-processing script to handle `!include` directives in markdown files
 
 ### Alternative documentation generation
@@ -49,12 +49,12 @@ make clean
 1. **Doxygen**: Parses C source files and generates XML output based on `Doxyfile` configuration
 2. **Doxybook2**: Converts Doxygen XML to markdown using `doxybook-config.json` and custom templates
 3. **Post-processing**: `postprocess.sh` script handles `!include` directives to merge related content
-4. **Templates**: Located in `doxybook-templates/` with Japanese customizations
+4. **Templates**: Located in `doxyconfig/templates/` with Japanese customizations
 
 ### Key Configuration Files
-- `Doxyfile` - Doxygen configuration (UTF-8 encoding, extracts all elements)
-- `doxybook-config.json` - Doxybook2 settings (filters for `public_api` group only)
-- `doxybook-templates/` - Custom Jinja2 templates for Japanese output formatting
+- `doxyconfig/Doxyfile` - Doxygen configuration (UTF-8 encoding, extracts all elements)
+- `doxyconfig/doxybook-config.json` - Doxybook2 settings (no group filtering, processes all content)
+- `doxyconfig/templates/` - Custom Jinja2 templates for Japanese output formatting
 
 ### Template Structure
 The template system uses:

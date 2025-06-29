@@ -1,11 +1,11 @@
 {% include "header" -%}
 
-{% if exists("brief") %}{{brief}}{% endif %}{% if hasDetails %} [More...](#detailed-description){% endif %}
+{% if exists("brief") %}{% if not hasDetails %}{{brief}}{% endif %}{% endif %}{# % if hasDetails %} [More...](#detailed-description){% endif % #}
 
 {# Markdown 側で目次を生成するため、テーブルは出力しない #}
 {#% include "nonclass_members_tables" -%#}
 
-{% if hasDetails %}## Detailed Description
+{% if hasDetails %}{# ## Detailed Description #}
 
 {% include "details" %}{% endif -%}
 

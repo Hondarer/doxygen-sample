@@ -1,6 +1,6 @@
 ---
 {% if exists("title") -%}
-title: {{title}}
+title: {% if title == "Files" %}ファイルの一覧{% else  if title == "Modules" %}カテゴリーの一覧{% else %}{{title}}{% endif %}
 {% else if exists("name") -%}
 title: {{name}}
 {% endif -%}
@@ -11,7 +11,7 @@ summary: {{summary}}
 ---
 
 {% if exists("title") -%}
-# {{title}}
+# {% if title == "Files" %}ファイルの一覧{% else  if title == "Modules" %}カテゴリーの一覧{% else %}{{title}}{% endif %}
 {% else if exists("kind") and kind != "page" -%}
 # {{name}} {{title(kind)}} Reference
 {% endif %}

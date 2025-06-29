@@ -1,6 +1,6 @@
 {# 上位テンプレートで不活化しているため、呼び出されない #}
 
-{% if exists("groups") %}## Modules
+{% if exists("groups") %}## カテゴリーの一覧
 
 | Name           |
 | -------------- |
@@ -9,7 +9,7 @@
 {%- endfor %}
 {% endif -%}
 
-{% if exists("dirs") %}## Directories
+{% if exists("dirs") %}## ディレクトリの一覧
 
 | Name           |
 | -------------- |

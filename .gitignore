@@ -409,5 +409,6 @@ FodyWeavers.xsd
 build/
 
 # doxygen output
-docs-src/
+xml/
+#docs-src/
 docs/

@@ -4,28 +4,28 @@
 {% if exists("paramList") %}
 **Parameters**: 
 
-{% for param in paramList %}  * **{{param.name}}** {{param.text}}
+{% for param in paramList %}  * {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("returnsList") %}
 **Returns**: 
 
-{% for param in returnsList %}  * **{{param.name}}** {{param.text}}
+{% for param in returnsList %}  * {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("exceptionsList") %}
 **Exceptions**: 
 
-{% for param in exceptionsList %}  * **{{param.name}}** {{param.text}}
+{% for param in exceptionsList %}  * {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("templateParamsList") %}
 **Template Parameters**: 
 
-{% for param in templateParamsList %}  * **{{param.name}}** {{param.text}}
+{% for param in templateParamsList %}  * {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
