@@ -75,7 +75,7 @@ double divide (
   * [in] b 除数 
 
 
-**Return**: 除算結果 
+**Return**: 除算結果
 
 **Note**: 特別な注意事項を示します。 
 
@@ -84,6 +84,8 @@ double divide (
 **Details**:
 
 
+PlantUML の図を挿入することができます。
+ VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
 ```plantuml
 @startuml
  caption 図のテスト
@@ -120,7 +122,7 @@ int add (
 
 非推奨の機能であることを示す。 
 
-**Return**: 加算結果
+**Return**: 加算結果 
 
 **Since**: いつから利用可能かを示す 
 
@@ -134,7 +136,7 @@ int add (
 
 **Postcondition**: 関数の後の保証。 
 
-**Remarks**: この関数はスレッド セーフです。 
+**Remarks**: この関数はスレッド セーフです。
 
 **Details**:
 
