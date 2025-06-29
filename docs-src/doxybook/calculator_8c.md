@@ -1,6 +1,7 @@
 ---
 title: src/calculator.c
 summary: 計算機の実装ファイル 
+author: doxygen & doxybook
 
 toc: true
 ---

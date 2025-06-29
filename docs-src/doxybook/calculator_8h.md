@@ -1,6 +1,7 @@
 ---
 title: src/calculator.h
 summary: 簡単な計算機のヘッダーファイル 
+author: doxygen & doxybook
 
 toc: true
 ---
