@@ -107,8 +107,9 @@ while IFS= read -r xml_file; do
         sed -i 's|<parametername direction="inout">\([^<]*\)</parametername>|<parametername>[inout] \1</parametername>|g' "$TEMP_FILE"
         
         # Step 3: linebreak変換
-        # <linebreak/> を改行に変換
-        sed -i 's|<linebreak/>||g' "$TEMP_FILE"
+        # <linebreak/> を !linebreak に変換
+        # (postprocess で 改行にする)
+        sed -i 's|<linebreak/>|!linebreak|g' "$TEMP_FILE"
         
         # その他のlinebreakバリエーション
         #sed -i 's|<linebreak />|\n|g' "$TEMP_FILE"

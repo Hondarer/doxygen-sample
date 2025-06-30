@@ -194,7 +194,7 @@ remove_consecutive_empty_lines() {
     fi
 }
 
-# 行末の連続した空白を取り除く関数
+# 行末の連続した空白を取り除き、linebreak の処理を行う関数
 remove_trailing_spaces() {
     local file="$1"
     local temp_file
@@ -202,10 +202,11 @@ remove_trailing_spaces() {
         echo "エラー: 一時ファイルの作成に失敗しました: $file"
         return 1
     }
-    
-    # sedを使用して行末の空白文字を削除
-    sed 's/[[:space:]]*$//' "$file" > "$temp_file"
-    
+
+    # sedを使用して行末の空白文字を削除し、
+    # !linebreak を空白 2 つに変換
+    sed 's/[[:space:]]*$//' "$file" | sed 's/[[:space:]]*\!linebreak/  /' > "$temp_file"
+
     # ファイルを更新
     if mv "$temp_file" "$file" 2>/dev/null; then
         return 0
@@ -213,6 +214,78 @@ remove_trailing_spaces() {
         rm -f "$temp_file"
         return 1
     fi
+}
+
+# Markdownファイルから不要な行頭空白を除去する関数
+# 箇条書き（*, -, +）やコードブロック（```）のインデントは保持
+# 元のファイルを直接置換する
+clean_markdown_whitespace() {
+    local input_file="$1"
+    
+    # 引数チェック
+    #if [[ -z "$input_file" ]]; then
+    #    echo "使用法: clean_markdown_whitespace <ファイル>"
+    #    echo "指定されたファイルの内容を直接置換します"
+    #    return 1
+    #fi
+    
+    if [[ ! -f "$input_file" ]]; then
+        #echo "エラー: ファイル '$input_file' が見つかりません"
+        return 1
+    fi
+    
+    local in_code_block=false
+    local temp_file=$(mktemp)
+    
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # コードブロックの開始/終了を検出
+        if [[ "$line" =~ ^[[:space:]]*\`\`\` ]]; then
+            if [[ "$in_code_block" == true ]]; then
+                in_code_block=false
+            else
+                in_code_block=true
+            fi
+            echo "$line" >> "$temp_file"
+            continue
+        fi
+        
+        # コードブロック内の場合は元の行をそのまま保持
+        if [[ "$in_code_block" == true ]]; then
+            echo "$line" >> "$temp_file"
+            continue
+        fi
+        
+        # 箇条書きマーカー（*, -, +）の検出
+        # 行頭の空白 + マーカー + 空白の組み合わせを検出
+        if [[ "$line" =~ ^[[:space:]]*[\*\-\+][[:space:]] ]]; then
+            echo "$line" >> "$temp_file"
+            continue
+        fi
+        
+        # 番号付きリスト（数字 + . + 空白）の検出
+        if [[ "$line" =~ ^[[:space:]]*[0-9]+\.[[:space:]] ]]; then
+            echo "$line" >> "$temp_file"
+            continue
+        fi
+        
+        # インデントされたコード（4つ以上の空白で始まる）の検出
+        if [[ "$line" =~ ^[[:space:]]{4,} ]]; then
+            # ただし、空白のみの行は除去
+            if [[ ! "$line" =~ ^[[:space:]]*$ ]]; then
+                echo "$line" >> "$temp_file"
+                continue
+            fi
+        fi
+        
+        # 上記のいずれでもない場合は行頭の空白を除去
+        cleaned_line=$(echo "$line" | sed 's/^[[:space:]]*//')
+        echo "$cleaned_line" >> "$temp_file"
+        
+    done < "$input_file"
+    
+    # 元のファイルを置換
+    mv "$temp_file" "$input_file"
+    #echo "処理完了: $input_file を置換しました"
 }
 
 # .mdファイルを配列に収集
@@ -247,6 +320,9 @@ for file in "${md_files[@]}"; do
 
     # 連続した空行を単一の空行に置換
     remove_consecutive_empty_lines "$file"
+
+    # 行頭の不要な空白を除去
+    clean_markdown_whitespace "$file"
 done
 
 #echo ""
