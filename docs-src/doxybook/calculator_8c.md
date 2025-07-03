@@ -1,5 +1,5 @@
 ---
-summary: 計算機の実装ファイル
+summary: ファイルの概要を表します。
 author: doxygen and doxybook
 toc: true
 ---
@@ -8,7 +8,64 @@ toc: true
 
 # src/calculator.c
 
-計算機の実装ファイル
+ファイルの概要を表します。
+
+**Deprecated**:
+
+非推奨であることを記載します。
+
+**Author**: 初版作成者を表します。
+
+**Version**: 現在のバージョンを表します。
+
+**Since**: コードや API がいつから利用可能になったかを記載します。
+
+**Date**: yyyy/mm/dd (初版作成年月日を表します。)
+
+**Note**: 一般的な注釈を記載します。
+
+**Todo**: Todo リストを記載します。この行はリスト名となります (省略可能)。
+
+* 子リスト1
+* 子リスト2
+* 子リスト3
+
+**Warning**: 警告を記載します。
+
+**Remarks**: 詳細な説明や補足情報を記載します。
+
+**Attention**: 注意を記載します。
+
+**History**:
+
+* yyyy/mm/dd [修正ID](https://example.com/id/1234) 修正の概要
+    * 子リスト1
+    * 子リスト2
+* yyyy/mm/dd [修正ID](https://example.com/id/5678) 修正の概要
+    * 子リスト1  
+子リスト1の続き
+
+**Details**:
+
+タグのないコメントは、details として扱われます。
+
+PlantUML の図を挿入することができます。  
+VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
+
+```plantuml
+@startuml
+    caption 図のテスト
+    circle a
+    circle b
+    rectangle "a/b" as devide
+    circle return
+    a -> devide : 被除数
+    b -> devide : 除数
+    devide -> return
+@enduml
+```
+
+Copyright (c) YYYY Sample Inc. All Rights reserved.
 
 ## 関数
 

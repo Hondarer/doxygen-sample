@@ -154,17 +154,10 @@
 {% endfor %}{% endif %}
 {% endif -%}
 
-{% if exists("par") %}
-**Par**:{% if length(par) == 1 %} {{first(par)}}{% else %}
-
-{% for item in par %}* {{item}}
-{% endfor %}{% endif %}
-{% endif -%}
-
 {% if exists("rcs") %}
 **Rcs**:{% if length(rcs) == 1 %} {{first(rcs)}}{% else %}
 
-{% for item in rcs %}  * {{item}}
+{% for item in rcs %}* {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
@@ -176,6 +169,13 @@
 {% if exists("reimplementedBy") %}
 **Reimplemented by**: {% for impl in reimplementedBy %}[{{impl.fullname}}]({{impl.url}}){% if not loop.is_last %}, {% endif %}{% endfor %}
 
+{% endif -%}
+
+{# par は定義回数が 1 回でも 2 回でもリスト形式で出力する #}
+{# 出力後に postprocess.sh で {{item}} を見出しに変換する #}
+{% if exists("par") %}
+{% for item in par %}**Par**: {{item}}
+{% endfor %}
 {% endif -%}
 
 {% if exists("details") %}
