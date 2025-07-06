@@ -344,7 +344,7 @@ for file in "${md_files[@]}"; do
     remove_consecutive_empty_lines "$file"
 
     # Par 項目の処理
-    process_par_lines "$file"
+    #process_par_lines "$file"
 
     # 行頭の不要な空白を除去
     clean_markdown_whitespace "$file"

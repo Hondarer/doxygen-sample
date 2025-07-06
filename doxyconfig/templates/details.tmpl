@@ -2,184 +2,213 @@
 {% endif -%}
 
 {% if exists("paramList") %}
-**Parameters**:
+ #### Parameters
 
 {% for param in paramList %}* {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("returnsList") %}
-**Returns**:
+ #### Returns
 
-{% for param in returnsList %}* {{param.name}} {{param.text}}
+{% for param in returnsList %}##### {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("exceptionsList") %}
-**Exceptions**:
+ #### Exceptions
 
-{% for param in exceptionsList %}* {{param.name}} {{param.text}}
+{% for param in exceptionsList %}##### {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("templateParamsList") %}
-**Template Parameters**:
+ #### Template Parameters
 
-{% for param in templateParamsList %}* {{param.name}} {{param.text}}
+{% for param in templateParamsList %}##### {{param.name}} {{param.text}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("deprecated") %}
-**Deprecated**:
+ #### Deprecated
 
 {{deprecated}}
 {% endif -%}
 
 {% if exists("see") %}
-**See**:{% if length(see) == 1 %} {{first(see)}}{% else %}
+ #### See
 
-{% for item in see %}* {{item}}
+{% if length(see) == 1 %}{{first(see)}}{% else %}
+
+{% for item in see %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("returns") %}
-**Return**:{% if length(returns) == 1 %} {{first(returns)}}{% else %}
+ #### Return
 
-{% for item in returns %}* {{item}}
+{% if length(returns) == 1 %}{{first(returns)}}{% else %}
+
+{% for item in returns %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("authors") %}
-**Author**:{% if length(authors) == 1 %} {{first(authors)}}{% else %}
+ #### Author
 
-{% for item in authors %}* {{item}}
+{% if length(authors) == 1 %}{{first(authors)}}{% else %}
+
+{% for item in authors %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("version") %}
-**Version**:{% if length(version) == 1 %} {{first(version)}}{% else %}
+ #### Version
 
-{% for item in version %}* {{item}}
+{% if length(version) == 1 %}{{first(version)}}{% else %}
+
+{% for item in version %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("since") %}
-**Since**:{% if length(since) == 1 %} {{first(since)}}{% else %}
+ #### Since
 
-{% for item in since %}* {{item}}
+{% if length(since) == 1 %}{{first(since)}}{% else %}
+
+{% for item in since %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("date") %}
-**Date**:{% if length(date) == 1 %} {{first(date)}}{% else %}
+ #### Date
 
-{% for item in date %}* {{item}}
+{% if length(date) == 1 %}{{first(date)}}{% else %}
+
+{% for item in date %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("note") %}
-**Note**:{% if length(note) == 1 %} {{first(note)}}{% else %}
+ #### Note
 
-{% for item in note %}* {{item}}
+{% if length(note) == 1 %}{{first(note)}}{% else %}
+
+{% for item in note %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("bugs") %}
-**Bug**:{% if length(bugs) == 1 %} {{first(bugs)}}{% else %}
+ #### Bug
 
-{% for item in bugs %}* {{item}}
+{% if length(bugs) == 1 %}{{first(bugs)}}{% else %}
+
+{% for item in bugs %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("tests") %}
-**Test**:{% if length(tests) == 1 %} {{first(tests)}}{% else %}
+ #### Test
 
-{% for item in tests %}* {{item}}
+{% if length(tests) == 1 %}{{first(tests)}}{% else %}
+
+{% for item in tests %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("todos") %}
-**Todo**:{% if length(todos) == 1 %} {{first(todos)}}{% else %}
+ #### Todo
 
-{% for item in todos %}* {{item}}
+{% if length(todos) == 1 %}{{first(todos)}}{% else %}
+
+{% for item in todos %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("warning") %}
-**Warning**:{% if length(warning) == 1 %} {{first(warning)}}{% else %}
+ #### Warning
 
-{% for item in warning %}* {{item}}
+{% if length(warning) == 1 %}{{first(warning)}}{% else %}
+
+{% for item in warning %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("pre") %}
-**Precondition**:{% if length(pre) == 1 %} {{first(pre)}}{% else %}
+ #### Precondition
 
-{% for item in pre %}* {{item}}
+{% if length(pre) == 1 %}{{first(pre)}}{% else %}
+
+{% for item in pre %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("post") %}
-**Postcondition**:{% if length(post) == 1 %} {{first(post)}}{% else %}
+ #### Postcondition
 
-{% for item in post %}* {{item}}
-{% endfor %}{% endif %}
-{% endif -%}
+{% if length(post) == 1 %}{{first(post)}}{% else %}
 
-{% if exists("copyright") %}
-**Copyright**:{% if length(copyright) == 1 %} {{first(copyright)}}{% else %}
-
-{% for item in copyright %}* {{item}}
+{% for item in post %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("invariant") %}
-**Invariant**:{% if length(invariant) == 1 %} {{first(invariant)}}{% else %}
+ #### Invariant
 
-{% for item in invariant %}* {{item}}
+{% if length(invariant) == 1 %}{{first(invariant)}}{% else %}
+
+{% for item in invariant %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("remark") %}
-**Remarks**:{% if length(remark) == 1 %} {{first(remark)}}{% else %}
+ #### Remarks
 
-{% for item in remark %}* {{item}}
+{% if length(remark) == 1 %}{{first(remark)}}{% else %}
+
+{% for item in remark %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("attention") %}
-**Attention**:{% if length(attention) == 1 %} {{first(attention)}}{% else %}
+ #### Attention
 
-{% for item in attention %}* {{item}}
+{% if length(attention) == 1 %}{{first(attention)}}{% else %}
+
+{% for item in attention %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("rcs") %}
-**Rcs**:{% if length(rcs) == 1 %} {{first(rcs)}}{% else %}
+ #### Rcs
 
-{% for item in rcs %}* {{item}}
+{% if length(rcs) == 1 %}{{first(rcs)}}{% else %}
+
+{% for item in rcs %}##### {{item}}
 {% endfor %}{% endif %}
 {% endif -%}
 
 {% if exists("reimplements") %}
-**Reimplements**: [{{reimplements.fullname}}]({{reimplements.url}})
+ #### Reimplements
+
+[{{reimplements.fullname}}]({{reimplements.url}})
 
 {% endif -%}
 
 {% if exists("reimplementedBy") %}
-**Reimplemented by**: {% for impl in reimplementedBy %}[{{impl.fullname}}]({{impl.url}}){% if not loop.is_last %}, {% endif %}{% endfor %}
+ #### Reimplemented by
+
+{% for impl in reimplementedBy %}[{{impl.fullname}}]({{impl.url}}){% if not loop.is_last %}, {% endif %}{% endfor %}
 
 {% endif -%}
 
-{# par は定義回数が 1 回でも 2 回でもリスト形式で出力する #}
-{# 出力後に postprocess.sh で {{item}} を見出しに変換する #}
 {% if exists("par") %}
-{% for item in par %}**Par**: {{item}}
+{% for item in par %}#### {{item}}
 {% endfor %}
 {% endif -%}
 
 {% if exists("details") %}
-**Details**:
+ #### Details
 
 {{details}}
 
@@ -188,4 +217,13 @@
 {% if exists("inbody") %}
 {{inbody}}
 
+{% endif -%}
+
+{% if exists("copyright") %}
+ #### Copyright
+
+{% if length(copyright) == 1 %}{{first(copyright)}}{% else %}
+
+{% for item in copyright %}##### {{item}}
+{% endfor %}{% endif %}
 {% endif -%}

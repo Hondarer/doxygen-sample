@@ -39,7 +39,7 @@
         devide -> return
     @enduml
  * 
- *  Copyright (c) YYYY Sample Inc. All Rights reserved.
+ *  @copyright Copyright (c) YYYY Sample Inc. All Rights reserved.
  * 
  *******************************************************************************
  */
@@ -61,7 +61,7 @@
  * 詳細な説明や、特定の使用例などの追加情報を  
  * 複数行にわたって記述することができます。
  * 
- * 改行は、&lt;br&gt;<br>
+ * 改行は、`br` タグ<br>
  * と 2 個の空白どちらでも動作します。
  *
  * - 箇条書き1

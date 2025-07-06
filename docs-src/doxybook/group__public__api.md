@@ -8,15 +8,25 @@ toc: true
 
 # 公開API
 
+## カテゴリー
+
+### 公開API
+
 外部公開するAPI群
 
-**Note**: 補足
+#### Note
 
-**Warning**: 警告
+補足
 
-**Attention**: 注意
+#### Warning
 
-**Details**:
+警告
+
+#### Attention
+
+注意
+
+#### Details
 
 詳細な説明文
 
@@ -33,14 +43,18 @@ int subtract (
 
 二つの整数を減算する関数
 
-**Parameters**:
+#### Parameters
 
 * [in] a 被減数
 * [in] b 減数
 
-**Return**: 減算結果
+#### Return
 
-**Todo**: 単項目の Todo
+減算結果
+
+#### Todo
+
+単項目の Todo
 
 ### multiply
 
@@ -53,12 +67,14 @@ int multiply (
 
 二つの整数を乗算する関数
 
-**Parameters**:
+#### Parameters
 
 * [in] a 第一因数
 * [in] b 第二因数
 
-**Return**: 乗算結果
+#### Return
+
+乗算結果
 
 ### divide
 
@@ -71,18 +87,24 @@ double divide (
 
 二つの整数を除算する関数
 
-**Parameters**:
+#### Parameters
 
 * [in] a 被除数
 * [in] b 除数
 
-**Return**: 除算結果
+#### Return
 
-**Note**: 特別な注意事項を示します。
+除算結果
 
-**Warning**: b が 0 の場合、結果は未定義です
+#### Note
 
-**Details**:
+特別な注意事項を示します。
+
+#### Warning
+
+b が 0 の場合、結果は未定義です
+
+#### Details
 
 PlantUML の図を挿入することができます。  
 VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
@@ -111,37 +133,47 @@ int add (
 
 二つの整数を加算する関数
 
-**Parameters**:
+#### Parameters
 
 * [in] a 第一オペランド
 * [in] b 第二オペランド
 
-**Deprecated**:
+#### Deprecated
 
 非推奨の機能であることを示す。
 
-**Return**: 加算結果
+#### Return
 
-**Since**: いつから利用可能かを示す。
+加算結果
 
-**Todo**:
+#### Since
+
+いつから利用可能かを示す。
+
+#### Todo
 
 * コメントを記載する
 * ログ機能を実装する
 * 将来的に浮動小数点対応を追加する
 
-**Precondition**: 関数の前提条件。
+#### Precondition
 
-**Postcondition**: 関数の後の保証。
+関数の前提条件。
 
-**Remarks**: この関数はスレッド セーフです。
+#### Postcondition
 
-**Details**:
+関数の後の保証。
+
+#### Remarks
+
+この関数はスレッド セーフです。
+
+#### Details
 
 詳細な説明や、特定の使用例などの追加情報を  
 複数行にわたって記述することができます。
 
-改行は、<br>  
+改行は、`br` タグ  
 と 2 個の空白どちらでも動作します。
 
 * 箇条書き1
