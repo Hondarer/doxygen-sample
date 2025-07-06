@@ -1,6 +1,6 @@
 # cheetsheet
 
-from [Doxygenチートシート](https://qiita.com/yuta-yoshinaga/items/84887a89f6a21a7dcfd5)
+from [Doxygen チートシート](https://qiita.com/yuta-yoshinaga/items/84887a89f6a21a7dcfd5)
 
 C 言語用に見直し中。
 

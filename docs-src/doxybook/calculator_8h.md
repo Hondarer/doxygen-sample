@@ -39,6 +39,7 @@ toc: true
 #### Copyright
 
 コピーライト
+
 ## 関数
 
 ### subtract

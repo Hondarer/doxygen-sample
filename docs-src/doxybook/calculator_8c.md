@@ -90,6 +90,7 @@ VSCode の PlantUML プラグインを使用するために、行頭の * は記
 #### Copyright
 
 Copyright (c) YYYY Sample Inc. All Rights reserved.
+
 ## 関数
 
 ### subtract
