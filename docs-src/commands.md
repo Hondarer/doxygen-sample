@@ -21,9 +21,7 @@
  *  \brief          Sets the position.
  *  \param[in]      x,y,z Coordinates of the position in 3D space.
  */
-void setPosition(double x,double y,double z,double t)
-{
-}
+void setPosition(double x,double y,double z,double t);
 ```
 
 ## `\return { description of the return value }`
@@ -199,6 +197,8 @@ void sortArray(int* arr, size_t size);
 
 ユーザー定義の見出しを使った説明を表します。Doxygen で用意されていない見出しを利用するために用います。見出しにどのような意味を持たせるかは、一般的にプロジェクトごとに規定されます。
 
+`History` というユーザー定義の見出しを使った例を以下に示します。
+
 ```c
 /**
  *  \par            History
@@ -268,7 +268,7 @@ Latex の式を表します。複数行形式と行内形式の 2 つの書式�
 
 ## 注釈コマンド (タグ) 使い分けガイド
 
-Doxygen のドキュメント作成において、`\note`、`\warning`、`\remark`、`\attention` の 4 つの注釈コマンド (タグ) を適切に使い分けるためのガイドラインを示します。
+`\note`、`\warning`、`\remarks`、`\attention` の 4 つの注釈コマンド (タグ) を適切に使い分けるためのガイドラインを示します。
 
 適切なコマンド (タグ) の使い分けにより、開発者にとって実用的で理解しやすいドキュメントを作成できます。各コマンド (タグ) の特徴を理解し、情報の重要度と緊急度に応じて適切に選択することで、コードの品質と保守性の向上につながります。
 
@@ -281,7 +281,7 @@ Doxygen のドキュメント作成において、`\note`、`\warning`、`\remar
 | `\warning`   | 🔴 高     | 🔴 高     | 重大なエラーや危険の回避 |
 | `\attention` | 🔴 高     | 🟡 中     | 必須の制約条件・使用条件 |
 | `\note`      | 🟡 中     | 🟡 中     | 技術的詳細・実装仕様     |
-| `\remark`    | 🟢 低～中 | 🟢 低     | 補足情報・推奨事項       |
+| `\remarks`   | 🟢 低～中 | 🟢 低     | 補足情報・推奨事項       |
 
 ### `\warning` - 危険回避のための警告
 
@@ -378,7 +378,7 @@ char *sendHttpRequest(const char *url);
 - 性能特性の説明
 - 実装の技術的な詳細
 
-### `\remark` - 補足情報・推奨事項
+### `\remarks` - 補足情報・推奨事項
 
 **使用場面**: 使用上のヒントや最適化のアドバイスを提供する場合
 
@@ -388,9 +388,9 @@ char *sendHttpRequest(const char *url);
 /**
  *  \brief          大量のデータを処理します。
  *  \param[in]      dataset 処理するデータセット。
- *  \remark         10 万件以上のデータの場合は並列処理版の使用を推奨します。
- *  \remark         メモリ使用量はデータサイズの約 1.5 倍になります。
- *  \remark         処理中にプログレスバーを表示することを推奨します。
+ *  \remarks        10 万件以上のデータの場合は並列処理版の使用を推奨します。
+ *  \remarks        メモリ使用量はデータサイズの約 1.5 倍になります。
+ *  \remarks        処理中にプログレスバーを表示することを推奨します。
  */
 void processLargeDataset(const Dataset *dataset);
 
@@ -398,7 +398,7 @@ void processLargeDataset(const Dataset *dataset);
  *  \brief          設定ファイルを読み込みます。
  *  \param[in]      filePath ファイルパス。
  *  \return         設定内容。
- *  \remark         起動時のパフォーマンスを向上させるため、設定をキャッシュすることを推奨します。
+ *  \remarks        起動時のパフォーマンスを向上させるため、設定をキャッシュすることを推奨します。
  */
 Config *loadConfiguration(const char *filePath);
 ```
@@ -424,7 +424,7 @@ Config *loadConfiguration(const char *filePath);
  *  \attention      取引実行前に必ず口座残高を確認してください。
  *  \warning        取引が失敗した場合でも重複実行は禁止です。
  *  \note           取引履歴は自動的にデータベースに保存されます。
- *  \remark         高頻度取引の場合はバッチ処理の使用を検討してください。
+ *  \remarks        高頻度取引の場合はバッチ処理の使用を検討してください。
  */
 TransactionResult *executeTransaction(const Transaction *transaction, 
                                       const Account *account);
@@ -453,7 +453,7 @@ else (No)
       stop
     else (No)
       if (補足情報や推奨事項？\n例：最適化のヒント\n代替手段の提案) then (Yes)
-        :\\remark を使用;
+        :\\remarks を使用;
         stop
       else (No)
         :通常の \\brief や \\param、\\details を使用;

@@ -7,8 +7,8 @@
  *  \version        現在のバージョンを表します。
  *  \note           一般的な注釈を記載します。
  *  \remarks        詳細な説明や補足情報を記載します。
- *  \attention      注意を記載します。
  *  \warning        警告を記載します。
+ *  \attention      注意を記載します。
  *  \deprecated     非推奨であることを記載します。
  *  \since          コードや API がいつから利用可能になったかを記載します。
  *  \par            History
@@ -28,7 +28,7 @@
  *  PlantUML の図を挿入することができます。<br>
  *  VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
  * 
-    \startuml
+    @startuml
         caption 図のテスト
         circle a
         circle b
@@ -37,7 +37,7 @@
         a -> devide : 被除数
         b -> devide : 除数
         devide -> return
-    \enduml
+    @enduml
  * 
  *  \copyright Copyright (c) YYYY Sample Inc. All Rights reserved.
  * 
@@ -47,33 +47,33 @@
 #include "calculator.h"
 
 /**
- * @ingroup public_api
- * @brief 二つの整数を加算する関数
- * @param[in] a 第一オペランド
- * @param[in] b 第二オペランド
- * @return 加算結果
- * @pre 関数の前提条件。
- * @post 関数の後の保証。
- * @deprecated 非推奨の機能であることを示す。
- * @since いつから利用可能かを示す。
- * @remarks この関数はスレッド セーフです。
- * @details
- * 詳細な説明や、特定の使用例などの追加情報を  
- * 複数行にわたって記述することができます。
+ *  \ingroup public_api
+ *  \brief 二つの整数を加算する関数
+ *  \param[in] a 第一オペランド
+ *  \param[in] b 第二オペランド
+ *  \return 加算結果
+ *  \pre 関数の前提条件。
+ *  \post 関数の後の保証。
+ *  \deprecated 非推奨の機能であることを示す。
+ *  \since いつから利用可能かを示す。
+ *  \remarks この関数はスレッド セーフです。
+ *  \details
+ *  詳細な説明や、特定の使用例などの追加情報を  
+ *  複数行にわたって記述することができます。
+ *  
+ *  改行は、`br` タグ<br>
+ *  と 2 個の空白どちらでも動作します。
  * 
- * 改行は、`br` タグ<br>
- * と 2 個の空白どちらでも動作します。
- *
- * - 箇条書き1
- *     - 箇条書き1-1
- *     - 箇条書き1-2
- * - 箇条書き2
- *
- * このように、箇条書きも記載できます。
- * @todo
- * - コメントを記載する
- * - ログ機能を実装する
- * - 将来的に浮動小数点対応を追加する
+ *  - 箇条書き1
+ *      - 箇条書き1-1
+ *      - 箇条書き1-2
+ *  - 箇条書き2
+ * 
+ *  このように、箇条書きも記載できます。
+ *  \todo
+ *  - コメントを記載する
+ *  - ログ機能を実装する
+ *  - 将来的に浮動小数点対応を追加する
  */
 int add(int a, int b)
 {
