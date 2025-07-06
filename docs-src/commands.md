@@ -17,8 +17,9 @@
 コンマ区切りリストを使用して、複数のパラメーターの説明を表すこともできます。次に例を示します。
 
 ```c
-/** Sets the position.
- *  \param x,y,z Coordinates of the position in 3D space.
+/**
+ *  \brief          Sets the position.
+ *  \param[in]      x,y,z Coordinates of the position in 3D space.
  */
 void setPosition(double x,double y,double z,double t)
 {
@@ -63,18 +64,18 @@ void setPosition(double x,double y,double z,double t)
 
 ```c
 /**
- *  \brief     Pretty nice class.
- *  \details   This class is used to demonstrate a number of section commands.
- *  \author    John Doe
- *  \author    Jan Doe
- *  \version   4.1a
- *  \date      1990-2011
- *  \pre       First initialize the system.
- *  \bug       Not all memory is freed when deleting an object of this class.
- *  \warning   Improper use can crash your application.
- *  \copyright GNU Public License.
+ *  \brief          Pretty nice method.
+ *  \details        This method is used to demonstrate a number of section commands.
+ *  \author         John Doe
+ *  \author         Jan Doe
+ *  \version        4.1a
+ *  \date           1990-2011
+ *  \pre            First initialize the system.
+ *  \bug            Not all memory is freed when deleting an object of this method.
+ *  \warning        Improper use can crash your application.
+ *  \copyright      GNU Public License.
  */
-class SomeNiceClass {};
+void SomeNiceMethod ();
 ```
 
 Doxygen によって生成された対応する HTML ドキュメントについては、[ここ](https://www.doxygen.nl/manual/examples/author/html/class_some_nice_class.html) をクリックしてください。
@@ -115,18 +116,18 @@ Doxygen によって生成された対応する HTML ドキュメントについ
 
 ```c
 /**
- * \defgroup MenuTests "Menu Testing Procedures"
- * \brief Manual testing procedures for menu functionality.
+ *  \defgroup       MenuTests "Menu Testing Procedures"
+ *  \brief          Manual testing procedures for menu functionality.
  */
 
 /**
- * \ingroup MenuTests
- * \test Menu item selection test.
- * 1. Open the application menu.
- * 2. Click on "File" menu item.
- * 3. Verify submenu appears.
- * 4. Select "New Document" option.
- * 5. Confirm new document is created.
+ *  \ingroup        MenuTests
+ *  \test           Menu item selection test.
+ *                  1. Open the application menu.
+ *                  2. Click on "File" menu item.
+ *                  3. Verify submenu appears.
+ *                  4. Select "New Document" option.
+ *                  5. Confirm new document is created.
  */
 void testMenuSelection();
 ```
@@ -145,25 +146,22 @@ Todo 項目を表します。
 
 ```c
 /**
- * Some description.
- * \param[in] grid1 First grid.
- * \param[in] grid2 Second grid.
- * \pre \p grid1 and \p grid2 must be of the same dimensions.
+ *  \brief          Some description.
+ *  \param[in]      grid1 First grid.
+ *  \param[in]      grid2 Second grid.
+ *  \pre            \p grid1 and \p grid2 must be of the same dimensions.
  */
 ```
 
 ```c
 /**
- * Trim leading and trailing whitespace from a string.
- * \param str string to prune.
- * \pre str is non-empty.
+ *  \brief          Trim leading and trailing whitespace from a string.
+ *  \param[in,out]  str string to prune.
+ *  \pre            \p str is non-empty.
  */
-inline void trim(std::string& str) {
+inline void trim(char *str) {
     // If the string is empty, do nothing
-    if (str.empty()) {
-        return;
-    }
-    // 実装...
+    // ...
 }
 ```
 
@@ -173,14 +171,14 @@ inline void trim(std::string& str) {
 
 ```c
 /**
- * \brief 配列をソートします。
+ *  \brief          配列をソートします。
  * 
- * \param[in,out] arr ソート対象の配列を表します。
- * \param[in] size 配列のサイズを表します。
+ *  \param[in,out]  arr ソート対象の配列を表します。
+ *  \param[in]      size 配列のサイズを表します。
  * 
- * \post arr contains the same elements as before, but in sorted order.
- * \post arr[i] <= arr[i+1] for all valid i (0 <= i < size-1).
- * \post The original elements are preserved (no elements added or removed).
+ *  \post           \p arr contains the same elements as before, but in sorted order.
+ *  \post           arr[i] <= arr[i+1] for all valid i (0 <= i < size-1).
+ *  \post           The original elements are preserved (no elements added or removed).
  */
 void sortArray(int* arr, size_t size);
 ```
@@ -223,6 +221,51 @@ void sortArray(int* arr, size_t size);
 
 著作権の説明を表します。
 
+## `@startuml ~ @enduml`
+
+PlantUML 形式の図を表します。
+
+以下のように記載すると、[PlantUML プラグイン](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml) のプレビュー機能も活用できます。
+
+```c
+/**
+ *  \brief          2 つの整数を除算します。
+ *  \param[in]      a 被除数。
+ *  \param[in]      b 除数。
+ *  \return         除算結果。
+ *  \details        PlantUML の図を挿入することができます。
+    @startuml
+        caption 図のテスト
+        circle a
+        circle b
+        rectangle "a/b" as devide
+        circle return
+        a -> devide : 被除数
+        b -> devide : 除数
+        devide -> return
+    @enduml
+ *  \warning        \p b が 0 の場合、結果は未定義です。
+ */
+double divide(int a, int b);
+```
+
+## `@f[ ~ @f]`, `@f$ ~ @f$`
+
+Latex の式を表します。複数行形式と行内形式の 2 つの書式があります。
+
+```c
+/**
+ *  式のサンプル
+    @f[
+        \sum_{k=1}^n a_k
+    @f]
+ */
+```
+
+```c
+# define THUMB_RGB565_SIZE  28800   //!< RGB565 タイプのサムネイルサイズ @f$(160 * 90 * 2)@f$
+```
+
 ## 注釈コマンド (タグ) 使い分けガイド
 
 Doxygen のドキュメント作成において、`\note`、`\warning`、`\remark`、`\attention` の 4 つの注釈コマンド (タグ) を適切に使い分けるためのガイドラインを示します。
@@ -233,12 +276,12 @@ Doxygen のドキュメント作成において、`\note`、`\warning`、`\remar
 
 #### 優先度・重要度マトリックス
 
-| タグ | 重要度 | 緊急度 | 主な用途 |
-|------|--------|--------|----------|
-| `\warning` | 🔴 高 | 🔴 高 | 重大なエラーや危険の回避 |
-| `\attention` | 🔴 高 | 🟡 中 | 必須の制約条件・使用条件 |
-| `\note` | 🟡 中 | 🟡 中 | 技術的詳細・実装仕様 |
-| `\remark` | 🟢 低～中 | 🟢 低 | 補足情報・推奨事項 |
+| タグ         | 重要度     | 緊急度     | 主な用途                |
+|--------------|------------|------------|-------------------------|
+| `\warning`   | 🔴 高     | 🔴 高     | 重大なエラーや危険の回避 |
+| `\attention` | 🔴 高     | 🟡 中     | 必須の制約条件・使用条件 |
+| `\note`      | 🟡 中     | 🟡 中     | 技術的詳細・実装仕様     |
+| `\remark`    | 🟢 低～中 | 🟢 低     | 補足情報・推奨事項       |
 
 ### `\warning` - 危険回避のための警告
 
@@ -248,19 +291,19 @@ Doxygen のドキュメント作成において、`\note`、`\warning`、`\remar
 
 ```c
 /**
- * \brief 生のメモリポインタを操作します。
- * \param[in,out] ptr メモリポインタ。
- * \param[in] size 操作するサイズ。
- * \warning この関数を呼ぶ前に必ず ptr != nullptr を確認してください。
- * \warning size は実際のメモリサイズを超えてはいけません。
+ *  \brief          生のメモリポインタを操作します。
+ *  \param[in,out]  ptr メモリポインタ。
+ *  \param[in]      size 操作するサイズ。
+ *  \warning        この関数を呼ぶ前に必ず ptr != nullptr を確認してください。
+ *  \warning        \p size は実際のメモリサイズを超えてはいけません。
  */
 void manipulateRawMemory(void* ptr, size_t size);
 
 /**
- * \brief 暗号化キーを生成します。
- * \return 生成されたキー。
- * \warning 生成されたキーは必ず安全な場所に保存してください。
- * \warning デバッグ時でもキーをログに出力しないでください。
+ *  \brief          暗号化キーを生成します。
+ *  \return         生成されたキー。
+ *  \warning        生成されたキーは必ず安全な場所に保存してください。
+ *  \warning        デバッグ時でもキーをログに出力しないでください。
  */
 char* generateEncryptionKey();
 ```
@@ -279,18 +322,18 @@ char* generateEncryptionKey();
 
 ```c
 /**
- * \brief データベース接続を初期化します。
- * \param[in] config 設定情報。
- * \attention この関数は main() 関数内で1回だけ呼び出してください。
- * \attention cleanup() を呼ぶ前に必ず disconnect() を実行してください。
+ *  \brief          データベース接続を初期化します。
+ *  \param[in]      config 設定情報。
+ *  \attention      この関数は main() 関数内で1回だけ呼び出してください。
+ *  \attention      cleanup() を呼ぶ前に必ず disconnect() を実行してください。
  */
 void initializeDatabase(const Config *config);
 
 /**
- * \brief スレッドプールを作成します。
- * \param[in] threadCount スレッド数。
- * \attention threadCount は CPU コア数以下に設定してください。
- * \attention 他のスレッドプールが動作中の場合は先に停止してください。
+ *  \brief          スレッドプールを作成します。
+ *  \param[in]      threadCount スレッド数。
+ *  \attention      \p threadCount は CPU コア数以下に設定してください。
+ *  \attention      他のスレッドプールが動作中の場合は先に停止してください。
  */
 void createThreadPool(int threadCount);
 ```
@@ -309,21 +352,21 @@ void createThreadPool(int threadCount);
 
 ```c
 /**
- * \brief 高速ソートアルゴリズムを提供します。
- * \param[in,out] data ソートするデータ。
- * \note このアルゴリズムはクイックソートを基に最適化されています。
- * \note 平均時間計算量は O(n log n)、最悪時間計算量は O(n²) です。
- * \note 安定ソートではありません。
+ *  \brief          高速ソートアルゴリズムを提供します。
+ *  \param[in,out]  data ソートするデータ。
+ *  \note           このアルゴリズムはクイックソートを基に最適化されています。
+ *  \note           平均時間計算量は O(n log n)、最悪時間計算量は O(n²) です。
+ *  \note           安定ソートではありません。
  */
 void fastSort(Data *data);
 
 /**
- * \brief HTTP リクエストを送信します。
- * \param[in] url リクエスト URL。
- * \return レスポンス内容。
- * \note 内部で libcurl ライブラリを使用しています。
- * \note タイムアウト値は 30 秒に設定されています。
- * \note SSL 証明書の検証を有効にしています。
+ *  \brief          HTTP リクエストを送信します。
+ *  \param[in]      url リクエスト URL。
+ *  \return         レスポンス内容。
+ *  \note           内部で libcurl ライブラリを使用しています。
+ *  \note           タイムアウト値は 30 秒に設定されています。
+ *  \note           SSL 証明書の検証を有効にしています。
  */
 char *sendHttpRequest(const char *url);
 ```
@@ -343,19 +386,19 @@ char *sendHttpRequest(const char *url);
 
 ```c
 /**
- * \brief 大量のデータを処理します。
- * \param[in] dataset 処理するデータセット。
- * \remark 10 万件以上のデータの場合は並列処理版の使用を推奨します。
- * \remark メモリ使用量はデータサイズの約 1.5 倍になります。
- * \remark 処理中にプログレスバーを表示することを推奨します。
+ *  \brief          大量のデータを処理します。
+ *  \param[in]      dataset 処理するデータセット。
+ *  \remark         10 万件以上のデータの場合は並列処理版の使用を推奨します。
+ *  \remark         メモリ使用量はデータサイズの約 1.5 倍になります。
+ *  \remark         処理中にプログレスバーを表示することを推奨します。
  */
 void processLargeDataset(const Dataset *dataset);
 
 /**
- * \brief 設定ファイルを読み込みます。
- * \param[in] filePath ファイルパス。
- * \return 設定内容。
- * \remark 起動時のパフォーマンスを向上させるため、設定をキャッシュすることを推奨します。
+ *  \brief          設定ファイルを読み込みます。
+ *  \param[in]      filePath ファイルパス。
+ *  \return         設定内容。
+ *  \remark         起動時のパフォーマンスを向上させるため、設定をキャッシュすることを推奨します。
  */
 Config *loadConfiguration(const char *filePath);
 ```
@@ -373,15 +416,15 @@ Config *loadConfiguration(const char *filePath);
 
 ```c
 /**
- * \brief 金融取引を実行します。
- * \param[in] transaction 取引情報。
- * \param[in] account 口座情報。
- * \return 取引結果。
- * 
- * \attention 取引実行前に必ず口座残高を確認してください。
- * \warning 取引が失敗した場合でも重複実行は禁止です。
- * \note 取引履歴は自動的にデータベースに保存されます。
- * \remark 高頻度取引の場合はバッチ処理の使用を検討してください。
+ *  \brief          金融取引を実行します。
+ *  \param[in]      transaction 取引情報。
+ *  \param[in]      account 口座情報。
+ *  \return         取引結果。
+ *
+ *  \attention      取引実行前に必ず口座残高を確認してください。
+ *  \warning        取引が失敗した場合でも重複実行は禁止です。
+ *  \note           取引履歴は自動的にデータベースに保存されます。
+ *  \remark         高頻度取引の場合はバッチ処理の使用を検討してください。
  */
 TransactionResult *executeTransaction(const Transaction *transaction, 
                                       const Account *account);
@@ -421,29 +464,3 @@ else (No)
 endif
 @enduml
 ```
-
-### 品質向上のためのチェックリスト
-
-#### `\warning` チェック項目
-
-- [ ] セキュリティリスクは適切に警告されているか
-- [ ] メモリ関連の危険は明記されているか
-- [ ] データ損失の可能性は警告されているか
-
-#### `\attention` チェック項目
-
-- [ ] 呼び出し順序の制約は明記されているか
-- [ ] 初期化・終了処理の要件は説明されているか
-- [ ] リソースの制約は適切に伝えられているか
-
-#### `\note` チェック項目
-
-- [ ] アルゴリズムの特性は説明されているか
-- [ ] 使用ライブラリの情報は記載されているか
-- [ ] 性能特性は適切に記述されているか
-
-#### `\remark` チェック項目
-
-- [ ] 実用的なヒントは提供されているか
-- [ ] 代替手段は適切に提案されているか
-- [ ] 最適化のアドバイスは具体的か

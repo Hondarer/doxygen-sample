@@ -74,6 +74,8 @@ Todo リストを記載します。この行はリスト名となります (省�
 PlantUML の図を挿入することができます。  
 VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
 
+\[ \sum_{k=1}^n a_k \]
+
 ```plantuml
 @startuml
     caption 図のテスト
