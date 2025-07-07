@@ -6,4 +6,4 @@ author: doxygen and doxybook
 
 # カテゴリーの一覧
 
-* group [公開API](group__public__api.md) <br/>外部公開するAPI群
+* group [公開 API](group__public__api.md) <br/>外部公開する API 群をカテゴライズします。

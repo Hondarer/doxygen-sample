@@ -7,5 +7,5 @@ author: doxygen and doxybook
 # ファイルの一覧
 
 * dir src
-    * file [src/calculator.c](calculator_8c.md) <br/>ファイルの概要を表します。
-    * file [src/calculator.h](calculator_8h.md) <br/>簡単な計算機のヘッダーファイル
+    * file [src/calculator.c](calculator_8c.md) <br/>計算機の実装を提供します。
+    * file [src/calculator.h](calculator_8h.md) <br/>計算機の定義を提供します。

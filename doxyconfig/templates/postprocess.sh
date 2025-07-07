@@ -216,28 +216,6 @@ remove_trailing_spaces() {
     fi
 }
 
-# 行末の連続した空白を取り除き、linebreak の処理を行う関数
-process_par_lines() {
-    local file="$1"
-    local temp_file
-    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").trailing_spaces.XXXXXX") || {
-        echo "エラー: 一時ファイルの作成に失敗しました: $file"
-        return 1
-    }
-
-    # sedを使用して **Par**: で始まる行を加工
-    # **Par**: 単語 を **単語**: に変換
-    sed 's/^\*\*Par\*\*:[[:space:]]*\([^[:space:]]*\)/\*\*\1\*\*:/g' "$file" > "$temp_file"
-
-    # ファイルを更新
-    if mv "$temp_file" "$file" 2>/dev/null; then
-        return 0
-    else
-        rm -f "$temp_file"
-        return 1
-    fi
-}
-
 # Markdownファイルから不要な行頭空白を除去する関数
 # 箇条書き（*, -, +）やコードブロック（```）のインデントは保持
 # 元のファイルを直接置換する
@@ -342,9 +320,6 @@ for file in "${md_files[@]}"; do
 
     # 連続した空行を単一の空行に置換
     remove_consecutive_empty_lines "$file"
-
-    # Par 項目の処理
-    #process_par_lines "$file"
 
     # 行頭の不要な空白を除去
     clean_markdown_whitespace "$file"

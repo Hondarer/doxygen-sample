@@ -14,14 +14,14 @@
 
 このコマンドには、パラメーターの方向を指定するオプションの属性 `<dir>` があります。可能な値は `in`、`out`、および `in,out` です。`in,out` の場合、方向 `in` と `out` は任意の順序で指定でき、まとめて記述することも、コンマ (,) またはスペースで区切ることもできます。つまり、たとえば、値 `outin` や `in out` も有効です。
 
-コンマ区切りリストを使用して、複数のパラメーターの説明を表すこともできます。例を以下に示します。
+コンマ区切りリストを使用して、複数のパラメーターの説明を表すこともできます。以下に例を示します。
 
 ```c
 /**
  *  @brief          Sets the position.
  *  @param[in]      x,y,z Coordinates of the position in 3D space.
  */
-void setPosition(double x,double y,double z,double t);
+void setPosition(double x, double y, double z);
 ```
 
 ## `@return { description of the return value }`
@@ -148,7 +148,7 @@ Todo 項目を表します。
  *  @brief          Some description.
  *  @param[in]      grid1 First grid.
  *  @param[in]      grid2 Second grid.
- *  @pre            \p grid1 and \p grid2 must be of the same dimensions.
+ *  @pre            @p grid1 and @p grid2 must be of the same dimensions.
  */
 ```
 
@@ -156,7 +156,7 @@ Todo 項目を表します。
 /**
  *  @brief          Trim leading and trailing whitespace from a string.
  *  @param[in,out]  str string to prune.
- *  @pre            \p str is non-empty.
+ *  @pre            @p str is non-empty.
  */
 inline void trim(char *str) {
     // If the string is empty, do nothing
@@ -175,11 +175,11 @@ inline void trim(char *str) {
  *  @param[in,out]  arr ソート対象の配列を表します。
  *  @param[in]      size 配列のサイズを表します。
  * 
- *  @post           \p arr contains the same elements as before, but in sorted order.
+ *  @post           @p arr contains the same elements as before, but in sorted order.
  *  @post           arr[i] <= arr[i+1] for all valid i (0 <= i < size-1).
  *  @post           The original elements are preserved (no elements added or removed).
  */
-void sortArray(int* arr, size_t size);
+void sortArray(int *arr, size_t size);
 ```
 
 ## `@invariant { description of invariant }`
@@ -228,7 +228,7 @@ void sortArray(int* arr, size_t size);
 
 ## `@copyright { copyright description }`
 
-著作権の説明を表します。例を以下に示します。
+著作権の説明を表します。以下に例を示します。
 
 ```c
 /**
@@ -265,7 +265,7 @@ PlantUML 形式の図を表します。
         b -> devide : 除数
         devide -> return
     @enduml
- *  @warning        \p b が 0 の場合、結果は未定義です。
+ *  @warning        @p b が 0 の場合、結果は未定義です。
  */
 double divide(int a, int b);
 ```
@@ -273,6 +273,8 @@ double divide(int a, int b);
 ## `@f[ ~ @f]`, `@f$ ~ @f$`
 
 Latex の式を表します。複数行形式と行内形式の 2 つの書式があります。
+
+参考: [数式エディタ Mathcha.io](https://www.mathcha.io/)
 
 ```c
 /**
@@ -302,7 +304,7 @@ Latex の式を表します。複数行形式と行内形式の 2 つの書式�
 
 `@defgroup` を用いることで、一連の関数やクラス、変数などを一つのグループとしてまとめることができます。これにより、ドキュメントが読みやすくなり、大規模なコードベースでの情報管理に役立ちます。API ドキュメントなど、カテゴリー別の公開情報をまとめる場合に使用します。
 
-例を以下に示します。
+以下に例を示します。
 
 ```c
 /**
@@ -314,7 +316,7 @@ Latex の式を表します。複数行形式と行内形式の 2 つの書式�
  *  @ingroup        MathFunctions
  *  @brief          Calculates the factorial of a number.
  *  @param[in]      n An integer number.
- *  @return         The factorial of \p n.
+ *  @return         The factorial of @p n.
  */
 int factorial(int n);
 ```
@@ -331,9 +333,35 @@ int factorial(int n);
  *  @brief          Calculates the greatest common divisor of two numbers.
  *  @param[in]      a First integer.
  *  @param[in]      b Second integer.
- *  @return         The greatest common divisor of \p a and \p b.
+ *  @return         The greatest common divisor of @p a and @p b.
  */
 int gcd(int a, int b);
+```
+
+## 対象の指定
+
+### `@fn`, `@class`, `@var`, `@def`, `@enum`, `@struct`, `@typedef`
+
+これらのコマンドは特定の関数、クラス、変数、定義、列挙、構造体、型定義に対するドキュメンテーションを行うために使用されます。  
+ただし、それらの対象の直前に Doxygen コメントが記載されている場合、これらのコマンドを省略することができます。
+
+以下に例を示します。
+
+```c
+/**
+ *  @brief          演算を行う関数。
+ *  @param[in]      a 演算の入力1。
+ *  @param[in]      b 演算の入力2。
+ *  @return         演算結果。
+ */
+int computeOperation(int a, int b);  // @fn を省略
+```
+
+```cpp
+/**
+ *  @brief          トークンを表すクラス。
+ */
+class Token {};  // @class を省略
 ```
 
 ## 注釈コマンド (タグ) 使い分けガイド
@@ -365,7 +393,7 @@ int gcd(int a, int b);
  *  @param[in,out]  ptr メモリポインタ。
  *  @param[in]      size 操作するサイズ。
  *  @warning        この関数を呼ぶ前に必ず ptr != nullptr を確認してください。
- *  @warning        \p size は実際のメモリサイズを超えてはいけません。
+ *  @warning        @p size は実際のメモリサイズを超えてはいけません。
  */
 void manipulateRawMemory(void* ptr, size_t size);
 
@@ -402,7 +430,7 @@ void initializeDatabase(const Config *config);
 /**
  *  @brief          スレッドプールを作成します。
  *  @param[in]      threadCount スレッド数。
- *  @attention      \p threadCount は CPU コア数以下に設定してください。
+ *  @attention      @p threadCount は CPU コア数以下に設定してください。
  *  @attention      他のスレッドプールが動作中の場合は先に停止してください。
  */
 void createThreadPool(int threadCount);
@@ -541,9 +569,9 @@ endif
 
 Doxygen では、コマンドの先頭に `@` もしくは `\` のどちらを使用しても機能しますが、一般的なスタイルとして多くのプロジェクトやガイドラインでは `@` が推奨されている場合が多いです。
 
-統一性を保つためには、プロジェクト内でどちらかに統一すると良いでしょう。
+統一性を保つためには、`@` に統一すると良いでしょう。
 
-例を以下に示します。
+以下に例を示します。
 
 ```c
 /**
@@ -572,5 +600,3 @@ int exampleFunction(int param1) {
     return 0;
 }
 ```
-
-どちらかに揃えてください。

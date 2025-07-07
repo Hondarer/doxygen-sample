@@ -1,34 +1,14 @@
 ---
-summary: 外部公開するAPI群
+summary: 外部公開する API 群をカテゴライズします。
 author: doxygen and doxybook
 toc: true
 ---
 
 <!-- IMPORTANT: This is an AUTOMATICALLY GENERATED file by doxygen and doxybook. Manual edits are NOT allowed. -->
 
-# 公開API
+# 公開 API
 
-## カテゴリー
-
-### 公開API
-
-外部公開するAPI群
-
-#### Note
-
-補足
-
-#### Warning
-
-警告
-
-#### Attention
-
-注意
-
-#### Details
-
-詳細な説明文
+外部公開する API 群をカテゴライズします。
 
 ## 関数
 
@@ -41,7 +21,7 @@ int subtract (
 )
 ```
 
-二つの整数を減算する関数
+`a` から `b` を減算します。
 
 #### Parameters
 
@@ -50,11 +30,11 @@ int subtract (
 
 #### Return
 
-減算結果
+減算結果。
 
-#### Todo
+#### Remarks
 
-単項目の Todo
+この関数はスレッド セーフです。
 
 ### multiply
 
@@ -65,16 +45,20 @@ int multiply (
 )
 ```
 
-二つの整数を乗算する関数
+`a` と `b` を乗算します。
 
 #### Parameters
 
-* [in] a 第一因数
-* [in] b 第二因数
+* [in] a 因数a
+* [in] b 因数b
 
 #### Return
 
-乗算結果
+乗算結果。
+
+#### Remarks
+
+この関数はスレッド セーフです。
 
 ### divide
 
@@ -85,7 +69,7 @@ double divide (
 )
 ```
 
-二つの整数を除算する関数
+`a` を `b` で除算します。
 
 #### Parameters
 
@@ -94,31 +78,28 @@ double divide (
 
 #### Return
 
-除算結果
-
-#### Note
-
-特別な注意事項を示します。
+除算結果。
 
 #### Warning
 
-b が 0 の場合、結果は未定義です
+`b` が 0 の場合、結果は未定義です。
+
+#### Remarks
+
+この関数はスレッド セーフです。
 
 #### Details
 
-PlantUML の図を挿入することができます。  
-VSCode の PlantUML プラグインを使用するために、行頭の * は記載しないことを推奨します。
-
 ```plantuml
 @startuml
- caption 図のテスト
- circle a
- circle b
- rectangle "a/b" as devide
- circle return
- a -> devide : 被除数
- b -> devide : 除数
- devide -> return
+    caption 図のテスト
+    circle a
+    circle b
+    rectangle "a/b" as devide
+    circle return
+    a -> devide : 被除数
+    b -> devide : 除数
+    devide -> return
 @enduml
 ```
 
@@ -131,67 +112,30 @@ int add (
 )
 ```
 
-二つの整数を加算する関数
+`a` と `b` を加算します。
 
 #### Parameters
 
-* [in] a 第一オペランド
-* [in] b 第二オペランド
-
-#### Deprecated
-
-非推奨の機能であることを示す。
+* [in] a 加算数a
+* [in] b 加算数b
 
 #### Return
 
-加算結果
-
-#### Since
-
-いつから利用可能かを示す。
-
-#### Todo
-
-* コメントを記載する
-* ログ機能を実装する
-* 将来的に浮動小数点対応を追加する
-
-#### Precondition
-
-関数の前提条件。
-
-#### Postcondition
-
-関数の後の保証。
+加算結果。
 
 #### Remarks
 
 この関数はスレッド セーフです。
 
-#### Details
-
-詳細な説明や、特定の使用例などの追加情報を  
-複数行にわたって記述することができます。
-
-改行は、`br` タグ  
-と 2 個の空白どちらでも動作します。
-
-* 箇条書き1
-    * 箇条書き1-1
-    * 箇条書き1-2
-* 箇条書き2
-
-このように、箇条書きも記載できます。
-
 ## 定数、マクロ
 
-### TEISU
+### ZERO_DEVIDE
 
 ```cpp
-#define TEISU (1)
+#define ZERO_DEVIDE (0.0)
 ```
 
-定数
+ゼロ除算の戻り値を定義します。
 
 ## 構造体
 
@@ -204,7 +148,7 @@ struct UserInfo {
 }
 ```
 
-ユーザー情報を保持する構造体
+ユーザー情報を保持する構造体を定義します。
 
 #### name
 
