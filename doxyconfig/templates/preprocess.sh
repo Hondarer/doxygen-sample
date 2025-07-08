@@ -103,17 +103,13 @@ while IFS= read -r xml_file; do
         sed -i 's|<parametername direction="in,out">\([^<]*\)</parametername>|<parametername>[in,out] \1</parametername>|g' "$TEMP_FILE"
         sed -i 's|<parametername direction="in, out">\([^<]*\)</parametername>|<parametername>[in,out] \1</parametername>|g' "$TEMP_FILE"
         
-        # direction="inout" の場合（一部のDoxygenバージョンで使用される）
+        # direction="inout" の場合（一部の Doxygen バージョンで使用される）
         sed -i 's|<parametername direction="inout">\([^<]*\)</parametername>|<parametername>[inout] \1</parametername>|g' "$TEMP_FILE"
         
-        # Step 3: linebreak変換
-        # <linebreak/> を !linebreak に変換
-        # (postprocess で 改行にする)
-        sed -i 's|<linebreak/>|!linebreak|g' "$TEMP_FILE"
-        
-        # その他のlinebreakバリエーション
-        #sed -i 's|<linebreak />|\n|g' "$TEMP_FILE"
-        #sed -i 's|<linebreak></linebreak>|\n|g' "$TEMP_FILE"
+        # Step 3: linebreak 変換
+        # <linebreak/> を !linebreak! に変換
+        # (postprocess で最終的に改行に置換する)
+        sed -i ':a;N;$!ba;s|<linebreak/>\n|!linebreak!|g' "$TEMP_FILE"
         
         # 元ファイルを置換
         mv "$TEMP_FILE" "$xml_file"

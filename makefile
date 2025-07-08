@@ -24,10 +24,10 @@ docs:
 # プリプロセッシング
 	doxyconfig/templates/preprocess.sh xml
 # xml -> md 変換
-	# TODO: パスチェック (インストール済であれば、それを使う)
-	bin/doxybook2/doxybook2 \
-		-i xml/ \
-		-o docs-src/doxybook/ \
+# doxybook2 へのパスは通っている前提
+	doxybook2 \
+		-i xml \
+		-o docs-src/doxybook \
 		--config doxyconfig/doxybook-config.json \
 		--templates doxyconfig/templates
 # ポストプロセッシング

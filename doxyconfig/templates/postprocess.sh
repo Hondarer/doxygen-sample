@@ -194,7 +194,7 @@ remove_consecutive_empty_lines() {
     fi
 }
 
-# 行末の連続した空白を取り除き、linebreak の処理を行う関数
+# 行末の連続した空白を取り除き、!linebreak! の処理を行う関数
 remove_trailing_spaces() {
     local file="$1"
     local temp_file
@@ -204,8 +204,11 @@ remove_trailing_spaces() {
     }
 
     # sedを使用して行末の空白文字を削除し、
-    # !linebreak を空白 2 つに変換
-    sed 's/[[:space:]]*$//' "$file" | sed 's/[[:space:]]*\!linebreak/  /' > "$temp_file"
+    # !linebreak! を空白 2 つ + 改行に変換
+    # 表内 (| で始まる) の !linebreak! は <br/> に変換
+    sed 's/[[:space:]]*$//' "$file" | \
+    sed '/^|/ s/[[:space:]]*\!linebreak\![[:space:]]*/<br \/>/' | \
+    sed '/^[^|]/ s/[[:space:]]*\!linebreak\![[:space:]]*/  \n/' > "$temp_file"
 
     # ファイルを更新
     if mv "$temp_file" "$file" 2>/dev/null; then
@@ -217,7 +220,7 @@ remove_trailing_spaces() {
 }
 
 # Markdownファイルから不要な行頭空白を除去する関数
-# 箇条書き（*, -, +）やコードブロック（```）のインデントは保持
+# 箇条書き（*, -, +）やコード ブロック（```）のインデントは保持
 # 元のファイルを直接置換する
 clean_markdown_whitespace() {
     local input_file="$1"
@@ -238,7 +241,7 @@ clean_markdown_whitespace() {
     local temp_file=$(mktemp)
     
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # コードブロックの開始/終了を検出
+        # コード ブロックの開始/終了を検出
         if [[ "$line" =~ ^[[:space:]]*\`\`\` ]]; then
             if [[ "$in_code_block" == true ]]; then
                 in_code_block=false
@@ -249,7 +252,7 @@ clean_markdown_whitespace() {
             continue
         fi
         
-        # コードブロック内の場合は元の行をそのまま保持
+        # コード ブロック内の場合は元の行をそのまま保持
         if [[ "$in_code_block" == true ]]; then
             echo "$line" >> "$temp_file"
             continue
