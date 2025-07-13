@@ -25,16 +25,6 @@
 
 /**
  *  @ingroup        public_api
- *  @brief          ユーザー情報を保持する構造体を定義します。
- */
-typedef struct
-{
-    int id;           /*!< ユーザーID */
-    const char *name; /*!< ユーザー名 */
-} UserInfo;
-
-/**
- *  @ingroup        public_api
  *  @brief          ゼロ除算の戻り値を定義します。
  */
 #define ZERO_DEVIDE (0.0)

@@ -137,6 +137,18 @@ int add (
 
 ゼロ除算の戻り値を定義します。
 
+## 型
+
+### SampleEnum
+
+| Enumerator | Value | Description |
+| ---------- | ----- | ----------- |
+| two | | 2 つめの要素   |
+| three | | 3 つめの要素   |
+| one | | 1 つめの要素   |
+
+サンプルの列挙体を定義します。
+
 ## 構造体
 
 ### UserInfo
@@ -145,6 +157,7 @@ int add (
 struct UserInfo {
     const char * name;
     int id;
+    SampleEnum enumValue;
 }
 ```
 
@@ -165,3 +178,11 @@ int id;
 ```
 
 ユーザーID
+
+#### enumValue
+
+```cpp
+SampleEnum enumValue;
+```
+
+列挙値

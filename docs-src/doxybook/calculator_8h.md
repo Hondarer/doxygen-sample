@@ -160,32 +160,3 @@ int add (
 ```
 
 ゼロ除算の戻り値を定義します。
-
-## 構造体
-
-### UserInfo
-
-```cpp
-struct UserInfo {
-    const char * name;
-    int id;
-}
-```
-
-ユーザー情報を保持する構造体を定義します。
-
-#### name
-
-```cpp
-const char * name;
-```
-
-ユーザー名
-
-#### id
-
-```cpp
-int id;
-```
-
-ユーザーID
