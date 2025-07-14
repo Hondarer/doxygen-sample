@@ -238,6 +238,7 @@ clean_markdown_whitespace() {
     fi
     
     local in_code_block=false
+    local in_code_block_first=false
     local temp_file=$(mktemp)
     
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -245,11 +246,21 @@ clean_markdown_whitespace() {
         if [[ "$line" =~ ^[[:space:]]*\`\`\` ]]; then
             if [[ "$in_code_block" == true ]]; then
                 in_code_block=false
+                in_code_block_first=false
             else
                 in_code_block=true
+                in_code_block_first=true
             fi
             echo "$line" >> "$temp_file"
             continue
+        fi
+
+        # コードブロックの直後の行が空行の場合、その空行をスキップ
+        if [[ "$in_code_block_first" == true ]]; then
+            in_code_block_first=false
+            if [[ "$line" == "" ]]; then
+                continue
+            fi
         fi
         
         # コード ブロック内の場合は元の行をそのまま保持
