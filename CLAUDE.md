@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 このファイルは、このリポジトリでコードを扱う際のClaude Code (claude.ai/code) への指針を提供します。
 
 ## プロジェクト概要
@@ -11,63 +13,90 @@
 - マークダウンドキュメント用のDoxybook2統合
 - 日本語ドキュメント出力用のカスタムテンプレート
 
-## ビルドとドキュメント生成コマンド
+## 主要コマンド
 
 ### ドキュメント生成
 ```bash
-make docs
+cd doxyfw && make docs
 ```
-このコマンドは：
-1. `xml/`にDoxygen XMLファイルと`docs/doxygen/`にHTMLファイルを出力
-2. XMLファイルに対してプリプロセッシングスクリプトを実行
-3. Doxybook2を実行してXMLを`docs-src/doxybook/`のマークダウンに変換
-4. `doxyconfig/templates/`のカスタム日本語テンプレートを使用
-5. `!include`ディレクティブを処理するポストプロセッシングスクリプトを実行
+このコマンドは以下の処理を順次実行します：
+1. `../Doxyfile.part`が存在する場合、基本設定ファイルと結合して一時ファイルを作成し使用（設定のオーバーライド対応）
+2. `../prod`ディレクトリからCソースファイルを解析し、`../xml/`にDoxygen XMLファイルと`../docs/doxygen/html/`にHTMLファイルを生成
+3. `preprocess.sh`でXMLファイルを前処理（PlantUMLタグ、パラメータdirection属性、linebreakタグを変換）
+4. Doxybook2でXMLを`../docs-src/doxybook/`のマークダウンに変換（カスタム日本語テンプレート使用）
+5. `postprocess.sh`で`!include`ディレクティブを処理して関連コンテンツを統合
 
-### ビルド成果物のクリーンアップ
+### クリーンアップ
 ```bash
-make clean
+cd doxyfw && make clean
 ```
-計算機バイナリ、オブジェクトファイル、`docs/html`と`docs-src/doxybook/`内の生成されたドキュメントを削除します。
+生成されたドキュメント（`../docs/doxygen`、`../docs-src/doxybook`、`../xml`）を削除します。
 
 ## アーキテクチャ
 
+### プロジェクト構造
+```
+study-doxygen/
+├── doxyfw/                    # ドキュメント生成環境
+│   ├── makefile              # ドキュメント生成用Makefile
+│   └── config/               # 設定ファイル群
+│       ├── Doxyfile          # Doxygen設定
+│       ├── doxybook-config.json  # Doxybook2設定
+│       └── templates/        # カスタム日本語テンプレート群
+├── prod/src/                 # 実際のCソースコード
+│   ├── calculator.h/c        # 計算機API (@ingroup public_api)
+│   ├── samplestruct.h        # UserInfo構造体定義
+│   └── *.c                   # その他のサンプルコード
+├── docs/doxygen/html/        # Doxygen生成HTML出力
+└── docs-src/doxybook/        # Doxybook2生成マークダウン出力
+```
+
 ### ソースコード構造
-- `src/calculator.h` - 関数宣言とUserInfo構造体を含むヘッダー
-- `src/calculator.c` - `@ingroup public_api`を使用したDoxygenコメント付きの実装
+- `prod/src/calculator.h` - 関数宣言と`@ingroup public_api`によるAPI分類、ZERO_DEVIDE定数定義
+- `prod/src/calculator.c` - `@ingroup public_api`を使用したDoxygenコメント付きの実装
+- `prod/src/samplestruct.h` - UserInfo構造体とその他のサンプル定義
 
 ### ドキュメント生成パイプライン
 1. **Doxygen**: Cソースファイルを解析し、`Doxyfile`設定に基づいてXMLファイルとHTMLドキュメントを生成
 2. **プリプロセッシング**: `preprocess.sh`スクリプトが変換前にXMLファイルを処理
-3. **Doxybook2**: `doxybook-config.json`とカスタムテンプレートを使用してDoxygen XMLをマークダウンに変換
-4. **ポストプロセッシング**: `postprocess.sh`スクリプトが`!include`ディレクティブを処理して関連コンテンツを統合
-5. **テンプレート**: `doxyconfig/templates/`に日本語カスタマイズ版が配置
+3. **Doxybook2**: `doxyfw/config/doxybook-config.json`とカスタムテンプレートを使用してDoxygen XMLをマークダウンに変換
+4. **ポストプロセッシング**: `postprocess.sh`スクリプトが`!include`ディレクティブを処理して関連コンテンツを統合、不要ファイルを削除
 
 ### 主要設定ファイル
-- `doxyconfig/Doxyfile` - Doxygen設定 (UTF-8エンコーディング、全要素抽出)
-- `doxyconfig/doxybook-config.json` - Doxybook2設定 (グループフィルタなし、全コンテンツ処理)
-- `doxyconfig/templates/` - 日本語フォーマット用カスタムJinja2テンプレート
+- `doxyfw/config/Doxyfile` - Doxygen基本設定 (UTF-8エンコーディング、全要素抽出、PlantUML対応)
+- `Doxyfile.part` - プロジェクト固有の設定オーバーライド (存在時は基本設定に追加結合)
+- `doxyfw/config/doxybook-config.json` - Doxybook2設定 (ソートあり、フォルダ使用なし、.md拡張子)
+- `doxyfw/config/templates/` - 日本語フォーマット用カスタムJinja2テンプレート群
 
-### テンプレート構造
-テンプレートシステムは以下を使用：
-- `nonclass_members_details.tmpl` - 出力セクションを組織するメインテンプレート
-- `member_details.tmpl` - 個別要素の書式設定 (関数、構造体など)
-- `details.tmpl` - パラメータリスト、戻り値、警告などの共通テンプレート
-- `preprocess.sh` - 変換前にXMLファイルを処理するプリプロセッシングスクリプト
-- `postprocess.sh` - `!include {filename}`ディレクティブを処理してファイル内容を置換するポストプロセッシングスクリプト
+### 処理スクリプト詳細
 
-### ポストプロセッシング機能
-- **インクルードディレクティブ**: テンプレートで`!include filename.md`を使用して他の生成ファイルからコンテンツを統合
-- **ファイルクリーンアップ**: 処理後に`struct*.md`、`index_classes.md`、`index_namespaces.md`などの不要なファイルを削除
-- **エラー処理**: 1つのファイルの処理が失敗しても他のファイルの処理を継続
-- **統計レポート**: 処理されたファイル数と成功したインクルード数を表示
+#### preprocess.sh（前処理）
+XMLファイル変換前の前処理を実行：
+- PlantUMLタグ（`<plantuml>`→`\`\`\`plantuml\n@startuml`、`</plantuml>`→`@enduml\n\`\`\``）
+- パラメータdirection属性（`direction="in"`→`[in]`プレフィックス追加）
+- linebreakタグ（`<linebreak/>`→改行文字への変換準備）
 
-### テンプレート開発のメモ
-- テンプレートで`!include`ディレクティブを使用して関連コンテンツを統合 (例：構造体の詳細をグループページに統合)
-- ポストプロセッシングスクリプトは、インクルードファイルの相対パスと絶対パスの両方をサポート
-- インクルードされたコンテンツは`!include`行をそのまま置換
-- `postprocess.sh`内の`set -x`のコメントアウトを解除してデバッグ出力を有効化可能
+#### postprocess.sh（後処理）
+Markdownファイル生成後の後処理を実行：
+- **インクルードディレクティブ**: `!include filename.md`でファイル内容を統合
+- **ファイルクリーンアップ**: 不要な`struct*.md`、`index_classes.md`等を削除
+- **エラー継続**: 単一ファイル処理失敗時も他ファイル処理継続
 
-## 開発メモ
+### カスタムテンプレート
+- `nonclass_members_details.tmpl` - API出力セクション組織化のメインテンプレート
+- `member_details.tmpl` - 関数・構造体等の個別要素書式設定
+- `details.tmpl` - パラメータ・戻り値・警告等の共通書式
 
-プロジェクトはDoxygen `@ingroup`の使用法を実証し、APIドキュメントを論理的なグループに整理します。すべてのパブリック関数は、フィルタリングされたドキュメント生成のために`@ingroup public_api`でタグ付けされています。
+## 開発ガイド
+
+### Doxygen仕様とベストプラクティス
+- 全パブリック関数に`@ingroup public_api`を付与してAPIをグループ化
+- PlantUMLサポート（前提：`/usr/local/bin/plantuml.jar`が存在）
+- UTF-8エンコーディングで日本語コメント対応
+- 関数宣言はヘッダーで簡潔に、詳細実装コメントは.cファイルに記述
+- プロジェクト固有設定は`Doxyfile.part`で上書き（PROJECT_NAME等）
+
+### テンプレート開発時の注意点
+- `!include`ディレクティブで関連コンテンツ統合（例：構造体詳細をグループページに統合）
+- 相対パス・絶対パス両方をサポート
+- デバッグ時は`postprocess.sh`内の`set -x`のコメントアウト解除
