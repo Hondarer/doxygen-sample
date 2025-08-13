@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# postprocess.sh - Markdownファイル内の !include ディレクティブを処理するスクリプト
+# postprocess.sh - Doxybook 後処理スクリプト
 # 使用方法: ./postprocess.sh <markdown_directory>
-# 例: ./postprocess.sh docs-src/doxybook2
+# 例: ./postprocess.sh docs-src/doxybook
 
-# set -x  # デバッグ時のみ有効にする
+# set -x # デバッグ時のみ有効にする
 
 # 引数チェック
 if [ $# -ne 1 ]; then
@@ -21,23 +21,23 @@ if [ ! -d "$MARKDOWN_DIR" ]; then
     exit 1
 fi
 
-#echo "Markdownファイルのポストプロセッシング: $MARKDOWN_DIR"
-
 # 一時ディレクトリを作成
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-# インクルードファイルを処理する関数
-process_includes() {
+# Markdown ファイルのポストプロセッシング関数
+process_markdown_file() {
     local file="$1"
     local temp_file
     temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").XXXXXX") || {
         echo "エラー: 一時ファイルの作成に失敗しました: $file"
         return 1
     }
-    local processed=false
     
-    # ファイルを行ごと処理
+    # インクルード処理
+    local include_temp
+    include_temp=$(mktemp "$TEMP_DIR/$(basename "$file").include.XXXXXX")
+    
     while IFS= read -r line; do
         # !include {filename} パターンをチェック
         if [[ "$line" =~ ^[[:space:]]*\!include[[:space:]]+([^[:space:]]+) ]]; then
@@ -58,7 +58,6 @@ process_includes() {
                 #echo "  -> インクルード: $include_file"
                 # ファイルの内容を出力
                 cat "$include_path"
-                processed=true
             else
                 echo "  -> 警告: インクルードファイルが見つかりません: $include_file"
                 # 元の行をそのまま出力
@@ -68,32 +67,10 @@ process_includes() {
             # 通常の行をそのまま出力
             echo "$line"
         fi
-    done < "$file" > "$temp_file"
+    done < "$file" > "$include_temp"
     
-    # 変更があった場合のみファイルを更新
-    if [ "$processed" = true ]; then
-        if mv "$temp_file" "$file" 2>/dev/null; then
-            : #echo "  -> 更新完了: $(basename "$file")"
-        else
-            #echo "  -> エラー: ファイル更新に失敗: $(basename "$file")"
-            rm -f "$temp_file"
-            return 1
-        fi
-    else
-        rm -f "$temp_file"
-    fi
-}
-
-# YAMLフロントマター内の空行をすべて取り除く関数
-remove_frontmatter_empty_lines() {
-    local file="$1"
-    local temp_file
-    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").frontmatter.XXXXXX") || {
-        echo "エラー: 一時ファイルの作成に失敗しました: $file"
-        return 1
-    }
-    
-    # awkを使用してYAMLフロントマター内の空行を除去
+    # YAML フロントマター処理
+    # - YAML フロントマター内の空行を除去
     awk '
     BEGIN { 
         in_frontmatter = 0
@@ -136,27 +113,17 @@ remove_frontmatter_empty_lines() {
         print $0
         line_count++
     }
-    ' "$file" > "$temp_file"
+    ' "$include_temp" | \
     
-    # ファイルを更新
-    if mv "$temp_file" "$file" 2>/dev/null; then
-        return 0
-    else
-        rm -f "$temp_file"
-        return 1
-    fi
-}
-
-# 連続した空行を単一の空行に置換する関数
-remove_consecutive_empty_lines() {
-    local file="$1"
-    local temp_file
-    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").empty_lines.XXXXXX") || {
-        echo "エラー: 一時ファイルの作成に失敗しました: $file"
-        return 1
-    }
+    # 行末空白除去と !linebreak! 処理
+    # - sedを使用して行末の空白文字を削除し、
+    # - !linebreak! を空白 2 つ + 改行に変換
+    # - 表内 (| で始まる) の !linebreak! は <br/> に変換
+    sed 's/[[:space:]]*$//' | \
+    sed '/^|/ s/[[:space:]]*\!linebreak\![[:space:]]*/<br \/>/' | \
+    sed '/^[^|]/ s/[[:space:]]*\!linebreak\![[:space:]]*/  \n/' | \
     
-    # awkを使用して処理
+    # 連続空行統合
     # - 空白文字のみの行 (空行含む) を空行として扱う
     # - 連続する空行を1つの空行に置換
     # - 文末の複数の空行も1つの空行に置換
@@ -183,123 +150,71 @@ remove_consecutive_empty_lines() {
         # 現在の行を出力
         print $0
     }
-    ' "$file" > "$temp_file"
+    ' | \
     
-    # ファイルを更新
-    if mv "$temp_file" "$file" 2>/dev/null; then
-        return 0
-    else
-        rm -f "$temp_file"
-        return 1
-    fi
-}
-
-# 行末の連続した空白を取り除き、!linebreak! の処理を行う関数
-remove_trailing_spaces() {
-    local file="$1"
-    local temp_file
-    temp_file=$(mktemp "$TEMP_DIR/$(basename "$file").trailing_spaces.XXXXXX") || {
-        echo "エラー: 一時ファイルの作成に失敗しました: $file"
-        return 1
+    # Markdown 空白整理
+    # - Markdown ファイルから不要な行頭空白を除去
+    # - 箇条書き (*, -, +) やコード ブロック (```) のインデントは保持
+    awk '
+    BEGIN {
+        in_code_block = 0
+        in_code_block_first = 0
     }
-
-    # sedを使用して行末の空白文字を削除し、
-    # !linebreak! を空白 2 つ + 改行に変換
-    # 表内 (| で始まる) の !linebreak! は <br/> に変換
-    sed 's/[[:space:]]*$//' "$file" | \
-    sed '/^|/ s/[[:space:]]*\!linebreak\![[:space:]]*/<br \/>/' | \
-    sed '/^[^|]/ s/[[:space:]]*\!linebreak\![[:space:]]*/  \n/' > "$temp_file"
-
-    # ファイルを更新
+    
+    # コード ブロックの開始/終了を検出
+    /^[[:space:]]*```/ {
+        if (in_code_block) {
+            in_code_block = 0
+            in_code_block_first = 0
+        } else {
+            in_code_block = 1
+            in_code_block_first = 1
+        }
+        print $0
+        next
+    }
+    
+    # コード ブロックの直後の行が空行の場合、その空行をスキップ
+    in_code_block_first && /^[[:space:]]*$/ {
+        in_code_block_first = 0
+        next
+    }
+    
+    in_code_block_first {
+        in_code_block_first = 0
+    }
+    
+    # コード ブロック内の場合は元の行をそのまま保持
+    in_code_block {
+        print $0
+        next
+    }
+    
+    # 以下の場合は元の行をそのまま保持
+    # - 箇条書きマーカー (*, -, +)
+    # - 番号付きリスト (数字 + . + 空白)
+    # - インデントされたコード (4 つ以上の空白で始まる)
+    /^[[:space:]]*[*+-][[:space:]]/ || /^[[:space:]]*[0-9]+\.[[:space:]]/ || /^[[:space:]]{4,}[^[:space:]]/ {
+        print $0
+        next
+    }
+    
+    {
+        # いずれでもない場合は行頭の空白を除去
+        gsub(/^[[:space:]]*/, "")
+        print $0
+    }
+    ' > "$temp_file"
+    
+    rm -f "$include_temp"
+    
+    # ファイル更新
     if mv "$temp_file" "$file" 2>/dev/null; then
         return 0
     else
         rm -f "$temp_file"
         return 1
     fi
-}
-
-# Markdownファイルから不要な行頭空白を除去する関数
-# 箇条書き（*, -, +）やコード ブロック（```）のインデントは保持
-# 元のファイルを直接置換する
-clean_markdown_whitespace() {
-    local input_file="$1"
-    
-    # 引数チェック
-    #if [[ -z "$input_file" ]]; then
-    #    echo "使用法: clean_markdown_whitespace <ファイル>"
-    #    echo "指定されたファイルの内容を直接置換します"
-    #    return 1
-    #fi
-    
-    if [[ ! -f "$input_file" ]]; then
-        #echo "エラー: ファイル '$input_file' が見つかりません"
-        return 1
-    fi
-    
-    local in_code_block=false
-    local in_code_block_first=false
-    local temp_file=$(mktemp)
-    
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        # コード ブロックの開始/終了を検出
-        if [[ "$line" =~ ^[[:space:]]*\`\`\` ]]; then
-            if [[ "$in_code_block" == true ]]; then
-                in_code_block=false
-                in_code_block_first=false
-            else
-                in_code_block=true
-                in_code_block_first=true
-            fi
-            echo "$line" >> "$temp_file"
-            continue
-        fi
-
-        # コードブロックの直後の行が空行の場合、その空行をスキップ
-        if [[ "$in_code_block_first" == true ]]; then
-            in_code_block_first=false
-            if [[ "$line" == "" ]]; then
-                continue
-            fi
-        fi
-        
-        # コード ブロック内の場合は元の行をそのまま保持
-        if [[ "$in_code_block" == true ]]; then
-            echo "$line" >> "$temp_file"
-            continue
-        fi
-        
-        # 箇条書きマーカー（*, -, +）の検出
-        # 行頭の空白 + マーカー + 空白の組み合わせを検出
-        if [[ "$line" =~ ^[[:space:]]*[\*\-\+][[:space:]] ]]; then
-            echo "$line" >> "$temp_file"
-            continue
-        fi
-        
-        # 番号付きリスト（数字 + . + 空白）の検出
-        if [[ "$line" =~ ^[[:space:]]*[0-9]+\.[[:space:]] ]]; then
-            echo "$line" >> "$temp_file"
-            continue
-        fi
-        
-        # インデントされたコード（4つ以上の空白で始まる）の検出
-        if [[ "$line" =~ ^[[:space:]]{4,} ]]; then
-            # ただし、空白のみの行は除去
-            if [[ ! "$line" =~ ^[[:space:]]*$ ]]; then
-                echo "$line" >> "$temp_file"
-                continue
-            fi
-        fi
-        
-        # 上記のいずれでもない場合は行頭の空白を除去
-        cleaned_line=$(echo "$line" | sed 's/^[[:space:]]*//')
-        echo "$cleaned_line" >> "$temp_file"
-        
-    done < "$input_file"
-    
-    # 元のファイルを置換
-    mv "$temp_file" "$input_file"
-    #echo "処理完了: $input_file を置換しました"
 }
 
 # .mdファイルを配列に収集
@@ -309,56 +224,32 @@ mapfile -t md_files < <(find "$MARKDOWN_DIR" -name "*.md" -type f)
 total_files=${#md_files[@]}
 processed_files=0
 
-#echo "見つかったMarkdownファイル: $total_files 個"
-
 # 各ファイルを処理
 for file in "${md_files[@]}"; do
-    #echo "処理中: $(basename "$file")"
-    
-    # インクルードディレクティブが含まれているかチェック
-    if grep -q "^[[:space:]]*!include[[:space:]]" "$file"; then
-        if process_includes "$file"; then
-            ((processed_files++))
-        else
-            : #echo "  -> 処理に失敗: $(basename "$file")"
-        fi
-    else
-        : #echo "  -> インクルードディレクティブなし"
+    if process_markdown_file "$file"; then
+        ((processed_files++))
     fi
-
-    # YAMLフロントマター内の空行を除去
-    remove_frontmatter_empty_lines "$file"
-
-    # 行末の空白を除去
-    remove_trailing_spaces "$file"
-
-    # 連続した空行を単一の空行に置換
-    remove_consecutive_empty_lines "$file"
-
-    # 行頭の不要な空白を除去
-    clean_markdown_whitespace "$file"
 done
 
-#echo ""
-#echo "ポストプロセッシング完了"
-#echo "  - 対象ファイル数: $total_files"
-#echo "  - 処理済みファイル数: $processed_files"
-
 # 不要ファイルの削除
-# 構造体ファイルは、それぞれに include するので処理後は不要
-rm -f $MARKDOWN_DIR/struct*.md
-# クラスインデックスは不要
-rm -f $MARKDOWN_DIR/index_classes.md
-# 名前空間インデックスは不要
-rm -f $MARKDOWN_DIR/index_namespaces.md
-
-# 以下、現段階で使用していない
-# Pages インデックスは不要
-rm -f $MARKDOWN_DIR/index_pages.md
-# Exanples インデックスは不要
-rm -f $MARKDOWN_DIR/index_examples.md
-# ディレクトリページは不要
-rm -f $MARKDOWN_DIR/dir_*.md
+# 現段階で対象としていない Markdown を削除する
+#
+# - 構造体ファイル (それぞれに include するので処理後は不要)
+# - クラスインデックス
+# - 名前空間インデックス
+# - Pages インデックス
+# - Exanples インデックス
+# - ディレクトリページ
+# - Todo リスト
+# - Deprecated リスト
+rm -f "$MARKDOWN_DIR"/struct*.md \
+      "$MARKDOWN_DIR"/index_classes.md \
+      "$MARKDOWN_DIR"/index_namespaces.md \
+      "$MARKDOWN_DIR"/index_pages.md \
+      "$MARKDOWN_DIR"/index_examples.md \
+      "$MARKDOWN_DIR"/dir_*.md \
+      "$MARKDOWN_DIR"/todo.md \
+      "$MARKDOWN_DIR"/deprecated.md
 
 # ファイルインデックスの編集
 # テンプレートでは正しく置換できなかったため、シェルで加工する
@@ -373,40 +264,11 @@ rm -f $MARKDOWN_DIR/dir_*.md
 #     * **file [calculator.c](calculator_8c.md)** <br/>計算機の実装ファイル
 #     * **file [calculator.h](calculator_8h.md)** <br/>簡単な計算機のヘッダーファイル
 #
-cat $MARKDOWN_DIR/index_files.md | \
-sed 's/\(\*\* *file \[\)[^/]*\/\([^]]*\]\)/\1\2/g' | \
-sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/index_files_new.md
-mv $MARKDOWN_DIR/index_files_new.md $MARKDOWN_DIR/index_files.md
-
-# Todo リストの編集
-# テンプレートでは正しく置換できなかったため、シェルで加工する
-#
-# オリジナル
-# Global [add](group__public__api.md#function-add)  (int a, int b)
-#
-# 編集後
-# Global [add](group__public__api.md)  (int a, int b)
-#
-#cat $MARKDOWN_DIR/todo.md | \
-#sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/todo_new.md
-#mv $MARKDOWN_DIR/todo_new.md $MARKDOWN_DIR/todo.md
-# 不要なので削除する
-rm -f $MARKDOWN_DIR/todo.md
-
-# Deprecated リストの編集
-# テンプレートでは正しく置換できなかったため、シェルで加工する
-#
-# オリジナル
-# Global [add](group__public__api.md#function-add)  (int a, int b)
-#
-# 編集後
-# Global [add](group__public__api.md)  (int a, int b)
-#
-#cat $MARKDOWN_DIR/deprecated.md | \
-#sed 's/\(\.md\)#[^)]*/\1/g' > $MARKDOWN_DIR/deprecated_new.md
-#mv $MARKDOWN_DIR/deprecated_new.md $MARKDOWN_DIR/deprecated.md
-# 不要なので削除する
-rm -f $MARKDOWN_DIR/deprecated.md
+if [ -f "$MARKDOWN_DIR/index_files.md" ]; then
+    sed -i -e 's/\(\*\* *file \[\)[^/]*\/\([^]]*\]\)/\1\2/g' \
+           -e 's/\(\.md\)#[^)]*/\1/g' \
+           "$MARKDOWN_DIR/index_files.md"
+fi
 
 # 処理終了
 exit 0
