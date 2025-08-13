@@ -14,7 +14,7 @@
 # Values that contain spaces should be placed between quotes (\" \").
 
 #---------------------------------------------------------------------------
-# Project related configuration options
+# Default configuration options
 #---------------------------------------------------------------------------
 
 # This tag specifies the encoding used for all characters in the config file
