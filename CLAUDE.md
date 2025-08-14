@@ -115,7 +115,7 @@ cd doxyfw && make clean
 ## プロジェクト構造
 
 ```text
-study-doxygen/                     # このプロジェクト
+doxygen-sample/                    # このプロジェクト
 ├── doxyfw/                     # Doxygen フレームワーク (git submodule)
 │   ├── Doxyfile               # Doxygen 基本設定
 │   ├── doxybook-config.json   # Doxybook2 設定
