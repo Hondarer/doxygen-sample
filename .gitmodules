@@ -1,0 +1,3 @@
+[submodule "doxyfw"]
+	path = doxyfw
+	url = https://github.com/Hondarer/doxygen-framework.git
