@@ -29,7 +29,7 @@ cd doxyfw && make docs
 
 ### 生成されたドキュメントの確認
 
-- HTML版: `docs/doxygen/html/index.html`
+- HTML版: `docs/doxygen/index.html`
 - Markdown版: `docs-src/doxybook/`
 
 ### クリーンアップ

@@ -130,7 +130,7 @@ doxygen-sample/                    # このプロジェクト
 │   ├── calculator.h           # 関数宣言とマクロ定義
 │   ├── calculator.c           # 計算関数の実装
 │   └── samplestruct.h         # サンプル構造体定義
-├── docs/doxygen/html/          # 生成される HTML ドキュメント
+├── docs/doxygen/               # 生成される HTML ドキュメント
 ├── docs-src/doxybook/          # 生成される Markdown ドキュメント
 └── xml/                        # Doxygen XML 中間ファイル
 ```
