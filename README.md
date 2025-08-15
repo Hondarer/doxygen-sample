@@ -31,6 +31,7 @@ cd doxyfw && make docs
 
 - HTML版: `docs/doxygen/index.html`
 - Markdown版: `docs-src/doxybook/`
+- [GitHub Pages](https://hondarer.github.io/doxygen-sample/doxygen/)
 
 ### クリーンアップ
 
