@@ -34,6 +34,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **表記に関するルール**
 
+このルールは、**ソースコード内のコメントでも有効** です。
+
 + 本文の文末を `：` で終わらせないでください。きちんと文章として完結させてください。
 + 全角括弧 `（` `）` や全角コロン `：` は使用せず、半角で記述してください。
 + 日本語と英単語の間は、半角スペースを挿入してください。
@@ -121,7 +123,7 @@ doxygen-sample/                    # このプロジェクト
 │   ├── doxybook-config.json   # Doxybook2 設定
 │   ├── templates/             # カスタム日本語テンプレート群
 │   ├── docs-src/              # フレームワーク技術ドキュメント
-│   ├── makefile               # ドキュメント生成用 Makefile
+│   ├── Makefile               # ドキュメント生成用 Makefile
 │   └── CLAUDE.md              # フレームワーク詳細ドキュメント
 ├── Doxyfile.part               # Doxygen プロジェクト固有設定
 ├── prod/src/                   # サンプル C ソースコード
