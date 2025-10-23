@@ -7,4 +7,4 @@ toc: true
 
 # Pages
 
-* page [markdown のサンプル](md_src_sample.md#page-md-src-sample)
+* page [markdown のサンプル](Pages/md_src_sample.md#page-md-src-sample)
