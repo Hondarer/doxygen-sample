@@ -1,4 +1,5 @@
-xml/
+/xml/
+/xml_org/
 
 #docs-src/
 #docs/
