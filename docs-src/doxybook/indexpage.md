@@ -1,9 +1,10 @@
 ---
 author: doxygen and doxybook
+toc: true
 ---
 
 <!-- IMPORTANT: This is an AUTOMATICALLY GENERATED file by doxygen and doxybook. Manual edits are NOT allowed. -->
 
-# ページの一覧
+# doxygen-framework サンプル
 
-* page [markdown のサンプル](Pages/md_src_sample.md)
+これは、doxygen-framework を利用したドキュメントのサンプルです。

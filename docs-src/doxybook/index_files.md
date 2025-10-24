@@ -11,4 +11,4 @@ author: doxygen and doxybook
     * file [src/calculator.h](Files/calculator_8h.md) <br/>計算機の定義を提供します。
     * file [src/inline_code_block.c](Files/inline__code__block_8c.md) <br/>インラインコードブロックのテストファイル。
     * file [src/par.c](Files/par_8c.md) <br/>par のテストファイル。
-    * file [src/samplestruct.h](Files/samplestruct_8h.md)
+    * file [src/samplestruct.h](Files/samplestruct_8h.md) <br/>サンプルの列挙体を定義します。

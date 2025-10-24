@@ -1,4 +1,5 @@
 ---
+summary: サンプルの列挙体を定義します。
 author: doxygen and doxybook
 toc: true
 ---
@@ -6,6 +7,8 @@ toc: true
 <!-- IMPORTANT: This is an AUTOMATICALLY GENERATED file by doxygen and doxybook. Manual edits are NOT allowed. -->
 
 # src/samplestruct.h
+
+サンプルの列挙体を定義します。
 
 ## 型
 
