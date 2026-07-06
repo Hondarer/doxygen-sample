@@ -26,6 +26,7 @@
         "c_cpp_properties.json": "jsonc",
         ".debug-params.json": "jsonc",
         "**/.text_style_jp/*.json": "jsonc",
+        "*.mk": "makefile",
         "Doxyfile.part": "shellscript",
         "Doxyfile.part.*": "shellscript"
     },
@@ -59,6 +60,12 @@
         "files.trimFinalNewlines": false,
     },
     "[jsonc]": {
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": false,
+    },
+    // makefile は LF 改行でファイル末尾改行を付加する
+    "[makefile]": {
+        "files.eol": "\n",
         "files.insertFinalNewline": true,
         "files.trimFinalNewlines": false,
     },
