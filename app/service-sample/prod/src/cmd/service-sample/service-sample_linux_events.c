@@ -35,6 +35,8 @@
     #include <sys/eventfd.h>
     #include <unistd.h>
 
+    #include <com_util/crt/unistd.h>
+
     #include <systemd/sd-bus.h>
     #include <systemd/sd-event.h>
 
@@ -170,12 +172,12 @@ static void release_inhibit_locks(void)
 {
     if (g_ctx.inhibit_sleep_fd >= 0)
     {
-        close(g_ctx.inhibit_sleep_fd);
+        com_util_close(g_ctx.inhibit_sleep_fd);
         g_ctx.inhibit_sleep_fd = -1;
     }
     if (g_ctx.inhibit_shutdown_fd >= 0)
     {
-        close(g_ctx.inhibit_shutdown_fd);
+        com_util_close(g_ctx.inhibit_shutdown_fd);
         g_ctx.inhibit_shutdown_fd = -1;
     }
 }
@@ -215,7 +217,7 @@ static int on_prepare_for_sleep(sd_bus_message *m, void *userdata, sd_bus_error 
         /* lock を解放してサスペンドを許可する */
         if (g_ctx.inhibit_sleep_fd >= 0)
         {
-            close(g_ctx.inhibit_sleep_fd);
+            com_util_close(g_ctx.inhibit_sleep_fd);
             g_ctx.inhibit_sleep_fd = -1;
         }
     }
@@ -261,7 +263,7 @@ static int on_prepare_for_shutdown(sd_bus_message *m, void *userdata, sd_bus_err
         /* lock を解放してシャットダウンを許可する */
         if (g_ctx.inhibit_shutdown_fd >= 0)
         {
-            close(g_ctx.inhibit_shutdown_fd);
+            com_util_close(g_ctx.inhibit_shutdown_fd);
             g_ctx.inhibit_shutdown_fd = -1;
         }
     }
@@ -538,12 +540,12 @@ static void release_local_resources(void)
     }
     if (g_ctx.reload_fd >= 0)
     {
-        close(g_ctx.reload_fd);
+        com_util_close(g_ctx.reload_fd);
         g_ctx.reload_fd = -1;
     }
     if (g_ctx.stop_fd >= 0)
     {
-        close(g_ctx.stop_fd);
+        com_util_close(g_ctx.stop_fd);
         g_ctx.stop_fd = -1;
     }
     g_ctx.def = NULL;
@@ -595,7 +597,7 @@ int svc_linux_events_start(const svc_definition *def)
             {
                 com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                       "SIGHUP ハンドラーの設定に失敗したため設定再読込は無効です。");
-                close(g_ctx.reload_fd);
+                com_util_close(g_ctx.reload_fd);
                 g_ctx.reload_fd = -1;
             }
             else
