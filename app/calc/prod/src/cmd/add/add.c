@@ -27,10 +27,10 @@
  *
  *  使用例:
  *
- *  @code{.c}
+    @code{.c}
     ./add 10 20
     // 出力: 30
- *  @endcode
+    @endcode
  *
  *  @attention      引数は正確に 2 つ必要です。
  */

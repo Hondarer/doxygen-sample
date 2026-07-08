@@ -23,13 +23,13 @@
  *  C では構造体タグ名と typedef 名は別の名前空間に属するため、
  *  次の記法は問題ありません。
  *
- *  @code{.c}
+    @code{.c}
     typedef struct SAMPLE_STRUCT
     {
         int a;
         float b;
     } SAMPLE_STRUCT;
- *  @endcode
+    @endcode
  *
  *  @see https://docs.kernel.org/process/coding-style.html
  */

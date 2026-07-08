@@ -11,9 +11,9 @@
  *
  *  @par            使用例
  *
- *  @code{.c}
+    @code{.c}
     int result = merge_in_group(1);
- *  @endcode
+    @endcode
  */
 int merge_in_group(int value)
 {
@@ -31,9 +31,9 @@ int merge_in_group(int value)
  *
  *  @par            使用例
  *
- *  @code{.c}
+    @code{.c}
     int result = merge(1);
- *  @endcode
+    @endcode
  */
 int merge(int value)
 {

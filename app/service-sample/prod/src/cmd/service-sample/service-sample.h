@@ -25,12 +25,12 @@
  *  SIGHUP を共通のイベントに対応付けます。
  *
  *  @par            使用方法 (コマンド ライン)
- *  @code{.sh}
+    @code{.sh}
     service-sample install    # OS にサービスを登録する
     service-sample uninstall  # OS からサービスを解除する
     service-sample run        # サービスとして起動する (SCM/systemd から呼ばれる)
     service-sample console    # フォアグラウンドで実行する (デバッグ用)
- *  @endcode
+    @endcode
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
  *
@@ -177,7 +177,7 @@ extern "C"
      *  @brief          サービスの定義。
      *
      *  @par            使用例
-     *  @code{.c}
+        @code{.c}
         // 実装側で g_service_def を定義する (外部結合が必要)。
         // main() は共通実装 (service-sample.c) が提供し、g_service_def を svc_main() に渡す。
         const svc_definition g_service_def = {
@@ -191,7 +191,7 @@ extern "C"
             on_event,
             on_reload
         };
-     *  @endcode
+        @endcode
      */
     typedef struct svc_definition
     {
@@ -221,7 +221,7 @@ extern "C"
      *  停止要求を受け取ったときにメインループを正常に抜けられます。
      *
      *  @par            使用例
-     *  @code{.c}
+        @code{.c}
         static int on_run(void *user_data)
         {
             (void)user_data;
@@ -231,7 +231,7 @@ extern "C"
             }
             return 0;
         }
-     *  @endcode
+        @endcode
      */
     int svc_wait_for_stop(int timeout_ms);
 
