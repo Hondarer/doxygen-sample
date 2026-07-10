@@ -174,3 +174,50 @@ if [ "$IS_WINDOWS" -eq 1 ]; then
         done
     done
 fi
+
+# .vscode/mcp.json (VS Code 形式) を .github/mcp.json (Copilot CLI 形式) へ変換してコピーする。
+# VS Code 形式のトップレベルキー "servers" を "mcpServers" へ読み替え、
+# type 未指定のエントリには "type": "local" を付与する。
+# see: https://techcommunity.microsoft.com/blog/educatordeveloperblog/action-required-migrate-your-copilot-cli-mcp-config-away-from-vscodemcp-json/4531562
+sync_mcp_json() {
+    local src="$ROOT_DIR/.vscode/mcp.json"
+    local dst="$ROOT_DIR/.github/mcp.json"
+
+    if [ ! -f "$src" ]; then
+        printf 'INFO: %s not found, skipping mcp.json sync\n' "$src"
+        return
+    fi
+
+    python3 - "$src" "$dst" <<'PYEOF'
+import json
+import sys
+
+src_path, dst_path = sys.argv[1], sys.argv[2]
+
+with open(src_path, encoding="utf-8") as f:
+    vscode = json.load(f)
+
+servers = vscode.get("servers", {})
+mcp_servers = {}
+for name, entry in servers.items():
+    converted = dict(entry)
+    if converted.get("type") == "http":
+        url = converted.get("url")
+        if isinstance(url, str) and url.rstrip("/").endswith("sse"):
+            converted["type"] = "sse"
+    if "type" not in converted:
+        converted = {"type": "local", **converted}
+    mcp_servers[name] = converted
+
+out = {"mcpServers": mcp_servers}
+for key, val in vscode.items():
+    if key != "servers":
+        out[key] = val
+
+with open(dst_path, "w", encoding="utf-8") as f:
+    json.dump(out, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PYEOF
+}
+
+sync_mcp_json
