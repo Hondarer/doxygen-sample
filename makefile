@@ -157,7 +157,10 @@ docs :
 		else \
 			DOCS_EXIT=$$?; \
 		fi; \
-		wait $$TEE_PID; \
+		if [ "$$DOCS_EXIT" -ne 0 ]; then \
+			kill "$$TEE_PID" 2>/dev/null || true; \
+		fi; \
+		wait "$$TEE_PID" 2>/dev/null || true; \
 		DOCS_KEEP_LOG=1; \
 		rm -f "$$DOCS_PIPE"; \
 		if [ -x "$(EXTRACT_DOCS_WARNINGS)" ]; then \
