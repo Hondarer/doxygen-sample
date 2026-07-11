@@ -106,6 +106,9 @@ cleandocs :
 	fi
 	rm -f "$(DOCS_WARN_FILE)"
 
+# docs_kill_pid では MSYS の pid が Windows の pid と一致しない場合があるため、
+# /proc/<pid>/winpid で Windows の pid に変換してから taskkill.exe に渡す。
+# see: https://cygwin.com/cygwin-ug-net/proc.html
 .PHONY: docs
 docs :
 	$(MAKE) skills
@@ -121,7 +124,11 @@ docs :
 			case "$$(uname -s 2>/dev/null)" in \
 				MINGW*|MSYS*|CYGWIN*) \
 					if command -v taskkill.exe >/dev/null 2>&1; then \
-						MSYS2_ARG_CONV_EXCL='*' taskkill.exe /PID "$$_pid" /T /F >/dev/null 2>&1 || true; \
+						_winpid="$$_pid"; \
+						if [ -r "/proc/$$_pid/winpid" ]; then \
+							_winpid=$$(cat "/proc/$$_pid/winpid" 2>/dev/null || printf '%s' "$$_pid"); \
+						fi; \
+						MSYS2_ARG_CONV_EXCL='*' taskkill.exe /PID "$$_winpid" /T /F >/dev/null 2>&1 || true; \
 					fi; \
 					;; \
 			esac; \
