@@ -15,6 +15,7 @@
  */
 
 #include <calc.h>
+#include <com_util/argparser/argparser.h>
 #include <com_util/console/console.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,24 +39,44 @@ int main(int argc, char *argv[])
 {
     com_util_console_init();
 
-    if (argc != 4)
+    int need_help = 0;
+    int arg1 = 0;
+    int arg3 = 0;
+    const char *operator_value = NULL;
+    com_util_argparser_init("指定された演算子に基づいて 2 つの整数を計算します。");
+    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
+    com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
+                                                  &operator_value);
+    com_util_argparser_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
+    if (com_util_argparser_get_register_error_count() > 0)
     {
-        fprintf(stderr, "Usage: %s <arg1> <arg2> <arg3>\n", argv[0]);
-        return 1;
+        com_util_argparser_print_register_error_messages(stderr);
+        return EXIT_FAILURE;
     }
 
-    if (argv[2][0] == 0x00 || argv[2][1] != 0x00)
+    int parse_result = com_util_argparser_parse(argc, argv);
+    if (need_help != 0)
     {
-        fprintf(stderr, "Usage: %s <arg1> <arg2> <arg3>\n", argv[0]);
-        return 1;
+        com_util_argparser_print_usage(stdout);
+        return EXIT_SUCCESS;
     }
-
-    int arg1 = atoi(argv[1]);
-    int arg3 = atoi(argv[3]);
+    if (parse_result != COM_UTIL_ARGPARSER_OK)
+    {
+        com_util_argparser_print_error_messages(stderr);
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
+    }
+    if (operator_value[0] == 0x00 || operator_value[1] != 0x00)
+    {
+        fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
+    }
     int result;
 
     int kind;
-    switch (argv[2][0])
+    switch (operator_value[0])
     {
     case '+':
         kind = CALC_KIND_ADD;
@@ -70,18 +91,18 @@ int main(int argc, char *argv[])
         kind = CALC_KIND_DIVIDE;
         break;
     default:
-        fprintf(stderr, "Usage: %s <num1> <+|-|x|/> <num2>\n", argv[0]);
-        return 1;
-        break;
+        fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
     }
 
     if (calcHandler(kind, arg1, arg3, &result) != 0)
     {
         fprintf(stderr, "Error: calcHandler failed\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     printf("%d\n", result);
 
-    return 0;
+    return EXIT_SUCCESS;
 }

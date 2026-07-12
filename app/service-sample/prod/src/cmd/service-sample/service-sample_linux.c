@@ -15,7 +15,7 @@
  *  電源・セッション・シャットダウン前イベントの監視 (D-Bus) は
  *  service-sample_linux_events.c に実装します。
  *
- *  共通処理 (svc_run_lifecycle / svc_main / main) は service-sample.c に、
+ *  共通処理 (svc_run_lifecycle / main) は service-sample.c に、
  *  コールバック雛形は service-sample-impl.c に実装します。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
@@ -187,7 +187,8 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
     {
         return exit_code;
     }
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 /* ============================================================
@@ -400,7 +401,8 @@ int svc_os_install(const svc_definition *def)
                            def->name);
     com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "開始するには: sudo systemctl start %s",
                            def->name);
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 int svc_os_uninstall(const svc_definition *def)
@@ -470,7 +472,8 @@ int svc_os_uninstall(const svc_definition *def)
 
     com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "サービス '%s' を解除しました。",
                            def->name);
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 #elif defined(PLATFORM_WINDOWS) && defined(COMPILER_MSVC)

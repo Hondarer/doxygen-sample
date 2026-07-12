@@ -10,8 +10,8 @@
  *  サービス (デーモン) の雛形です。\n
  *  \n
  *  利用者は svc_definition 構造体にサービス名・表示名・説明と
- *  ライフサイクル コールバック (on_start / on_run / on_stop) を設定し、
- *  svc_main() に渡すだけでクロスプラットフォーム サービスを構築できます。\n
+ *  ライフサイクル コールバック (on_start / on_run / on_stop) を設定するだけで
+ *  クロスプラットフォーム サービスを構築できます。\n
  *  エントリ ポイント main() は共通実装 (service-sample.c) が提供しており、
  *  実装側 (service-sample-impl.c) は g_service_def の定義のみを行います。\n
  *  \n
@@ -179,7 +179,7 @@ extern "C"
      *  @par            使用例
         @code{.c}
         // 実装側で g_service_def を定義する (外部結合が必要)。
-        // main() は共通実装 (service-sample.c) が提供し、g_service_def を svc_main() に渡す。
+        // main() は共通実装 (service-sample.c) が提供し、g_service_def を参照する。
         const svc_definition g_service_def = {
             "my-service",
             "My Service",
@@ -264,25 +264,6 @@ extern "C"
      *  - Windows: SCM に等価な機能がないため、トレース出力のみ行います。
      */
     void svc_set_status_text(const char *text);
-
-    /* ============================================================
-     *  エントリ ポイント
-     * ============================================================ */
-
-    /**
-     *  @brief          サービスのエントリ ポイント。
-     *  @param[in]      argc    コマンド ライン引数の数。
-     *  @param[in]      argv    コマンド ライン引数の配列。
-     *  @param[in]      def     サービス定義。NULL を渡してはなりません。
-     *  @return         正常終了時は 0、異常終了時は 0 以外を返します。
-     *
-     *  argv[1] に応じて次の処理を実行します。\n
-     *  - install   : OS にサービスを登録します。\n
-     *  - uninstall : OS からサービスを解除します。\n
-     *  - run       : サービスとして常駐起動します (SCM/systemd から呼ばれる)。\n
-     *  - console   : フォアグラウンドで実行します (デバッグ用)。
-     */
-    int svc_main(int argc, char *argv[], const svc_definition *def);
 
     /* ============================================================
      *  OS フック (各プラットフォーム ファイルで実装)

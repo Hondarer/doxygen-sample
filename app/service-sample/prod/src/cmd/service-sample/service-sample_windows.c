@@ -11,7 +11,7 @@
  *  - svc_os_install     : CreateService による SCM 登録
  *  - svc_os_uninstall   : DeleteService による SCM 解除
  *
- *  共通処理 (svc_run_lifecycle / svc_main / main) は service-sample.c に、
+ *  共通処理 (svc_run_lifecycle / main) は service-sample.c に、
  *  コールバック雛形は service-sample-impl.c に実装します。
  *
  *  内部起動パターン (ユーザーは直接使わない):
@@ -209,7 +209,8 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
     {
         return exit_code;
     }
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 /* ============================================================
@@ -466,7 +467,8 @@ int svc_os_run_service(const svc_definition *def)
         write_dispatcher_error(err);
         return EXIT_FAILURE;
     }
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 int svc_os_install(const svc_definition *def)
@@ -605,7 +607,8 @@ int svc_os_install(const svc_definition *def)
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "開始するには: sc start %s",
                                def->name);
         CloseServiceHandle(svc);
-        rc = 0;
+
+        rc = EXIT_SUCCESS;
     }
 
     CloseServiceHandle(scm);
@@ -696,13 +699,14 @@ int svc_os_uninstall(const svc_definition *def)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "サービス '%s' を解除しました。",
                                    def->name);
-            rc = 0;
+            rc = EXIT_SUCCESS;
         }
 
         CloseServiceHandle(svc);
     }
 
     CloseServiceHandle(scm);
+
     return rc;
 }
 

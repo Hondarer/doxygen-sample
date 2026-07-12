@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <testfw.h>
 
@@ -99,6 +100,22 @@ class override_sampleTest : public Test
     }
 };
 
+// help オプションのテスト
+TEST_F(override_sampleTest, help)
+{
+    // Arrange
+    ProcessOptions opts = makeOpts(); // [状態] - ライブラリ探索パスを設定する。
+
+    // Pre-Assert
+
+    // Act
+    ProcessResult res = startProcess(binary_path, {"--help"}, opts); // [手順] - help オプションで起動する。
+
+    // Assert
+    EXPECT_EQ(EXIT_SUCCESS, res.exit_code);                 // [確認] - help の表示後に正常終了すること。
+    EXPECT_NE(string::npos, res.stdout_out.find("--help")); // [確認] - help オプションが usage に含まれること。
+}
+
 // stdout 確認テスト (デフォルト動作)
 TEST_F(override_sampleTest, check_stdout_default)
 {
@@ -112,7 +129,7 @@ TEST_F(override_sampleTest, check_stdout_default)
     ProcessResult res = startProcess(binary_path, {}, opts); // [手順] - override-sample を実行し、stdout をキャプチャする。
 
     // Assert
-    EXPECT_EQ(0, res.exit_code); // [確認] - override-sample の終了コードが 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, res.exit_code); // [確認] - override-sample の終了コードが EXIT_SUCCESS であること。
     EXPECT_NE(
         string::npos,
         res.stdout_out.find(
@@ -139,7 +156,7 @@ TEST_F(override_sampleTest, check_stdout_with_config)
     ProcessResult res = startProcess(binary_path, {}, opts); // [手順] - override-sample を実行し、stdout をキャプチャする。
 
     // Assert
-    EXPECT_EQ(0, res.exit_code); // [確認] - override-sample の終了コードが 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, res.exit_code); // [確認] - override-sample の終了コードが EXIT_SUCCESS であること。
     EXPECT_NE(
         string::npos,
         res.stdout_out.find(
@@ -170,7 +187,7 @@ TEST_F(override_sampleTest, onUnload_syslog)
         startProcess(binary_path, {}, opts); // [手順] - override-sample を実行し、syslog/OutputDebugString をキャプチャする。
 
     // Assert
-    ASSERT_EQ(0, res.exit_code); // [確認] - override-sample の終了コードが 0 であること。
+    ASSERT_EQ(EXIT_SUCCESS, res.exit_code); // [確認] - override-sample の終了コードが EXIT_SUCCESS であること。
     EXPECT_NE(string::npos,
               res.debug_log.find("base: onUnload called")); // [確認] - debug_log に onUnload の記録があること。
 }
@@ -190,7 +207,7 @@ TEST_F(override_sampleTest, onUnload_syslog_disabled_by_default)
         startProcess(binary_path, {}, opts); // [手順] - override-sample を実行し、診断ログを確認する。
 
     // Assert
-    ASSERT_EQ(0, res.exit_code); // [確認] - override-sample の終了コードが 0 であること。
+    ASSERT_EQ(EXIT_SUCCESS, res.exit_code); // [確認] - override-sample の終了コードが EXIT_SUCCESS であること。
     EXPECT_EQ(string::npos,
               res.debug_log.find("base: onUnload called")); // [確認] - デフォルトでは onUnload 診断ログが出力されないこと。
 }
@@ -209,7 +226,7 @@ TEST_F(override_sampleTest, too_long_tmpdir_causes_exit_code_1)
     ProcessResult res = startProcess(binary_path, {}, opts); // [手順] - 上限超過環境で override-sample を実行する。
 
     // Assert
-    EXPECT_EQ(1, res.exit_code); // [確認] - 設定ファイル パス構築失敗で終了コード 1 を返すこと。
+    EXPECT_EQ(EXIT_FAILURE, res.exit_code); // [確認] - 設定ファイル パス構築失敗で EXIT_FAILURE を返すこと。
     EXPECT_NE(string::npos,
               res.stderr_out.find("failed to build config path"))
         << res.stderr_out; // [確認] - 標準エラーに失敗理由が出力されること。

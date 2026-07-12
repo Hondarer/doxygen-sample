@@ -9,7 +9,6 @@
  *  プラットフォーム共通の処理を実装します。
  *  - 停止イベント抽象 (svc_request_stop / svc_wait_for_stop / svc_stop_requested)
  *  - ライフサイクル駆動 (svc_run_lifecycle)
- *  - 引数ディスパッチ (svc_main)
  *  - エントリ ポイント
  *
  *  プラットフォーム差異は各プラットフォーム ファイルが実装するフック関数
@@ -28,6 +27,7 @@
 #include <com_util/runtime/shutdown.h>
 #include <com_util/sync/sync.h>
 #include <com_util/trace/trace_file.h>
+#include <com_util/argparser/argparser.h>
 
 #include "service-sample.h"
 
@@ -37,7 +37,7 @@
  *  tracer (プロセス共通)
  * ============================================================ */
 
-/** プロセス共通の tracer ハンドル。svc_main が open / close します。 */
+/** プロセス共通の tracer ハンドル。main() が open / close します。 */
 static com_util_tracer *g_tracer = NULL;
 
 com_util_tracer *svc_get_tracer(void)
@@ -234,18 +234,18 @@ int svc_run_lifecycle(const svc_definition *def)
     com_util_console_init();
     com_util_shutdown_request_register(svc_shutdown_request_callback, NULL);
 
-    rc = 0;
+    rc = EXIT_SUCCESS;
     if (def->on_start != NULL)
     {
         rc = def->on_start(def->user_data);
-        if (rc != 0)
+        if (rc != EXIT_SUCCESS)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                                    "on_start が失敗しました (戻り値: %d)。", rc);
         }
     }
 
-    if (rc == 0)
+    if (rc == EXIT_SUCCESS)
     {
         int run_rc;
         int stop_rc;
@@ -253,7 +253,7 @@ int svc_run_lifecycle(const svc_definition *def)
         svc_os_notify_ready();
 
         run_rc = def->on_run(def->user_data);
-        if (run_rc != 0)
+        if (run_rc != EXIT_SUCCESS)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                                    "on_run が失敗しました (戻り値: %d)。", run_rc);
@@ -262,11 +262,11 @@ int svc_run_lifecycle(const svc_definition *def)
         svc_os_notify_stopping();
 
         /* on_run が失敗しても後始末のため on_stop は実行する */
-        stop_rc = 0;
+        stop_rc = EXIT_SUCCESS;
         if (def->on_stop != NULL)
         {
             stop_rc = def->on_stop(def->user_data);
-            if (stop_rc != 0)
+            if (stop_rc != EXIT_SUCCESS)
             {
                 com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                                        "on_stop が失敗しました (戻り値: %d)。", stop_rc);
@@ -274,7 +274,7 @@ int svc_run_lifecycle(const svc_definition *def)
         }
 
         /* 最初に失敗したコールバックの戻り値を採用する */
-        if (run_rc != 0)
+        if (run_rc != EXIT_SUCCESS)
         {
             rc = run_rc;
         }
@@ -287,39 +287,69 @@ int svc_run_lifecycle(const svc_definition *def)
     return rc;
 }
 
-/* ============================================================
- *  使い方の表示
- * ============================================================ */
+/** サービス定義。実装側 (service-sample-impl.c) が定義します。 */
+extern const svc_definition g_service_def;
 
 /**
- *  @brief          使い方を表示します。
- *  @param[in]      prog_name プログラム名。
+ *  @brief          メイン エントリ ポイント。
+ *  @param[in]      argc コマンド ライン引数の数。
+ *  @param[in]      argv コマンド ライン引数の配列。
+ *  @return         正常終了時は 0、異常終了時は 0 以外を返します。
+ *
+ *  command に応じて次の処理を実行します。\n
+ *  - install   : OS にサービスを登録します。\n
+ *  - uninstall : OS からサービスを解除します。\n
+ *  - run       : サービスとして常駐起動します (SCM/systemd から呼ばれる)。\n
+ *  - console   : フォアグラウンドで実行します (デバッグ用)。
  */
-static void print_usage(const char *prog_name)
+int main(int argc, char *argv[])
 {
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "使い方: %s <コマンド>", prog_name);
-    com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "コマンド:");
-    com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "  install    OS にサービスを登録します");
-    com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL,
-                          "  uninstall  OS からサービスを解除します");
-    com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL,
-                          "  run        サービスとして常駐起動します (SCM/systemd から呼ばれます)");
-    com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL,
-                          "  console    フォアグラウンドで実行します (デバッグ用)");
-}
+    /* 昇格起動された場合、親コンソールへ再接続して出力を元のコンソールへ戻す。
+       引き継ぎフラグを argv から取り除く必要があるため、引数解析より前に呼び出す。 */
+    com_util_console_attach_parent(&argc, argv);
 
-/* ============================================================
- *  エントリ ポイント
- * ============================================================ */
+    com_util_console_init();
 
-int svc_main(const int argc, char *argv[], const svc_definition *def)
-{
-    int rc;
-    int is_service_mode;
+    int need_help = 0;
+    const char *command = NULL;
+
+    com_util_argparser_init("サービスの登録、削除、起動を行います。");
+    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_register_positional_string("command", "install、uninstall、run、console のいずれか。",
+                                                  COM_UTIL_ARGPARSER_REQUIRED, &command);
+
+    if (com_util_argparser_get_register_error_count() > 0)
+    {
+        com_util_argparser_print_register_error_messages(stderr);
+        return EXIT_FAILURE;
+    }
+
+    int parse_result = com_util_argparser_parse(argc, argv);
+
+    if (need_help != 0)
+    {
+        com_util_argparser_print_usage(stdout);
+        return EXIT_SUCCESS;
+    }
+
+    if (parse_result != COM_UTIL_ARGPARSER_OK)
+    {
+        com_util_argparser_print_error_messages(stderr);
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
+    }
+
+    if (strcmp(command, "install") != 0 && strcmp(command, "uninstall") != 0 && strcmp(command, "run") != 0 &&
+        strcmp(command, "console") != 0)
+    {
+        fprintf(stderr, "不明なコマンド '%s'\n\n", command);
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
+    }
 
     /* run コマンドのみサービス モード: SCM/systemd 起動のため stderr は無効化する */
-    is_service_mode = (argc >= 2 && strcmp(argv[1], "run") == 0);
-    svc_tracer_open(def, !is_service_mode); /* 失敗しても g_tracer=NULL で継続 */
+    int is_service_mode = (strcmp(command, "run") == 0);
+    svc_tracer_open(&g_service_def, !is_service_mode); /* 失敗しても g_tracer=NULL で継続 */
 
     /* 停止イベント抽象の初期化 */
     if (com_util_local_lock_create(&g_stop_lock) != COM_UTIL_SYNC_OK)
@@ -338,32 +368,23 @@ int svc_main(const int argc, char *argv[], const svc_definition *def)
         return EXIT_FAILURE;
     }
 
-    rc = EXIT_FAILURE;
+    int rc = EXIT_FAILURE;
 
-    if (argc < 2)
+    if (strcmp(command, "install") == 0)
     {
-        print_usage(argv[0]);
+        rc = svc_os_install(&g_service_def);
     }
-    else if (strcmp(argv[1], "install") == 0)
+    else if (strcmp(command, "uninstall") == 0)
     {
-        rc = svc_os_install(def);
+        rc = svc_os_uninstall(&g_service_def);
     }
-    else if (strcmp(argv[1], "uninstall") == 0)
+    else if (strcmp(command, "run") == 0)
     {
-        rc = svc_os_uninstall(def);
+        rc = svc_os_run_service(&g_service_def);
     }
-    else if (strcmp(argv[1], "run") == 0)
+    else if (strcmp(command, "console") == 0)
     {
-        rc = svc_os_run_service(def);
-    }
-    else if (strcmp(argv[1], "console") == 0)
-    {
-        rc = svc_run_lifecycle(def);
-    }
-    else
-    {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "不明なコマンド '%s'", argv[1]);
-        print_usage(argv[0]);
+        rc = svc_run_lifecycle(&g_service_def);
     }
 
     com_util_condvar_destroy(g_stop_cv);
@@ -372,29 +393,6 @@ int svc_main(const int argc, char *argv[], const svc_definition *def)
     g_stop_lock = NULL;
 
     svc_tracer_close();
+
     return rc;
-}
-
-/* ============================================================
- *  エントリ ポイント
- * ============================================================ */
-
-/** サービス定義。実装側 (service-sample-impl.c) が定義します。 */
-extern const svc_definition g_service_def;
-
-/**
- *  @brief          メイン エントリ ポイント。
- *  @param[in]      argc コマンド ライン引数の数。
- *  @param[in]      argv コマンド ライン引数の配列。
- *  @return         正常終了時は 0、異常終了時は 0 以外を返します。
- */
-int main(int argc, char *argv[])
-{
-    /* 昇格起動された場合、親コンソールへ再接続して出力を元のコンソールへ戻す。
-       引き継ぎフラグを argv から取り除く必要があるため、引数解析より前に呼び出す。 */
-    com_util_console_attach_parent(&argc, argv);
-
-    com_util_console_init();
-
-    return svc_main(argc, argv, &g_service_def);
 }

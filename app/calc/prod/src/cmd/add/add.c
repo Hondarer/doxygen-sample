@@ -15,6 +15,7 @@
  */
 
 #include <calcbase.h>
+#include <com_util/argparser/argparser.h>
 #include <com_util/console/console.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,23 +39,41 @@ int main(int argc, char *argv[])
 {
     com_util_console_init();
 
-    if (argc != 3)
+    int need_help = 0;
+    int arg1 = 0;
+    int arg2 = 0;
+    com_util_argparser_init("2 つの整数を加算します。");
+    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_register_positional_int("arg1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
+    com_util_argparser_register_positional_int("arg2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg2);
+    if (com_util_argparser_get_register_error_count() > 0)
     {
-        fprintf(stderr, "Usage: %s <arg1> <arg2>\n", argv[0]);
-        return 1;
+        com_util_argparser_print_register_error_messages(stderr);
+        return EXIT_FAILURE;
     }
 
-    int arg1 = atoi(argv[1]);
-    int arg2 = atoi(argv[2]);
+    int parse_result = com_util_argparser_parse(argc, argv);
+    if (need_help != 0)
+    {
+        com_util_argparser_print_usage(stdout);
+        return EXIT_SUCCESS;
+    }
+    if (parse_result != COM_UTIL_ARGPARSER_OK)
+    {
+        com_util_argparser_print_error_messages(stderr);
+        com_util_argparser_print_usage(stderr);
+        return EXIT_FAILURE;
+    }
+
     int result;
 
     if (add(arg1, arg2, &result) != 0)
     {
         fprintf(stderr, "Error: add failed\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     printf("%d\n", result);
 
-    return 0;
+    return EXIT_SUCCESS;
 }

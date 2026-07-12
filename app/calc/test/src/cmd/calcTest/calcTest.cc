@@ -1,4 +1,5 @@
 #include <testfw.h>
+#include <cstdlib>
 #include <mock_stdio.h>
 #include <mock_calc.h>
 
@@ -18,7 +19,7 @@ TEST_F(calcTest, less_argc)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(0, rtc); // [確認] - main() の戻り値が 0 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS 以外であること。
 }
 
 TEST_F(calcTest, normal)
@@ -43,5 +44,19 @@ TEST_F(calcTest, normal)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc); // [確認] - main() の戻り値が 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS であること。
+}
+
+TEST_F(calcTest, help)
+{
+    // Arrange
+    const char *argv[] = {"calcTest", "-h"}; // [状態] - help オプションを指定する。
+
+    // Pre-Assert
+
+    // Act
+    int rtc = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - 必須位置引数なしでも正常終了すること。
 }

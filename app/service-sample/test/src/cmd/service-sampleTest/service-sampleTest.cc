@@ -2,6 +2,7 @@
 #include <mock_com_util.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -101,21 +102,21 @@ extern "C"
     {
         (void)def;
         g_calls.push_back("os_install");
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     int svc_os_uninstall(const svc_definition *def)
     {
         (void)def;
         g_calls.push_back("os_uninstall");
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     int svc_os_run_service(const svc_definition *def)
     {
         (void)def;
         g_calls.push_back("os_run_service");
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     void svc_os_notify_ready(void)
@@ -189,8 +190,23 @@ TEST_F(service_sampleTest, usage_without_args)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() を引数なしで呼び出す。
 
     // Assert
-    EXPECT_NE(0, rtc);            // [確認] - main() の戻り値が 0 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS 以外であること。
     EXPECT_TRUE(g_calls.empty()); // [確認] - OS フックもコールバックも呼ばれないこと。
+}
+
+TEST_F(service_sampleTest, help)
+{
+    // Arrange
+    const char *argv[] = {"service-sampleTest", "--help"}; // [状態] - help オプションを指定する。
+
+    // Pre-Assert
+
+    // Act
+    int rtc = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - help の表示後に正常終了すること。
+    EXPECT_TRUE(g_calls.empty()); // [確認] - OS フックやサービス コールバックを呼び出さないこと。
 }
 
 TEST_F(service_sampleTest, unknown_command)
@@ -205,7 +221,7 @@ TEST_F(service_sampleTest, unknown_command)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(0, rtc);            // [確認] - main() の戻り値が 0 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS 以外であること。
     EXPECT_TRUE(g_calls.empty()); // [確認] - OS フックもコールバックも呼ばれないこと。
 }
 
@@ -221,7 +237,7 @@ TEST_F(service_sampleTest, install_dispatch)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc);                   // [確認] - main() の戻り値が 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc);        // [確認] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());       // [確認] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_install", g_calls[0]); // [確認] - svc_os_install() が呼ばれること。
 }
@@ -240,7 +256,7 @@ TEST_F(service_sampleTest, tracer_uses_default_file_path_with_shared_mode)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc); // [確認] - tracer 設定後も通常の dispatch が成功すること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - tracer 設定後も通常の dispatch が成功すること。
 }
 
 TEST_F(service_sampleTest, uninstall_dispatch)
@@ -255,7 +271,7 @@ TEST_F(service_sampleTest, uninstall_dispatch)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc);                     // [確認] - main() の戻り値が 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc);          // [確認] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());         // [確認] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_uninstall", g_calls[0]); // [確認] - svc_os_uninstall() が呼ばれること。
 }
@@ -272,7 +288,7 @@ TEST_F(service_sampleTest, run_dispatch)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc);                       // [確認] - main() の戻り値が 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc);            // [確認] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());           // [確認] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_run_service", g_calls[0]); // [確認] - svc_os_run_service() が呼ばれること。
 }
@@ -293,7 +309,7 @@ TEST_F(service_sampleTest, console_lifecycle_order)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc); // [確認] - main() の戻り値が 0 であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(5U, g_calls.size());
     EXPECT_EQ("on_start", g_calls[0]);        // [確認] - on_start が最初に呼ばれること。
     EXPECT_EQ("notify_ready", g_calls[1]);    // [確認] - on_start 成功後に起動完了が通知されること。
