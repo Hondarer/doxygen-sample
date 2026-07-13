@@ -17,8 +17,8 @@ TEST_F(multiplyTest, test_5_multiply_4)
     int rtc = multiply(5, 4, &result); // [手順] - multiply(5, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(20, result);        // [確認] - 結果が 20 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - multiply の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(20, result);        // [確認_正常系] - multiply が result に 20 を設定すること。
 }
 
 TEST_F(multiplyTest, test_3_multiply_0)
@@ -32,8 +32,8 @@ TEST_F(multiplyTest, test_3_multiply_0)
     int rtc = multiply(3, 0, &result); // [手順] - multiply(3, 0, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(0, result);         // [確認] - 結果が 0 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - multiply の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(0, result);         // [確認_正常系] - multiply が result に 0 を設定すること。
 }
 
 TEST_F(multiplyTest, test_negative_multiply)
@@ -47,8 +47,8 @@ TEST_F(multiplyTest, test_negative_multiply)
     int rtc = multiply(-3, 4, &result); // [手順] - multiply(-3, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(-12, result);       // [確認] - 結果が -12 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - multiply の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(-12, result);       // [確認_正常系] - multiply が result に -12 を設定すること。
 }
 
 TEST_F(multiplyTest, test_null_result)
@@ -61,5 +61,5 @@ TEST_F(multiplyTest, test_null_result)
     int rtc = multiply(5, 4, NULL); // [手順] - multiply(5, 4, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認] - 戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - multiply の戻り値が CALC_ERROR であること。
 }

@@ -14,18 +14,20 @@ TEST_F(subtractTest, test_10_subtract_3)
 
     // Pre-Assert
     EXPECT_CALL(mock_calcbase, add(10, -3, _))
-        .WillOnce([](int, int, int *_result)
-                  {
-                    *_result = 7;
-                    return CALC_SUCCESS; }); // [Pre-Assert確認] - add(10, -3, &result) が 1 回呼び出されること。
-                        // [Pre-Assert手順] - add(10, -3, &result) にて result に 7 を設定し、CALC_SUCCESS を返す。
+        .WillOnce(
+            [](int, int, int *_result)
+            {
+                *_result = 7;
+                return CALC_SUCCESS;
+            }); // [Pre-Assert確認_正常系] - add(10, -3, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - add(10, -3, &result) にて result に 7 を設定し、CALC_SUCCESS を返す。
 
     // Act
     int rtc = subtract(10, 3, &result); // [手順] - subtract(10, 3, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(7, result);         // [確認] - 結果が 7 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - subtract の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(7, result);         // [確認_正常系] - subtract が result に 7 を設定すること。
 }
 
 TEST_F(subtractTest, test_3_subtract_10)
@@ -36,18 +38,20 @@ TEST_F(subtractTest, test_3_subtract_10)
 
     // Pre-Assert
     EXPECT_CALL(mock_calcbase, add(3, -10, _))
-        .WillOnce([](int, int, int *_result)
-                  {
-                    *_result = -7;
-                    return CALC_SUCCESS; }); // [Pre-Assert確認] - add(3, -10, &result) が 1 回呼び出されること。
-                        // [Pre-Assert手順] - add(3, -10, &result) にて result に -7 を設定し、CALC_SUCCESS を返す。
+        .WillOnce(
+            [](int, int, int *_result)
+            {
+                *_result = -7;
+                return CALC_SUCCESS;
+            }); // [Pre-Assert確認_正常系] - add(3, -10, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - add(3, -10, &result) にて result に -7 を設定し、CALC_SUCCESS を返す。
 
     // Act
     int rtc = subtract(3, 10, &result); // [手順] - subtract(3, 10, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(-7, result);        // [確認] - 結果が -7 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - subtract の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(-7, result);        // [確認_正常系] - subtract が result に -7 を設定すること。
 }
 
 TEST_F(subtractTest, test_5_subtract_5)
@@ -58,18 +62,20 @@ TEST_F(subtractTest, test_5_subtract_5)
 
     // Pre-Assert
     EXPECT_CALL(mock_calcbase, add(5, -5, _))
-        .WillOnce([](int, int, int *_result)
-                  {
-                    *_result = 0;
-                    return CALC_SUCCESS; }); // [Pre-Assert確認] - add(5, -5, &result) が 1 回呼び出されること。
-                        // [Pre-Assert手順] - add(5, -5, &result) にて result に 0 を設定し、CALC_SUCCESS を返す。
+        .WillOnce(
+            [](int, int, int *_result)
+            {
+                *_result = 0;
+                return CALC_SUCCESS;
+            }); // [Pre-Assert確認_正常系] - add(5, -5, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - add(5, -5, &result) にて result に 0 を設定し、CALC_SUCCESS を返す。
 
     // Act
     int rtc = subtract(5, 5, &result); // [手順] - subtract(5, 5, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(0, result);         // [確認] - 結果が 0 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - subtract の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(0, result);         // [確認_正常系] - subtract が result に 0 を設定すること。
 }
 
 TEST_F(subtractTest, test_null_result)
@@ -79,12 +85,12 @@ TEST_F(subtractTest, test_null_result)
 
     // Pre-Assert
     EXPECT_CALL(mock_calcbase, add(10, -3, NULL))
-        .WillOnce(Return(CALC_ERROR)); // [Pre-Assert確認] - add(10, -3, NULL) が 1 回呼び出されること。
+        .WillOnce(Return(CALC_ERROR)); // [Pre-Assert確認_異常系] - add(10, -3, NULL) が 1 回呼び出されること。
                                        // [Pre-Assert手順] - add(10, -3, NULL) にて CALC_ERROR を返す。
 
     // Act
     int rtc = subtract(10, 3, NULL); // [手順] - subtract(10, 3, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認] - 戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - subtract の戻り値が CALC_ERROR であること。
 }

@@ -17,8 +17,8 @@ TEST_F(divideTest, test_20_divide_4)
     int rtc = divide(20, 4, &result); // [手順] - divide(20, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(5, result);         // [確認] - 結果が 5 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(5, result);         // [確認_正常系] - divide が result に 5 を設定すること。
 }
 
 TEST_F(divideTest, test_10_divide_3)
@@ -32,8 +32,8 @@ TEST_F(divideTest, test_10_divide_3)
     int rtc = divide(10, 3, &result); // [手順] - divide(10, 3, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(3, result);         // [確認] - 結果が 3 であること (整数除算)。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - divide が整数除算の結果として result に 3 を設定すること。
 }
 
 TEST_F(divideTest, test_divide_by_zero)
@@ -47,7 +47,7 @@ TEST_F(divideTest, test_divide_by_zero)
     int rtc = divide(10, 0, &result); // [手順] - divide(10, 0, &result) **ゼロ除算** を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認] - 戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - divide の戻り値が CALC_ERROR であること。
 }
 
 TEST_F(divideTest, test_negative_divide)
@@ -61,8 +61,8 @@ TEST_F(divideTest, test_negative_divide)
     int rtc = divide(-12, 4, &result); // [手順] - divide(-12, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認] - 戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(-3, result);        // [確認] - 結果が -3 であること。
+    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
+    EXPECT_EQ(-3, result);        // [確認_正常系] - divide が result に -3 を設定すること。
 }
 
 TEST_F(divideTest, test_null_result)
@@ -75,5 +75,5 @@ TEST_F(divideTest, test_null_result)
     int rtc = divide(20, 4, NULL); // [手順] - divide(20, 4, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認] - 戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - divide の戻り値が CALC_ERROR であること。
 }
