@@ -33,6 +33,7 @@
 /.codex_tmp
 ## GitHub Copilot
 /.copilot-artifacts
+/.github/mcp.json
 
 ## デバッグのために LLM に参照させるファイル群の一時置き場
 /prompt
