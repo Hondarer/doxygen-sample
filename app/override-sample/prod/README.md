@@ -164,7 +164,7 @@ make clean && make
 #### デフォルト動作 (設定ファイルなし)
 
 ```bash
-cd app/override-sample/prod/bin
+cd app/override-sample/prod/cbin
 LD_LIBRARY_PATH=../lib ./override-sample
 ```
 
@@ -183,7 +183,7 @@ result: 3
 cp app/override-sample/prod/sample-config/libbase_extdef.txt /tmp/libbase_extdef.txt
 # エディターで /tmp/libbase_extdef.txt を編集し、以下の行のコメントを外す
 # sample_func  liboverride  override_func
-cd app/override-sample/prod/bin
+cd app/override-sample/prod/cbin
 LD_LIBRARY_PATH=../lib ./override-sample
 ```
 
@@ -191,7 +191,7 @@ LD_LIBRARY_PATH=../lib ./override-sample
 
 ```bash
 echo "sample_func liboverride override_func" > /tmp/libbase_extdef.txt
-cd app/override-sample/prod/bin
+cd app/override-sample/prod/cbin
 LD_LIBRARY_PATH=../lib ./override-sample
 ```
 

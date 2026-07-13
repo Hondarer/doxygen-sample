@@ -29,7 +29,7 @@ make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/com_util/prod/lib:${LD_LIBRARY_PATH:-}"
 
 # テスト実行時に必要なコマンド検索パスを設定 (.github/workflows/ci.yml に準拠)
-export PATH="/workspace/app/calc/prod/bin:/workspace/app/calc.net/prod/bin:/workspace/app/override-sample/prod/bin:/workspace/app/porter/prod/bin:${PATH}"
+export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:${PATH}"
 
 # テストログを保存しながら make test を実行
 make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"
@@ -191,4 +191,3 @@ LANG_TABLE
 </html>
 INDEX_BOTTOM
 } > /workspace/pages/index.html
-

@@ -67,10 +67,10 @@ jobs:
       - name: Set PATH and library path for tests
         run: |
           echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/app/calc/prod/bin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/calc.net/prod/bin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/override-sample/prod/bin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/porter/prod/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/override-sample/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/porter/prod/cbin" >> $GITHUB_PATH
 
       - name: Run tests
         run: |
@@ -234,13 +234,13 @@ jobs:
         run: |
           $paths = @(
             "${{ github.workspace }}\app\calc\prod\lib",
-            "${{ github.workspace }}\app\calc\prod\bin",
+            "${{ github.workspace }}\app\calc\prod\cbin",
             "${{ github.workspace }}\app\calc.net\prod\lib",
-            "${{ github.workspace }}\app\calc.net\prod\bin",
+            "${{ github.workspace }}\app\calc.net\prod\cbin",
             "${{ github.workspace }}\app\override-sample\prod\lib",
-            "${{ github.workspace }}\app\override-sample\prod\bin",
+            "${{ github.workspace }}\app\override-sample\prod\cbin",
             "${{ github.workspace }}\app\porter\prod\lib",
-            "${{ github.workspace }}\app\porter\prod\bin",
+            "${{ github.workspace }}\app\porter\prod\cbin",
             "${{ github.workspace }}\app\com_util\prod\lib"
           )
           foreach ($p in $paths) {
@@ -717,4 +717,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
-

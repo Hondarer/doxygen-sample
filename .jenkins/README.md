@@ -136,8 +136,8 @@ export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/pro
 /workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/com_util/prod/lib:\
 ${LD_LIBRARY_PATH:-}"
 
-export PATH="/workspace/app/calc/prod/bin:/workspace/app/calc.net/prod/bin:\
-/workspace/app/override-sample/prod/bin:/workspace/app/porter/prod/bin:${PATH}"
+export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:\
+/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:${PATH}"
 ```
 
 #### テスト実行
@@ -301,4 +301,3 @@ source/app/**/test/**/*.warn
 - [VS Code と CI の環境変数メンテナンス手順](../docs/vscode-variables.md)
 - [Jenkins セットアップ手順 (スキル ガイド)](../docs/skill-guide/07-ci-cd/jenkins.md)
 - [GitHub Actions CI/CD 仕様](../docs/github-actions.md)
-

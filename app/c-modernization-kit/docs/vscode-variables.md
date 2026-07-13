@@ -125,7 +125,7 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 環境変数の更新対象は、次の順で判断します。
 
 1. `app/<name>/prod/lib` があるか
-2. `app/<name>/prod/bin` があるか
+2. `app/<name>/prod/cbin` があるか
 3. そのアプリのライブラリや実行ファイルが、テスト・デバッグ・サンプル実行で必要か
 4. その必要性が VS Code、GitHub Actions、Jenkins のどこまで及ぶか
 
@@ -134,24 +134,25 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 - `app/<name>/prod/lib` を持つアプリ
     - Linux では `LD_LIBRARY_PATH` 候補
     - Windows では `PATH` 候補
-- `app/<name>/prod/bin` を持つアプリ
+- `app/<name>/prod/cbin` を持つアプリ
     - Linux / Windows ともに `PATH` 候補
-- ただし、`lib` や `bin` が存在しても、現在のテスト・デバッグ・実行で使わないなら追加しません
+- ただし、`lib` や `cbin` が存在しても、現在のテスト・デバッグ・実行で使わないなら追加しません
 
 ### 現在の代表例
 
-現時点で `app/<name>/prod/lib` / `app/<name>/prod/bin` を持つ主なアプリは以下です。
+現時点で `app/<name>/prod/lib` / `app/<name>/prod/cbin` を持つ主なアプリは以下です。
 
-| アプリ | `app/<name>/prod/lib` | `app/<name>/prod/bin` | 現在の環境変数設定に含める理由 |
+| アプリ | `app/<name>/prod/lib` | `app/<name>/prod/cbin` | 現在の環境変数設定に含める理由 |
 |---|---|---|---|
 | `calc` | あり | あり | C テスト、サンプル実行、.NET 呼び出しで使用 |
 | `calc.net` | あり | あり | .NET テスト、サンプル実行で使用 |
 | `override-sample` | あり | あり | CI / VS Code 実行対象として扱っている |
 | `porter` | あり | あり | CI / VS Code 実行対象として扱っている |
-| `com_util` | あり | なし | 多くのアプリが実行時に依存 |
+| `com_util` | あり | あり | 多くのアプリが実行時に依存 |
 | `subfolder-sample` | あり | あり | 現在の VS Code / CI の実行対象には含めていない |
 
-`subfolder-sample` のように `lib` / `bin` を持つアプリでも、現在の実行対象に入っていなければ、環境変数へ自動的には追加しません。  
+`subfolder-sample` のように `lib` / `cbin` を持つアプリでも、現在の実行対象に入っていなければ、環境変数へ自動的には追加しません。
+
 追加可否は「存在するか」だけではなく、「実行時に必要か」で判断します。
 
 ## どのファイルを更新するか
@@ -182,10 +183,10 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 
 ### 追加・削除・改名の対象を確認する
 
-まず、対象アプリに `app/<name>/prod/lib` と `app/<name>/prod/bin` があるかを確認します。
+まず、対象アプリに `app/<name>/prod/lib` と `app/<name>/prod/cbin` があるかを確認します。
 
 ```bash
-find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/bin' \) | sort
+find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/cbin' \) | sort
 ```
 
 次に、そのアプリがどこから使われるかを確認します。
@@ -202,13 +203,13 @@ find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/bin' \) | sort
 Linux 向けの `PATH` と `LD_LIBRARY_PATH` を更新します。
 
 - `app/<name>/prod/lib` が必要なら `LD_LIBRARY_PATH` に追加
-- `app/<name>/prod/bin` が必要なら `PATH` に追加
+- `app/<name>/prod/cbin` が必要なら `PATH` に追加
 
 #### .vscode/.env.windows
 
 Windows 向けの `PATH` を更新します。
 
-- `app/<name>/prod/lib` / `app/<name>/prod/bin` が必要なら `PATH` に追加
+- `app/<name>/prod/lib` / `app/<name>/prod/cbin` が必要なら `PATH` に追加
 
 #### .vscode/settings.json
 
@@ -216,9 +217,9 @@ Windows 向けの `PATH` を更新します。
 
 - Linux
     - `app/<name>/prod/lib` が必要なら `LD_LIBRARY_PATH` に追加
-    - `app/<name>/prod/bin` が必要なら `PATH` に追加
+    - `app/<name>/prod/cbin` が必要なら `PATH` に追加
 - Windows
-    - `app/<name>/prod/lib` / `app/<name>/prod/bin` が必要なら `PATH` に追加
+    - `app/<name>/prod/lib` / `app/<name>/prod/cbin` が必要なら `PATH` に追加
 
 ### GitHub Actions を更新する
 
@@ -230,11 +231,11 @@ Windows 向けの `PATH` を更新します。
 #### Linux
 
 - `LD_LIBRARY_PATH` は `$GITHUB_ENV` に書く
-- `bin` ディレクトリは `$GITHUB_PATH` に追加する
+- `cbin` ディレクトリは `$GITHUB_PATH` に追加する
 
 #### Windows
 
-- `PATH` に追加するパス配列へ `lib` / `bin` を入れる
+- `PATH` に追加するパス配列へ `lib` / `cbin` を入れる
 - `com_util` のように `lib` だけ必要なアプリは `lib` のみ追加する
 
 ### Jenkins を更新する
@@ -259,7 +260,7 @@ Jenkins を利用する場合は、GitHub Actions と同じ観点で以下を更
 
 ## 再チェック用チェックリスト
 
-- `app/<name>/prod/lib` と `app/<name>/prod/bin` の有無を確認した
+- `app/<name>/prod/lib` と `app/<name>/prod/cbin` の有無を確認した
 - 依存関係上、本当に環境変数へ入れる必要があるか判断した
 - `.vscode/.env.linux` を更新した
 - `.vscode/.env.windows` を更新した
@@ -272,10 +273,10 @@ Jenkins を利用する場合は、GitHub Actions と同じ観点で以下を更
 
 ## 確認コマンド例
 
-### 実在する lib / bin の確認
+### 実在する lib / cbin の確認
 
 ```bash
-find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/bin' \) | sort
+find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/cbin' \) | sort
 ```
 
 ### 設定箇所の確認

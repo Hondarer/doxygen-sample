@@ -232,7 +232,7 @@ NO_LINK = 1
 **生成される実行ファイル:**
 
 ```text
-app/subfolder-sample/prod/bin/sample-app
+app/subfolder-sample/prod/cbin/sample-app
 ```
 
 ## テストのサブディレクトリ対応

@@ -53,9 +53,9 @@ git submodule update --init --recursive
 ```gitignore
 # ビルド出力
 app/calc/prod/lib/
-app/calc/prod/bin/
+app/calc/prod/cbin/
 app/calc.net/prod/lib/
-app/calc.net/prod/bin/
+app/calc.net/prod/cbin/
 
 # Doxygen 生成ファイル
 docs/doxygen/

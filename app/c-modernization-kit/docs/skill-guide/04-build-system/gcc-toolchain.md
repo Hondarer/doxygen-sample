@@ -65,12 +65,12 @@ gcc -shared -fPIC \
     calcHandler.o
 
 # 静的リンクで実行ファイルをビルド
-gcc -o app/calc/prod/bin/add \
+gcc -o app/calc/prod/cbin/add \
     app/calc/prod/src/add/add.o \
     -L app/calc/prod/lib -lcalcbase
 
 # 動的リンクで実行ファイルをビルド
-gcc -o app/calc/prod/bin/calc \
+gcc -o app/calc/prod/cbin/calc \
     app/calc/prod/src/calc/calc.o \
     -L app/calc/prod/lib -lcalc \
     -Wl,-rpath,'$$ORIGIN/../lib'

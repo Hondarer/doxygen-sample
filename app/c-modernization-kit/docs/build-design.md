@@ -66,15 +66,15 @@ make
 
 | コマンド | Windows | Linux | リンク ライブラリ |
 |---------|---------|-------|----------------|
-| add | `app/calc/prod/bin/add.exe` | `app/calc/prod/bin/add` | calcbase のみ |
-| calc | `app/calc/prod/bin/calc.exe` | `app/calc/prod/bin/calc` | calc のみ |
-| shared-and-static-calc | `app/calc/prod/bin/shared-and-static-calc.exe` | `app/calc/prod/bin/shared-and-static-calc` | calc + calcbase (両方) |
+| add | `app/calc/prod/cbin/add.exe` | `app/calc/prod/cbin/add` | calcbase のみ |
+| calc | `app/calc/prod/cbin/calc.exe` | `app/calc/prod/cbin/calc` | calc のみ |
+| shared-and-static-calc | `app/calc/prod/cbin/shared-and-static-calc.exe` | `app/calc/prod/cbin/shared-and-static-calc` | calc + calcbase (両方) |
 
 .NET コマンド / .NET Commands:
 
 | コマンド | Windows | Linux | 依存ライブラリ |
 |---------|---------|-------|--------------|
-| CalcApp | `app/calc.net/prod/bin/CalcApp.exe` | `app/calc.net/prod/bin/CalcApp` | CalcLib (libcalc の .NET ラッパー) |
+| CalcApp | `app/calc.net/prod/cbin/CalcApp.exe` | `app/calc.net/prod/cbin/CalcApp` | CalcLib (libcalc の .NET ラッパー) |
 
 重要:
 
@@ -141,7 +141,7 @@ c-modernization-kit/
 +-- app/calc/prod/
 |   +-- makefile                        # トップレベル makefile (再帰ビルド)
 |   +-- lib/                            # ビルド済みライブラリ
-|   +-- bin/                            # ビルド済み実行ファイル
+|   +-- cbin/                           # ビルド済み実行ファイル
 |   +-- libsrc/
 |   |   +-- makefile                    # libsrc 配下の再帰ビルド
 |   |   +-- makepart.mk                # ライブラリ共通設定
@@ -161,7 +161,7 @@ c-modernization-kit/
 |           +-- makefile                # shared-and-static-calc ビルド定義
 +-- app/calc.net/prod/
 |   +-- lib/                            # ビルド済みライブラリ
-|   +-- bin/                            # ビルド済み実行ファイル
+|   +-- cbin/                           # ビルド済み実行ファイル
 |   +-- libsrc/CalcLib/                 # .NET ライブラリソース
 |   +-- src/
 |       +-- makepart.mk                # 実行ファイル出力先設定 (OUTPUT_DIR)
@@ -254,13 +254,13 @@ LIB_TYPE = shared
 
 この設定により、calc は Windows では DLL、Linux では .so として自動的にビルドされます。
 
-**app/calc/prod/src/makepart.mk の例 (実行ファイルの出力先設定):**
+**app/calc/prod/src/cmd/makepart.mk の例 (実行ファイルの出力先設定):**
 
 ```makefile
-OUTPUT_DIR := $(WORKSPACE_DIR)/app/calc/prod/bin
+OUTPUT_DIR := $(WORKSPACE_DIR)/app/calc/prod/cbin
 ```
 
-この設定により、`app/calc/prod/src/` 配下のすべての実行ファイルは `app/calc/prod/bin/` に出力されます。
+この設定により、`app/calc/prod/src/cmd/` 配下のすべての実行ファイルは `app/calc/prod/cbin/` に出力されます。
 
 **app/calc/test/makepart.mk の例:**
 

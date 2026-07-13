@@ -32,19 +32,19 @@ VS Code の環境変数設定は envFile 方式で一元管理しています。
 
 ## 新しいモジュール追加時の編集箇所
 
-`app/<name>/prod/bin` や `app/<name>/prod/lib` を PATH に追加する場合、以下の 4 箇所を編集します。
+`app/<name>/prod/cbin` や `app/<name>/prod/lib` を PATH に追加する場合、以下の 4 箇所を編集します。
 
 ### .vscode/.env.linux
 
 ```text
-PATH=${workspaceFolder}/app/<name>/prod/bin:...(既存)...
+PATH=${workspaceFolder}/app/<name>/prod/cbin:...(既存)...
 LD_LIBRARY_PATH=${workspaceFolder}/app/<name>/prod/lib:...(既存)...
 ```
 
 ### .vscode/.env.windows
 
 ```text
-PATH=${workspaceFolder}\app\<name>\prod\lib;${workspaceFolder}\app\<name>\prod\bin;...(既存)...
+PATH=${workspaceFolder}\app\<name>\prod\lib;${workspaceFolder}\app\<name>\prod\cbin;...(既存)...
 ```
 
 ### .vscode/settings.json の terminal.integrated.env.linux
@@ -52,7 +52,7 @@ PATH=${workspaceFolder}\app\<name>\prod\lib;${workspaceFolder}\app\<name>\prod\b
 ```json
 "terminal.integrated.env.linux": {
     "LD_LIBRARY_PATH": "${workspaceFolder}/app/<name>/prod/lib:...(既存)...",
-    "PATH": "${workspaceFolder}/app/<name>/prod/bin:...(既存)..."
+    "PATH": "${workspaceFolder}/app/<name>/prod/cbin:...(既存)..."
 }
 ```
 
@@ -60,7 +60,7 @@ PATH=${workspaceFolder}\app\<name>\prod\lib;${workspaceFolder}\app\<name>\prod\b
 
 ```json
 "terminal.integrated.env.windows": {
-    "PATH": "${workspaceFolder}\\app\\<name>\\prod\\lib;${workspaceFolder}\\app\\<name>\\prod\\bin;...(既存)..."
+    "PATH": "${workspaceFolder}\\app\\<name>\\prod\\lib;${workspaceFolder}\\app\\<name>\\prod\\cbin;...(既存)..."
 }
 ```
 
@@ -104,7 +104,7 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 
 ## 判断基準
 
-すべての `app/<name>/prod/bin` や `app/<name>/prod/lib` を PATH に追加するわけではありません。
+すべての `app/<name>/prod/cbin` や `app/<name>/prod/lib` を PATH に追加するわけではありません。
 
 追加が必要な場合:
 
@@ -122,7 +122,7 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 - `.env.linux` と `.env.windows` の両方を更新したか
 - `settings.json` の `terminal.integrated.env.linux` と `terminal.integrated.env.windows` を更新したか
 - Linux は `LD_LIBRARY_PATH` と `PATH` の両方に追加したか
-- Windows は `lib` と `bin` の両方を `PATH` に追加したか
+- Windows は `lib` と `cbin` の両方を `PATH` に追加したか
 - パス区切り文字が OS ごとに正しいか (Linux: `/`、Windows: `\`)
 - 区切り文字が OS ごとに正しいか (Linux: `:`、Windows: `;`)
 
