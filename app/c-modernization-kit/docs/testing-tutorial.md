@@ -44,6 +44,11 @@ Linux では GCC、Windows では MSVC を使用したクロスプラットフ�
 3. **Act [手順]**: テスト対象のメソッドを実行
 4. **Assert [確認_正常系] [確認_異常系]**: 実行結果を検証
 
+`TEST`、`TEST_F`、`TEST_P` などのテスト本体では、`{` の次の非空行を `// Arrange` とします。
+ローカル変数の宣言、モック オブジェクトの生成、テスト データや設定の準備は、すべて `// Arrange` より後に記載します。
+`[状態]` タグは、Arrange フェーズの内容をテスト エビデンスへ出力する場合に使用します。
+`[状態]` タグを付けない場合も `// Arrange` は省略しません。
+
 ---
 
 ## プロジェクト構造
@@ -392,16 +397,16 @@ class addTest : public Test
 // テスト ケース
 TEST_F(addTest, test_1_add_2)
 {
-    // Arrange (状態設定)
+    // Arrange
     int result;
 
-    // Pre-Assert (期待動作設定)
+    // Pre-Assert
     // - モックの期待動作を設定 (この例では不要)
 
-    // Act (実行)
+    // Act
     int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
 
-    // Assert (検証)
+    // Assert
     EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - add の戻り値が CALC_SUCCESS であること。
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
