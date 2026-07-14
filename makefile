@@ -109,6 +109,14 @@ cleandocs :
 # docs_kill_pid では MSYS の pid が Windows の pid と一致しない場合があるため、
 # /proc/<pid>/winpid で Windows の pid に変換してから taskkill.exe に渡す。
 # see: https://cygwin.com/cygwin-ug-net/proc.html
+#
+# taskkill /T /F は即時実行せず、TERM 送信後に最大 8 秒の猶予期間を設ける。
+# 猶予なしで強制終了すると、pub_markdown_core.sh の trap による後処理
+# (共有ブラウザーの WS ファイルやロックの削除) が完了する前にプロセス
+# ツリーごと終了され、一時ファイルが残存する。
+# 生存確認に kill -0 を使わないのは、終了済みの子が wait 前はゾンビとして
+# 残り、kill -0 が成功し続けて猶予期間を常に使い切るため。tasklist.exe で
+# Windows プロセスの実体を確認する。
 .PHONY: docs
 docs :
 	$(MAKE) skills
@@ -128,7 +136,17 @@ docs :
 						if [ -r "/proc/$$_pid/winpid" ]; then \
 							_winpid=$$(cat "/proc/$$_pid/winpid" 2>/dev/null || printf '%s' "$$_pid"); \
 						fi; \
-						MSYS2_ARG_CONV_EXCL='*' taskkill.exe /PID "$$_winpid" /T /F >/dev/null 2>&1 || true; \
+						_grace=0; \
+						while [ "$$_grace" -lt 40 ]; do \
+							if ! MSYS2_ARG_CONV_EXCL='*' tasklist.exe /FI "PID eq $$_winpid" 2>/dev/null | grep -q " $$_winpid "; then \
+								break; \
+							fi; \
+							sleep 0.2; \
+							_grace=$$((_grace+1)); \
+						done; \
+						if MSYS2_ARG_CONV_EXCL='*' tasklist.exe /FI "PID eq $$_winpid" 2>/dev/null | grep -q " $$_winpid "; then \
+							MSYS2_ARG_CONV_EXCL='*' taskkill.exe /PID "$$_winpid" /T /F >/dev/null 2>&1 || true; \
+						fi; \
 					fi; \
 					;; \
 			esac; \
