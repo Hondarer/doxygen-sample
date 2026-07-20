@@ -113,10 +113,46 @@ C / C++ コードで整数値を表す型は、次の方針で選択します。
 
 `int8_t` / `uint8_t` / `int16_t` / `uint16_t` / `int32_t` / `uint32_t` は使用しません。  
 `char` は処理系で符号付き / 符号なしが分かれるため、整数値として扱う場合は `signed char` / `unsigned char` を明示してください (文字列の要素として扱う場合は `char` を用います)。
+LP64 の Linux x86_64 では `long` が 64bit ですが、LLP64 の Windows x64 では `long` が 32bit です。  
+したがって、`long` をクロスプラットフォームの 64 bit 整数型として使用しません。  
 
 > 現代的な Linux (GCC)・Windows (MSVC) 環境では、`signed char` / `unsigned char` が 8bit、`short` / `unsigned short` が 16bit、`int` / `unsigned int` が 32bit となります。
 > LP64 (Linux x86_64 など) でも int は 32bit、long が 64bit です。
 > LLP64 (Windows x64) でも int は 32bit、long は 32bit、long long が 64bit です。
+
+### 値の意味に対応する型
+
+値に対応する標準型、OS API 型、または本リポジトリの共通型がある場合は、ビット幅だけで型を決めず、値の意味に対応する型を優先します。  
+`size_t`、`ptrdiff_t`、`ssize_t`、`off_t`、`time_t` は、特定の意味と演算規則を持つ型であり、単なる 32 bit または 64 bit の整数型として使用しません。
+
+| 値の意味 | 選択する型 | 使用条件 |
+|---|---|---|
+| オブジェクト ポインターとの往復変換、アドレス値 | `uintptr_t` | ポインター幅へ追従させる。 |
+| 負の無効値を持つ OS ネイティブ ハンドル | `intptr_t` | OS API がポインター幅の整数と負のセンチネル値を要求する場合に限定する |
+| オブジェクトのバイト サイズ、要素数、`sizeof` の結果、それらと同じ範囲の配列添字 | `size_t` | オブジェクトに関する、負値を取らない値に使用する |
+| 同一配列内の 2 つのポインターの差 | `ptrdiff_t` | 異なる配列を指すポインター同士の減算には使用しない |
+| POSIX I/O API が返す処理済みバイト数とエラー値 | `ssize_t` | Linux 実装内の POSIX API 境界に限定し、Windows 側に露出させない |
+| POSIX のファイル位置、ファイル サイズ、ファイル オフセット | `off_t` | Linux 実装内の POSIX API 境界に限定、Windows 側に露出させない |
+| C / POSIX 時刻 API が扱う時刻の秒部 | `time_t` | `time()` の戻り値や `struct timespec::tv_sec` などに使用し、任意の期間には使用しない |
+| クロスプラットフォームで受け渡す絶対時刻、単調時刻 | `com_util_timespec` | `app/` 配下の標準時刻型として使用する |
+| 正規化されたナノ秒部、負になり得る時間差 | `int64_t` | `com_util_timespec::tv_nsec` または符号付きの差分値に使用する |
+| 検査済みの非負ナノ秒期間、タイムアウト | `uint64_t` | 負値を受け付けないことを API 仕様で定め、外部入力の負値検査が完了した後に使用する |
+| クロスプラットフォーム API のファイル位置、ファイル オフセット、I/O 結果 | `int64_t` | Linux の `off_t` / `ssize_t` と Windows の 64 bit API を共通化する場合に使用する |
+| 文字列から入力し、負値や範囲外を検査するファイル オフセット | `int64_t` | 符号付き整数として解析し、構文、負値、上限を検査してから目的の型へ変換する |
+
+MSVC の UCRT では `off_t` も `long` の別名であるため 32bit となります。64 bit のファイル位置を扱う共通 API には `int64_t` を使用し、Windows 実装では `_fseeki64` / `_ftelli64` / `_lseeki64` との境界で変換し、`ott_t` を用いません。
+
+`ssize_t`、`off_t`、`time_t` の幅は処理系に依存します。  
+これらの型をファイル形式、通信形式、共有メモリなど、バイナリ レイアウトを固定するデータには使用しません。
+
+### 文字列入力から意味付き型への変換
+
+コマンド ライン引数などの外部文字列を `size_t` やファイル位置へ変換する場合は、最初に `int64_t` として解析します。  
+解析時には、文字列全体が整数として解釈されたこと、変換元の値が `int64_t` の範囲内であること、用途上の下限と上限を満たすことを確認します。
+
+負値を許容しない値は、負値の検査後に変換先の最大値を確認してから `size_t` または `uint64_t` へ変換します。  
+符号付き型と符号なし型を直接比較すると暗黙変換によって負値が大きな正値になるため、負値の検査より前に `SIZE_MAX` などと比較しません。  
+クロスプラットフォーム API のファイル位置へ渡す値は、検査後も `int64_t` のまま保持し、Linux 実装内でのみ `off_t` へ変換します。
 
 ### 例外として固定幅型を維持する用途
 
@@ -145,6 +181,9 @@ Sleep(timeout_dword);
 
 関数引数のうち「概念的には正の値のみを想定する」整数値も、型として `int` を採用します。  
 これは、呼び出し側で計算結果として負値が混入したことを検出可能にするためです。
+
+ただし、値の意味に対応する型が「[値の意味に対応する型](#値の意味に対応する型)」で定められている場合、または外部 API が型を指定している場合は、その型を優先します。  
+負値を検査する必要がある外部文字列は、符号なしの目的型へ直接変換せず、`int64_t` として解析してから検査します。
 
 負値が渡された場合の挙動は、仕様として明示します。
 
@@ -485,7 +524,7 @@ cd <module-dir> && make doxy 2>&1 | grep -i warning
 
 ## 宣言と定義の関係
 
-公開 API の関数では、修飾子とマクロを **宣言 (ヘッダー)** と **定義 (impl の `.c`)** のどちらに置くかを次のとおり統一します。
+公開 API の関数では、修飾子とマクロを **宣言 (ヘッダー)** と **定義 (impl の `.c`)** のどちらに置くかを次のとおり統一します。  
 宣言を契約の単一の源とし、定義側の重複を排します。
 
 | 対象 | 宣言 (ヘッダー) | 定義 (.c) |
@@ -516,7 +555,7 @@ int calcHandler(const int kind, const int a, const int b, int *result)
 ### エクスポート / 呼び出し規約マクロを定義側に付けない理由
 
 - MSVC は先行する宣言から `__declspec(dllexport)` と `__stdcall` を継承します。
-- `.c` は対応する公開ヘッダーを include 済みです (例: `calcHandler.c` は `<calc/calc_spec.h>` を include)。
+- `.c` は対応する公開ヘッダーを include 済みです (例: `calcHandler.c` は `<calc/calc_spec.h>` を include)。  
   このため定義側にマクロを重ねても情報が重複するだけで、新たな意味を持ちません。
 - 重複を排し、宣言を唯一の契約源とすることで保守性を上げます。
 
@@ -524,7 +563,7 @@ int calcHandler(const int kind, const int a, const int b, int *result)
 
 ### 検証上の注意
 
-Linux (GCC) では `CALC_EXPORT` / `CALC_API` が空に展開されるため、定義側マクロの有無で不整合は生じず、検出もできません。
+Linux (GCC) では `{APP名}_EXPORT` / `{APP名}_API` が空に展開されるため、定義側マクロの有無で不整合は生じず、検出もできません。  
 配置ルールの最終確認は MSVC ビルド (`Start-VSCode-With-Env.cmd` 環境) で行います。
 
 ## API 設計における概念の分離
@@ -542,7 +581,7 @@ Linux (GCC) では `CALC_EXPORT` / `CALC_API` が空に展開されるため、�
 
 ### 理由
 
-概念を暗黙に結合すると、ライブラリが識別名を設定した瞬間に出力ファイル名まで変わるなど、利用者の意図しない副作用が生じます。
+概念を暗黙に結合すると、ライブラリが識別名を設定した瞬間に出力ファイル名まで変わるなど、利用者の意図しない副作用が生じます。  
 識別番号も同様で、用途 (OS トレースの識別 / ファイルの分離) が異なるなら共有しません。
 
 ### 判定手順
@@ -555,7 +594,8 @@ Linux (GCC) では `CALC_EXPORT` / `CALC_API` が空に展開されるため、�
 
 ### 基本ルール
 
-`app/` 配下のコードでは、時刻の受け渡しに `struct timespec` を直接使用せず、公開型 `com_util_timespec` を使用します。
+`app/` 配下のコードでは、時刻の受け渡しに `struct timespec` を直接使用せず、公開型 `com_util_timespec` を使用します。  
+時刻の秒部、ナノ秒部、期間、時間差の型選択は「[値の意味に対応する型](#値の意味に対応する型)」に従います。
 
 | 項目 | 内容 |
 |---|---|
@@ -565,7 +605,7 @@ Linux (GCC) では `CALC_EXPORT` / `CALC_API` が空に展開されるため、�
 
 ### 理由
 
-Windows UCRT の `struct timespec` は `tv_nsec` が `long` (32bit) でレイアウトが異なります。
+Windows UCRT の `struct timespec` は `tv_nsec` が `long` (32bit) でレイアウトが異なります。  
 共有メモリ・ダンプ・プロセス間受け渡しでレイアウト互換を保つため、公開型に統一します。
 
 詳細は `app/com_util/prod/include/com_util/clock/timespec.h` の Doxygen コメントを参照してください。
@@ -596,8 +636,8 @@ Doxygen コメント内で可変部分 (プレースホルダー) を表すと�
 
 ### 理由
 
-Doxygen は `<...>` を XML/HTML タグとして解釈し、`warning: Unsupported xml/html tag <ファイル名> found` 警告を出力します。
-さらに、この解釈は XML 出力にも影響し、XML を入力とする Doxybook2 の Markdown 変換が正しく行えなくなります。
+Doxygen は `<...>` を XML/HTML タグとして解釈し、`warning: Unsupported xml/html tag <ファイル名> found` 警告を出力します。  
+さらに、この解釈は XML 出力にも影響し、XML を入力とする Doxybook2 の Markdown 変換が正しく行えなくなります。  
 `@c` の指定やバッククォートのコード スパンの外にある場合は、日本語のプレースホルダーでも警告を出力します。
 
 ### 適用範囲
@@ -642,7 +682,7 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 
 ### 理由
 
-コード例内の `*/` が外側のドキュメント コメントを途中で終端させ、以降のコード例が実コードとして解析されてビルド エラーになります。
+コード例内の `*/` が外側のドキュメント コメントを途中で終端させ、以降のコード例が実コードとして解析されてビルド エラーになります。  
 clang-format も実コードと誤認し、コメント内容を再インデントする差分を提示します。
 
 ### 適用範囲
@@ -659,3 +699,7 @@ clang-format も実コードと誤認し、コメント内容を再インデン�
 - [`source-style-guideline.md`](source-style-guideline.md) - `.gitattributes` / `.editorconfig` / `.clang-format` によるソース スタイル維持
 - [`include-guard-guideline.md`](include-guard-guideline.md) - インクルード ガード命名規則
 - [`platform-abstraction-guideline.md`](../com_util/platform-abstraction-guideline.md) - `platform.h` / `compiler.h` 利用規則
+- [POSIX `<stddef.h>`](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/stddef.h.html) - `size_t` / `ptrdiff_t` の定義
+- [POSIX `<sys/types.h>`](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_types.h.html) - `ssize_t` / `off_t` / `time_t` の定義
+- [Microsoft C ランタイムの標準型](https://learn.microsoft.com/ja-jp/cpp/c-runtime-library/standard-types?view=msvc-170) - MSVC における `size_t` / `ptrdiff_t` / `off_t` の定義
+- [Microsoft C ランタイムの `fseek` / `_fseeki64`](https://learn.microsoft.com/ja-jp/cpp/c-runtime-library/reference/fseek-fseeki64?view=msvc-170) - Windows で 64 bit ファイル位置を扱う API
