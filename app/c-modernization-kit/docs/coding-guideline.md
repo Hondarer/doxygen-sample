@@ -86,14 +86,16 @@ typedef struct
 typedef struct sample_record
 {
     int mode;
-#if defined(ARCH_X64)
     unsigned int pad; /* 明示的アラインメント */
-#endif
     intptr_t native_handle;
 } sample_record;
 ```
 
 ### プラットフォーム依存の条件付きパディング
+
+サポート対象外の 32 ビット環境だけを考慮した条件分岐は追加しません。  
+パディングはサポート対象の ABI に基づいて定義します。  
+複数アーキテクチャーを正式にサポートする構造体に限り、`ARCH_*` による条件付きパディングを使用します。
 
 プラットフォームやアーキテクチャーごとにパディング有無を切り替える場合は、`#if defined(ARCH_X64)` や `#if defined(PLATFORM_WINDOWS)` のように、`platform.h` の共通マクロを使います。  
 `__x86_64__` や `_WIN32` を利用側で直接判定しません。
@@ -112,9 +114,9 @@ C / C++ コードで整数値を表す型は、次の方針で選択します。
 - 64bit 幅の整数値は `int64_t` / `uint64_t` を用います。
 
 `int8_t` / `uint8_t` / `int16_t` / `uint16_t` / `int32_t` / `uint32_t` は使用しません。  
-`char` は処理系で符号付き / 符号なしが分かれるため、整数値として扱う場合は `signed char` / `unsigned char` を明示してください (文字列の要素として扱う場合は `char` を用います)。
+`char` は処理系で符号付き / 符号なしが分かれるため、整数値として扱う場合は `signed char` / `unsigned char` を明示してください (文字列の要素として扱う場合は `char` を用います)。  
 LP64 の Linux x86_64 では `long` が 64bit ですが、LLP64 の Windows x64 では `long` が 32bit です。  
-したがって、`long` をクロスプラットフォームの 64 bit 整数型として使用しません。  
+したがって、`long` をクロスプラットフォームの 64 bit 整数型として使用しません。
 
 > 現代的な Linux (GCC)・Windows (MSVC) 環境では、`signed char` / `unsigned char` が 8bit、`short` / `unsigned short` が 16bit、`int` / `unsigned int` が 32bit となります。
 > LP64 (Linux x86_64 など) でも int は 32bit、long が 64bit です。
