@@ -16,14 +16,6 @@
 !Makefile
 !makefile
 
-## サブモジュール
-!/framework/makefw
-!/framework/doxyfw
-!/framework/docsfw
-!/framework/testfw
-!/app/com_util
-!/app/porter
-
 # 以下は管理対象外
 
 ## Claude Code
