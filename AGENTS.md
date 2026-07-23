@@ -40,6 +40,8 @@
 
 - makepart.mk, makechild.mk, makelocal.mk など、make ファイルの断片については、空ファイルは不要。  
   see: `framework/makefw/docs/makeparts.md`
+- 末端の makefile は小文字の `makefile` を正とし、`Makefile` (大文字始まり) は使用しない。サブモジュールなど管理対象外の OSS 由来ファイルはこの限りではない。  
+  `.gitignore` は小文字の `makefile` のみを unignore しており、大文字小文字を区別するファイル システムでは `Makefile` が暗黙に管理対象外になる。
 
 ## make コマンド実行の指針
 
