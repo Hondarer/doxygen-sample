@@ -38,6 +38,7 @@ Clone 後、サブモジュールの初期化を行ってください。
 git submodule update --init --recursive
 ```
 
+- `app/cjson` - cJSON (JSON パーサー) を取り込む makefw 対応ライブラリ ([https://github.com/Hondarer/app_cjson](https://github.com/Hondarer/app_cjson))
 - `app/com_util` - C プロジェクト向け汎用ユーティリティ ライブラリ ([https://github.com/Hondarer/app_com_util](https://github.com/Hondarer/app_com_util))
 - `app/porter` - UDP/IP および TCP/IP をサポートする通信ライブラリ ([https://github.com/Hondarer/app_porter](https://github.com/Hondarer/app_porter))
 - `framework/docsfw` - Markdown ドキュメント発行フレームワーク ([https://github.com/Hondarer/pub_markdown](https://github.com/Hondarer/pub_markdown))
@@ -59,6 +60,7 @@ git submodule update --init --recursive
     component "framework/docsfw\npub_markdown" as docsfw
     component "app/com_util\napp_com_util" as com_util
     component "app/porter\napp_porter" as porter
+    component "app/cjson\napp_cjson" as cjson
     component "親レポジトリ" as this
 
     testfw --> gtest
@@ -66,6 +68,7 @@ git submodule update --init --recursive
     porter --> com_util
     this --> com_util
     this --> porter
+    this --> cjson
     this --> doxyfw
     this --> docsfw
     this --> makefw

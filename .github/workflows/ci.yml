@@ -69,8 +69,10 @@ jobs:
           echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/cjson/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/override-sample/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/porter/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/com_util/prod/cbin" >> $GITHUB_PATH
 
       - name: Run tests
         run: |
@@ -237,11 +239,13 @@ jobs:
             "${{ github.workspace }}\app\calc\prod\cbin",
             "${{ github.workspace }}\app\calc.net\prod\lib",
             "${{ github.workspace }}\app\calc.net\prod\cbin",
+            "${{ github.workspace }}\app\cjson\prod\cbin",
             "${{ github.workspace }}\app\override-sample\prod\lib",
             "${{ github.workspace }}\app\override-sample\prod\cbin",
             "${{ github.workspace }}\app\porter\prod\lib",
             "${{ github.workspace }}\app\porter\prod\cbin",
-            "${{ github.workspace }}\app\com_util\prod\lib"
+            "${{ github.workspace }}\app\com_util\prod\lib",
+            "${{ github.workspace }}\app\com_util\prod\cbin"
           )
           foreach ($p in $paths) {
             Add-Content -Path $env:GITHUB_PATH -Value $p

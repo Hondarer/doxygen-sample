@@ -137,7 +137,8 @@ export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/pro
 ${LD_LIBRARY_PATH:-}"
 
 export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:\
-/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:${PATH}"
+/workspace/app/cjson/prod/cbin:/workspace/app/override-sample/prod/cbin:\
+/workspace/app/porter/prod/cbin:/workspace/app/com_util/prod/cbin:${PATH}"
 ```
 
 #### テスト実行

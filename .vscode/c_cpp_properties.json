@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/app/calc/prod/include",
                 "${workspaceFolder}/app/calc/test/include",
+                "${workspaceFolder}/app/cjson/prod/include",
                 "${workspaceFolder}/app/com_util/prod/include",
                 "${workspaceFolder}/app/com_util/prod/include_internal",
                 "${workspaceFolder}/app/com_util/prod/src/cmd/compress-cli",
@@ -36,6 +37,7 @@
             "includePath": [
                 "${workspaceFolder}/app/calc/prod/include",
                 "${workspaceFolder}/app/calc/test/include",
+                "${workspaceFolder}/app/cjson/prod/include",
                 "${workspaceFolder}/app/com_util/prod/include",
                 "${workspaceFolder}/app/com_util/prod/include_internal",
                 "${workspaceFolder}/app/com_util/prod/src/cmd/compress-cli",
