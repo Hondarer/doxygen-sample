@@ -40,7 +40,9 @@ git submodule update --init --recursive
 
 - `app/cjson` - cJSON (JSON パーサー) を取り込む makefw 対応ライブラリ ([https://github.com/Hondarer/app_cjson](https://github.com/Hondarer/app_cjson))
 - `app/com_util` - C プロジェクト向け汎用ユーティリティ ライブラリ ([https://github.com/Hondarer/app_com_util](https://github.com/Hondarer/app_com_util))
+- `app/lua` - Lua (スクリプト言語) を取り込む makefw 対応ライブラリ ([https://github.com/Hondarer/app_lua](https://github.com/Hondarer/app_lua))
 - `app/porter` - UDP/IP および TCP/IP をサポートする通信ライブラリ ([https://github.com/Hondarer/app_porter](https://github.com/Hondarer/app_porter))
+- `app/sqlite` - SQLite (組み込み RDB) を取り込む makefw 対応ライブラリ ([https://github.com/Hondarer/app_sqlite](https://github.com/Hondarer/app_sqlite))
 - `framework/docsfw` - Markdown ドキュメント発行フレームワーク ([https://github.com/Hondarer/pub_markdown](https://github.com/Hondarer/pub_markdown))
 - `framework/doxyfw` - Doxygen ドキュメント生成フレームワーク ([https://github.com/Hondarer/doxygen-framework](https://github.com/Hondarer/doxygen-framework))
 - `framework/makefw` - Make ビルド フレームワーク ([https://github.com/Hondarer/make-framework](https://github.com/Hondarer/make-framework))
@@ -61,6 +63,8 @@ git submodule update --init --recursive
     component "app/com_util\napp_com_util" as com_util
     component "app/porter\napp_porter" as porter
     component "app/cjson\napp_cjson" as cjson
+    component "app/sqlite\napp_sqlite" as sqlite
+    component "app/lua\napp_lua" as lua
     component "親レポジトリ" as this
 
     testfw --> gtest
@@ -69,6 +73,8 @@ git submodule update --init --recursive
     this --> com_util
     this --> porter
     this --> cjson
+    this --> sqlite
+    this --> lua
     this --> doxyfw
     this --> docsfw
     this --> makefw

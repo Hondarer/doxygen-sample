@@ -70,6 +70,8 @@ jobs:
           echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/cjson/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/sqlite/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/lua/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/override-sample/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/porter/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/com_util/prod/cbin" >> $GITHUB_PATH
@@ -240,6 +242,8 @@ jobs:
             "${{ github.workspace }}\app\calc.net\prod\lib",
             "${{ github.workspace }}\app\calc.net\prod\cbin",
             "${{ github.workspace }}\app\cjson\prod\cbin",
+            "${{ github.workspace }}\app\sqlite\prod\cbin",
+            "${{ github.workspace }}\app\lua\prod\cbin",
             "${{ github.workspace }}\app\override-sample\prod\lib",
             "${{ github.workspace }}\app\override-sample\prod\cbin",
             "${{ github.workspace }}\app\porter\prod\lib",

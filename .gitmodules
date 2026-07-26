@@ -19,3 +19,9 @@
 [submodule "app/cjson"]
 	path = app/cjson
 	url = https://github.com/Hondarer/app_cjson.git
+[submodule "app/sqlite"]
+	path = app/sqlite
+	url = https://github.com/Hondarer/app_sqlite.git
+[submodule "app/lua"]
+	path = app/lua
+	url = https://github.com/Hondarer/app_lua.git
