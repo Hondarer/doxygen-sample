@@ -66,15 +66,21 @@ jobs:
 
       - name: Set PATH and library path for tests
         run: |
-          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
+          # BEGIN app-env-sync (linux)
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/cjson/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$GITHUB_WORKSPACE/app/empty-lib/prod/lib:$GITHUB_WORKSPACE/app/lua/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/sqlite/prod/lib:$GITHUB_WORKSPACE/app/subfolder-sample/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/cjson/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/sqlite/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/com_util/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/lua/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/override-sample/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/porter/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/com_util/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/service-sample/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/sqlite/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/subfolder-sample/prod/cbin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/app/tutorial/prod/cbin" >> $GITHUB_PATH
+          # END app-env-sync (linux)
 
       - name: Run tests
         run: |
@@ -95,6 +101,7 @@ jobs:
         with:
           name: linux-${{ matrix.os-name }}-warns
           path: |
+            app/app_env.warn
             app/c_cpp_properties.warn
             app/**/prod/**/*.warn
             app/**/test/**/*.warn
@@ -236,21 +243,32 @@ jobs:
 
       - name: Set PATH for tests
         run: |
+          # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
+          # BEGIN app-env-sync (windows)
           $paths = @(
             "${{ github.workspace }}\app\calc\prod\lib",
             "${{ github.workspace }}\app\calc\prod\cbin",
             "${{ github.workspace }}\app\calc.net\prod\lib",
             "${{ github.workspace }}\app\calc.net\prod\cbin",
+            "${{ github.workspace }}\app\cjson\prod\lib",
             "${{ github.workspace }}\app\cjson\prod\cbin",
-            "${{ github.workspace }}\app\sqlite\prod\cbin",
+            "${{ github.workspace }}\app\com_util\prod\lib",
+            "${{ github.workspace }}\app\com_util\prod\cbin",
+            "${{ github.workspace }}\app\empty-lib\prod\lib",
+            "${{ github.workspace }}\app\lua\prod\lib",
             "${{ github.workspace }}\app\lua\prod\cbin",
             "${{ github.workspace }}\app\override-sample\prod\lib",
             "${{ github.workspace }}\app\override-sample\prod\cbin",
             "${{ github.workspace }}\app\porter\prod\lib",
             "${{ github.workspace }}\app\porter\prod\cbin",
-            "${{ github.workspace }}\app\com_util\prod\lib",
-            "${{ github.workspace }}\app\com_util\prod\cbin"
+            "${{ github.workspace }}\app\service-sample\prod\cbin",
+            "${{ github.workspace }}\app\sqlite\prod\lib",
+            "${{ github.workspace }}\app\sqlite\prod\cbin",
+            "${{ github.workspace }}\app\subfolder-sample\prod\lib",
+            "${{ github.workspace }}\app\subfolder-sample\prod\cbin",
+            "${{ github.workspace }}\app\tutorial\prod\cbin"
           )
+          # END app-env-sync (windows)
           foreach ($p in $paths) {
             Add-Content -Path $env:GITHUB_PATH -Value $p
             Write-Host "Added $p to PATH"
@@ -277,6 +295,7 @@ jobs:
         with:
           name: windows-warns
           path: |
+            app/app_env.warn
             app/c_cpp_properties.warn
             app/**/prod/**/*.warn
             app/**/test/**/*.warn

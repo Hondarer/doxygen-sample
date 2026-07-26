@@ -69,7 +69,11 @@ make cleandocs
 make docs
 make clean
 make skills
+make sync-app-env
 ```
+
+`make sync-app-env` は、`app/<name>/**/makepart.mk` の `OUTPUT_DIR` を正本として、実行時のコマンド探索パスとライブラリ探索パスを `.vscode`、`.github/workflows/ci.yml`、`.jenkins` へ生成する。app の追加・削除の際にこれらを手で編集せず、本コマンドを実行すること。  
+see: `app/c-modernization-kit/docs/vscode-variables.md`
 
 ## テスト コメントの注意点
 

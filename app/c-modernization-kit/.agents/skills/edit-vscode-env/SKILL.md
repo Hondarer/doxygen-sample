@@ -30,39 +30,36 @@ VS Code の環境変数設定は envFile 方式で一元管理しています。
 `launch.json` と `tasks.json` は `.env.linux` / `.env.windows` を参照するため、直接編集は不要です。  
 `settings.json` の `terminal.integrated.env.*` は envFile をサポートしないため、別途編集が必要です。
 
-## 新しいモジュール追加時の編集箇所
+## 新しいモジュールを追加・削除したとき
 
-`app/<name>/prod/cbin` や `app/<name>/prod/lib` を PATH に追加する場合、以下の 4 箇所を編集します。
+`.vscode` の `PATH` / `LD_LIBRARY_PATH` は手で編集しません。
+`app/<name>/**/makepart.mk` の `OUTPUT_DIR` を正本として、`bin/sync-app-env.sh` が生成します。
 
-### .vscode/.env.linux
-
-```text
-PATH=${workspaceFolder}/app/<name>/prod/cbin:...(既存)...
-LD_LIBRARY_PATH=${workspaceFolder}/app/<name>/prod/lib:...(既存)...
+```bash
+make sync-app-env
 ```
 
-### .vscode/.env.windows
+生成される内容は次の規則で決まります。
 
-```text
-PATH=${workspaceFolder}\app\<name>\prod\lib;${workspaceFolder}\app\<name>\prod\cbin;...(既存)...
+- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/cbin` が現れる app は、`app/<name>/prod/cbin` がコマンド探索パスへ入る
+- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/lib` が現れる app は、`app/<name>/prod/lib` がライブラリ探索パスへ入る (Windows は `PATH`)
+- 並び順は app 名の `LC_ALL=C sort`。Windows の `PATH` は app ごとに `lib`、`cbin` の順
+
+したがって、新しいモジュールで実行ファイルや共有ライブラリを出力する場合にすることは、対象ディレクトリの `makepart.mk` に `OUTPUT_DIR` を設定することだけです。
+
+```make
+# app/<name>/prod/src/cmd/makepart.mk
+OUTPUT_DIR := $(MYAPP_DIR)/prod/cbin
 ```
 
-### .vscode/settings.json の terminal.integrated.env.linux
-
-```json
-"terminal.integrated.env.linux": {
-    "LD_LIBRARY_PATH": "${workspaceFolder}/app/<name>/prod/lib:...(既存)...",
-    "PATH": "${workspaceFolder}/app/<name>/prod/cbin:...(既存)..."
-}
+```make
+# app/<name>/prod/libsrc/makepart.mk
+OUTPUT_DIR := $(MYAPP_DIR)/prod/lib
 ```
 
-### .vscode/settings.json の terminal.integrated.env.windows
+生成対象は `.vscode` の 4 ファイルにとどまらず、`.github/workflows/ci.yml`、`.jenkins/inner-build.sh`、`.jenkins/README.md` も同時に更新されます。
 
-```json
-"terminal.integrated.env.windows": {
-    "PATH": "${workspaceFolder}\\app\\<name>\\prod\\lib;${workspaceFolder}\\app\\<name>\\prod\\cbin;...(既存)..."
-}
-```
+ルートの `make` の完了後には `bash bin/sync-app-env.sh --check` が自動で走り、差異があれば `app/app_env.warn` が生成されます。
 
 ## env ファイルの形式
 
@@ -104,28 +101,22 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 
 ## 判断基準
 
-すべての `app/<name>/prod/cbin` や `app/<name>/prod/lib` を PATH に追加するわけではありません。
+`lib` や `cbin` を出力するかどうかは `makepart.mk` の `OUTPUT_DIR` で表現します。
+`LIB_TYPE` (static / shared / both) による絞り込みは行いません。
+静的ライブラリだけを出力する app のディレクトリが探索パスに載っても実害がないため、判定を `OUTPUT_DIR` の 1 つに統一しています。
 
-追加が必要な場合:
-
-- テスト実行時に DLL/SO が必要
-- デバッグ実行時に実行ファイルや DLL/SO が必要
-- 他のモジュールから実行時に参照される
-
-追加が不要な場合:
-
-- ビルド時のみ必要で実行時には不要
-- 現在の VS Code タスク / デバッグ対象に含まれていない
+「存在するが実行時には不要」といった個別の除外は設けていません。
+除外が必要になった場合は、`bin/sync-app-env.sh` の導出規則そのものを見直します。
 
 ## 確認項目
 
-- `.env.linux` と `.env.windows` の両方を更新したか
-- `settings.json` の `terminal.integrated.env.linux` と `terminal.integrated.env.windows` を更新したか
-- Linux は `LD_LIBRARY_PATH` と `PATH` の両方に追加したか
-- Windows は `lib` と `cbin` の両方を `PATH` に追加したか
-- パス区切り文字が OS ごとに正しいか (Linux: `/`、Windows: `\`)
-- 区切り文字が OS ごとに正しいか (Linux: `:`、Windows: `;`)
+- `makepart.mk` の `OUTPUT_DIR` が意図した出力先を指しているか
+- `make sync-app-env` を実行したか
+- 生成された差分に、想定外の app の増減がないか
+- `bash bin/sync-app-env.sh --check` が終了コード 0 で完了するか
+- マーカー (`# BEGIN app-env-sync` など) の内側を手で編集していないか
 
 ## 参照ドキュメント
 
 - `docs/vscode-variables.md` - VS Code における環境変数と保守手順の詳細
+- `bin/sync-app-env.sh` - 実行時パス設定の生成スクリプト

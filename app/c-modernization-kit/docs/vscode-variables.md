@@ -84,7 +84,8 @@ test ! -f app/c_cpp_properties.warn
 `terminal.integrated.env.*` は、VS Code の統合ターミナルにだけ反映されます。  
 新しく開いたターミナルには反映されますが、既存のターミナルには反映されません。
 
-このリポジトリでは、Linux では `LD_LIBRARY_PATH` と `PATH`、Windows では `PATH` を設定しています。
+このリポジトリでは、Linux では `LD_LIBRARY_PATH` と `PATH`、Windows では `PATH` を設定しています。  
+これらの値は `bin/sync-app-env.sh` が生成します。
 
 ### .vscode/tasks.json
 
@@ -110,7 +111,7 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 ### .vscode/.env.linux / .vscode/.env.windows
 
 `launch.json` と `tasks.json` が共通で参照する環境変数定義ファイルです。  
-新しいモジュールを追加する際は、これらのファイルに PATH を追加します。
+`PATH` と `LD_LIBRARY_PATH` の行は `bin/sync-app-env.sh` が生成するため、手で編集しません。
 
 `MAKEFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME`、`DOCSFW_HOME` もここで定義します。  
 `MAKEFW_HOME` は make テンプレート群 (`framework/makefw`) の場所を表し、`make` / `make test` / `make doxy` などの実行で必須です。未設定だと `MAKEFW_HOME is required. Export MAKEFW_HOME before running make` で停止します。  
@@ -118,55 +119,79 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 `TESTFW_HOME` はテスト フレームワークの場所を表し、`make` / `make test` はこの値を使って testfw をビルドし、テスト実行スクリプトやライブラリを参照します。  
 `DOCSFW_HOME` は Markdown 発行フレームワークの場所を表し、VS Code の Markdown 発行タスクと `make docs` が参照します。
 
-`settings.json` の `terminal.integrated.env.*` は `envFile` をサポートしないため、ターミナル用の PATH は別途 `settings.json` にも追加が必要です。
+`settings.json` の `terminal.integrated.env.*` は `envFile` をサポートしないため、ターミナル用の `PATH` は `settings.json` にも同じ内容が必要です。  
+この重複も `bin/sync-app-env.sh` が両方へ同時に生成します。
 
-## このリポジトリで何を根拠に判断するか
+## 実行時パスの正本
 
-環境変数の更新対象は、次の順で判断します。
+`.vscode` と CI に書かれている実行時のコマンド探索パスとライブラリ探索パスは、これらのファイルが正本ではありません。
+`app/<name>` 配下の `makepart.mk` が設定する `OUTPUT_DIR` が正本であり、各設定ファイルはその派生物です。
 
-1. `app/<name>/prod/lib` があるか
-2. `app/<name>/prod/cbin` があるか
-3. そのアプリのライブラリや実行ファイルが、テスト・デバッグ・サンプル実行で必要か
-4. その必要性が VS Code、GitHub Actions、Jenkins のどこまで及ぶか
+`bin/sync-app-env.sh` が `app/<name>/**/makepart.mk` を make で評価し、次の規則で導出します。
 
-### 基本ルール
+- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/cbin` が現れる app は、`app/<name>/prod/cbin` をコマンド探索パスへ追加する
+- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/lib` が現れる app は、`app/<name>/prod/lib` をライブラリ探索パスへ追加する (Windows では `PATH` へ追加する)
+- `test/lib` のように `prod/` 以外を指す `OUTPUT_DIR` は対象外とする
+- 並び順は app 名の `LC_ALL=C sort` とし、Windows の `PATH` は app ごとに `lib`、`cbin` の順に並べる
 
-- `app/<name>/prod/lib` を持つアプリ
-    - Linux では `LD_LIBRARY_PATH` 候補
-    - Windows では `PATH` 候補
-- `app/<name>/prod/cbin` を持つアプリ
-    - Linux / Windows ともに `PATH` 候補
-- ただし、`lib` や `cbin` が存在しても、現在のテスト・デバッグ・実行で使わないなら追加しません
+`LIB_TYPE` (static / shared / both) による絞り込みは行いません。
+静的ライブラリだけを出力する app のディレクトリが探索パスに載っても実害がないため、判定を `OUTPUT_DIR` の 1 つに統一しています。
 
-### 現在の代表例
+`.vscode/pub_markdown.config.yaml` の `mergeSubfolderDocs` は、`app/<name>/docs` の有無から導出します。
 
-現時点で `app/<name>/prod/lib` / `app/<name>/prod/cbin` を持つ主なアプリは以下です。
+app の一覧は `framework/makefw/bin/resolve_app_deps.sh --app-order` から取得するため、app を追加・削除しただけで導出結果が追従します。
 
-| アプリ | `app/<name>/prod/lib` | `app/<name>/prod/cbin` | 現在の環境変数設定に含める理由 |
-|---|---|---|---|
-| `calc` | あり | あり | C テスト、サンプル実行、.NET 呼び出しで使用 |
-| `calc.net` | あり | あり | .NET テスト、サンプル実行で使用 |
-| `override-sample` | あり | あり | CI / VS Code 実行対象として扱っている |
-| `porter` | あり | あり | CI / VS Code 実行対象として扱っている |
-| `com_util` | あり | あり | 多くのアプリが実行時に依存 |
-| `subfolder-sample` | あり | あり | 現在の VS Code / CI の実行対象には含めていない |
+### 生成対象と生成区間
 
-`subfolder-sample` のように `lib` / `cbin` を持つアプリでも、現在の実行対象に入っていなければ、環境変数へ自動的には追加しません。
-
-追加可否は「存在するか」だけではなく、「実行時に必要か」で判断します。
-
-## どのファイルを更新するか
-
-| 対象 | ファイル | 何を更新するか |
+| 対象 | ファイル | 生成される箇所 |
 |---|---|---|
 | 統合ターミナル | `.vscode/settings.json` | Linux の `LD_LIBRARY_PATH` / `PATH`、Windows の `PATH` |
-| VS Code テスト タスク / デバッグ (Linux) | `.vscode/.env.linux` | `PATH` と `LD_LIBRARY_PATH` |
-| VS Code テスト タスク / デバッグ (Windows) | `.vscode/.env.windows` | `PATH` |
-| GitHub Actions Linux | `.github/workflows/ci.yml` | `$GITHUB_ENV` と `$GITHUB_PATH` |
-| GitHub Actions Windows | `.github/workflows/ci.yml` | `$GITHUB_PATH` に追加するパス配列 |
-| Jenkins 実装 | `.jenkins/inner-build.sh` | `LD_LIBRARY_PATH`、`PATH`、成果物収集パス |
-| Jenkins 説明 | `.jenkins/README.md` | 実装に対応する説明と例 |
-| 個別ドキュメント | 各 README / docs | 実行例やトラブルシュートの古いパス |
+| VS Code テスト タスク / デバッグ (Linux) | `.vscode/.env.linux` | `PATH` と `LD_LIBRARY_PATH` の行 |
+| VS Code テスト タスク / デバッグ (Windows) | `.vscode/.env.windows` | `PATH` の行 |
+| Markdown 発行 | `.vscode/pub_markdown.config.yaml` | `mergeSubfolderDocs` の行 |
+| GitHub Actions | `.github/workflows/ci.yml` | `# BEGIN app-env-sync (linux)` / `(windows)` の区間 |
+| Jenkins 実装 | `.jenkins/inner-build.sh` | `# BEGIN app-env-sync` の区間 |
+| Jenkins 説明 | `.jenkins/README.md` | `<!-- BEGIN app-env-sync -->` の区間 |
+
+マーカーで囲まれた区間の中身は毎回上書きされるため、手で編集しないでください。
+`.vscode` の 4 ファイルはキー単位の行置換であり、その行以外は保持されます。
+
+### 同期の流れ
+
+ルートの `make` (および `make with-cov`) の完了後に `bash bin/sync-app-env.sh --check` が自動で走ります。
+差異がある場合は `app/app_env.warn` が生成され、CI の warn artifact 収集にもそのまま乗ります。
+
+警告が出たら、ワークスペース ルートで次を実行して各ファイルを更新します。
+
+```bash
+make sync-app-env
+```
+
+スクリプトを直接呼び出す場合は次のとおりです。
+
+```bash
+bash bin/sync-app-env.sh --write
+bash bin/sync-app-env.sh --check
+```
+
+`--check` は差異があるときに終了コード 3 を返します。
+これは warning を表す終了コードであり、ビルドは失敗しません。
+
+### app を追加・削除したときにすること
+
+`.vscode` と CI を手で編集する必要はありません。
+`make sync-app-env` を実行し、生成された差分をコミットします。
+
+`.gitmodules` への submodule 登録と `README.md` のサブモジュール一覧は自動生成の対象外のため、従来どおり手で更新します。
+
+### 再チェック
+
+```bash
+make sync-app-env
+bash bin/sync-app-env.sh --check
+```
+
+## framework home 系の環境変数を変更する場合
 
 `MAKEFW_HOME` / `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` のような framework home 系の環境変数を変更する場合は、PATH 系とは別に以下も確認します。
 
@@ -179,104 +204,27 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 | Jenkins 説明 | `.jenkins/README.md`, `docs/c-modernization-kit/skill-guide/07-ci-cd/jenkins.md` | Jenkins 上の既定値と上書き方法 |
 | CI 詳細説明 | `docs/c-modernization-kit/github-actions.md` | GitHub Actions 上の既定値と `publish-docs` での利用 |
 
-## 具体的な更新手順
+## 個別 README の実行例を更新する
 
-### 追加・削除・改名の対象を確認する
-
-まず、対象アプリに `app/<name>/prod/lib` と `app/<name>/prod/cbin` があるかを確認します。
-
-```bash
-find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/cbin' \) | sort
-```
-
-次に、そのアプリがどこから使われるかを確認します。
-
-- `makepart.mk` の `LIBS += ...`
-- `LIBSDIR += ...`
-- テスト コードや README の実行例
-- `.NET` 側の P/Invoke やネイティブ ライブラリ読み込み
-
-### VS Code の環境変数ファイルを更新する
-
-#### .vscode/.env.linux
-
-Linux 向けの `PATH` と `LD_LIBRARY_PATH` を更新します。
-
-- `app/<name>/prod/lib` が必要なら `LD_LIBRARY_PATH` に追加
-- `app/<name>/prod/cbin` が必要なら `PATH` に追加
-
-#### .vscode/.env.windows
-
-Windows 向けの `PATH` を更新します。
-
-- `app/<name>/prod/lib` / `app/<name>/prod/cbin` が必要なら `PATH` に追加
-
-#### .vscode/settings.json
-
-統合ターミナル用の環境変数は `envFile` をサポートしないため、別途更新が必要です。
-
-- Linux
-    - `app/<name>/prod/lib` が必要なら `LD_LIBRARY_PATH` に追加
-    - `app/<name>/prod/cbin` が必要なら `PATH` に追加
-- Windows
-    - `app/<name>/prod/lib` / `app/<name>/prod/cbin` が必要なら `PATH` に追加
-
-### GitHub Actions を更新する
-
-`ci.yml` の Linux / Windows で更新箇所が異なります。
-
-`MAKEFW_HOME` / `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` は Linux / Windows / ドキュメント生成ジョブで共通に使うため、workflow-wide `env` で設定します。  
-`MAKEFW_HOME` は `framework/makefw`、`DOCSFW_HOME` は `framework/docsfw`、`DOXYFW_HOME` は `framework/doxyfw`、`TESTFW_HOME` は `framework/testfw` を指します。
-
-#### Linux
-
-- `LD_LIBRARY_PATH` は `$GITHUB_ENV` に書く
-- `cbin` ディレクトリは `$GITHUB_PATH` に追加する
-
-#### Windows
-
-- `PATH` に追加するパス配列へ `lib` / `cbin` を入れる
-- `com_util` のように `lib` だけ必要なアプリは `lib` のみ追加する
-
-### Jenkins を更新する
-
-Jenkins を利用する場合は、GitHub Actions と同じ観点で以下を更新します。
-
-- `.jenkins/inner-build.sh`
-    - `MAKEFW_HOME` (未設定だと `make` が即時失敗)
-    - `DOCSFW_HOME`
-    - `DOXYFW_HOME`
-    - `TESTFW_HOME`
-    - Linux の `LD_LIBRARY_PATH`
-    - Linux の `PATH`
-    - `results` / `warn` の収集対象パス
-- `.jenkins/README.md`
-    - 実装に合わせた説明
-
-### 個別 README の実行例を更新する
-
-利用者向けの README に、古い `app/<name>/prod/...` パスや手動 `LD_LIBRARY_PATH` 設定例が残っていないかを確認します。  
-特に、アプリ固有 README のトラブルシュート節は見落としやすい箇所です。
+利用者向けの README に、古い `app/<name>/prod/...` パスや手動 `LD_LIBRARY_PATH` 設定例が残っていないかを確認します。
+これらは自動生成の対象外です。特に、アプリ固有 README のトラブルシュート節は見落としやすい箇所です。
 
 ## 再チェック用チェックリスト
 
-- `app/<name>/prod/lib` と `app/<name>/prod/cbin` の有無を確認した
-- 依存関係上、本当に環境変数へ入れる必要があるか判断した
-- `.vscode/.env.linux` を更新した
-- `.vscode/.env.windows` を更新した
-- `.vscode/settings.json` の `terminal.integrated.env.*` を更新した
-- `.github/workflows/ci.yml` の Linux / Windows を更新した
-- Jenkins を使う場合は `.jenkins/inner-build.sh` と `.jenkins/README.md` を更新した
+- `make sync-app-env` を実行し、生成された差分を確認した
+- 生成結果に想定外の app の増減がないことを確認した (増減がある場合は `makepart.mk` の `OUTPUT_DIR` を疑う)
+- `bash bin/sync-app-env.sh --check` が終了コード 0 で完了することを確認した
+- framework home 系の環境変数を変更した場合は、上表のファイルを手で更新した
 - 個別 README の実行例やトラブルシュートを更新した
 - 旧 `app/<name>/prod/...` 構成が残っていないことを確認した
 - 代表的なテストまたは実行例でライブラリ解決エラーが出ないことを確認した
 
 ## 確認コマンド例
 
-### 実在する lib / cbin の確認
+### 正本 (OUTPUT_DIR) の確認
 
 ```bash
-find app -maxdepth 3 \( -path '*/prod/lib' -o -path '*/prod/cbin' \) | sort
+rg -n 'OUTPUT_DIR' --glob 'app/**/makepart.mk'
 ```
 
 ### 設定箇所の確認
@@ -318,5 +266,5 @@ LD_LIBRARY_PATH=$PWD/app/calc/prod/lib:$PWD/app/calc.net/prod/lib:$PWD/app/overr
 - `.github/workflows/ci.yml`
 - `.jenkins/inner-build.sh`
 
-GitHub Actions は「現在の必要十分な実装例」として有用ですが、それだけを正本にしないことが重要です。  
-必ず `app` 配下の実在ディレクトリと依存関係に立ち戻って判断してください。
+これらはいずれも `bin/sync-app-env.sh` の生成物です。
+内容に疑問がある場合は、`app/<name>/**/makepart.mk` の `OUTPUT_DIR` に立ち戻って確認してください。

@@ -25,11 +25,14 @@ python3 /workspace/bin/check-nbsp.py --force
 # ビルドログを保存しながら make を実行
 make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 
+# bin/sync-app-env.sh が生成する区間。手で編集しないこと。
+# BEGIN app-env-sync
 # テスト実行時に必要な共有ライブラリ検索パスを設定 (.github/workflows/ci.yml に準拠)
-export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/com_util/prod/lib:${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
 
 # テスト実行時に必要なコマンド検索パスを設定 (.github/workflows/ci.yml に準拠)
-export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/com_util/prod/cbin:${PATH}"
+export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
+# END app-env-sync
 
 # テストログを保存しながら make test を実行
 make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"
@@ -61,6 +64,7 @@ rm -f "$build_logs_list"
 # ビルド・テスト警告 (.warn) のアーカイブ (.github/workflows/ci.yml に準拠)
 warn_list=$(mktemp)
 {
+    [ -f /workspace/app/app_env.warn ] && printf '%s\n' app/app_env.warn
     [ -f /workspace/app/c_cpp_properties.warn ] && printf '%s\n' app/c_cpp_properties.warn
     find /workspace/app -type f -name '*.warn' \( -path '*/prod/*' -o -path '*/test/*' \) 2>/dev/null | sed 's#^/workspace/##' | sort
 } > "$warn_list"

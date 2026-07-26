@@ -131,15 +131,14 @@ make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 
 `.github/workflows/ci.yml` の `Set PATH and library path for tests` ステップに準拠しています。
 
+<!-- bin/sync-app-env.sh が生成する区間。手で編集しないこと。 -->
+<!-- BEGIN app-env-sync -->
 ```bash
-export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:\
-/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/com_util/prod/lib:\
-${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
 
-export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:\
-/workspace/app/cjson/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:\
-/workspace/app/porter/prod/cbin:/workspace/app/com_util/prod/cbin:${PATH}"
+export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
 ```
+<!-- END app-env-sync -->
 
 #### テスト実行
 
@@ -155,13 +154,13 @@ make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"
 |---|---|---|
 | `linux-${OS_NAME}-test-results.zip` | `app/**/results/` 以下のテスト結果 + `logs/linux-${OS_NAME}-test.log` | テスト結果またはテスト ログが存在する場合 |
 | `linux-${OS_NAME}-logs.zip` | `logs/` 以下のビルド ログ (`*-test.log` を除く) | ビルド ログまたは docs ログが存在する場合 |
-| `linux-${OS_NAME}-warns.zip` | `app/c_cpp_properties.warn`, `app/**/prod/**/*.warn`, `app/**/test/**/*.warn` | ビルド・テスト警告が存在する場合 |
+| `linux-${OS_NAME}-warns.zip` | `app/app_env.warn`, `app/c_cpp_properties.warn`, `app/**/prod/**/*.warn`, `app/**/test/**/*.warn` | ビルド・テスト警告が存在する場合 |
 | `docs-warns.zip` | `docs.warn`, `app/**/doxy*.warn` | `BUILD_DOCS=1` かつドキュメント警告ファイルが存在する場合 |
 | `docs-html-doxygen.zip` | `pages/doxygen/` 以下の Doxygen HTML | `BUILD_DOCS=1` かつ生成済みの場合 |
 | `docs-html-{lang}.zip` | `pages/{lang}/html/` 以下の Markdown HTML | `BUILD_DOCS=1` かつ生成済みの場合 |
 | `docs-docx-{lang}.zip` | `pages/{lang}/docx/` 以下の DOCX | `BUILD_DOCS=1` かつ生成済みの場合 |
 
-`.warn` ファイルはコンパイル・リンク時に生成されるビルド警告ファイルです。`makefw` が各ターゲットの `lib/` または `bin/` に `${TARGET}.warn` として出力します。`app/c_cpp_properties.warn` は、`INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。  
+`.warn` ファイルはコンパイル・リンク時に生成されるビルド警告ファイルです。`makefw` が各ターゲットの `lib/` または `bin/` に `${TARGET}.warn` として出力します。`app/c_cpp_properties.warn` は、`INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。`app/app_env.warn` は、`app/*/**/makepart.mk` の `OUTPUT_DIR` から導出した実行時パスと `.vscode`、`.github/workflows/ci.yml`、`.jenkins` の記載との不一致を知らせる dry-run 警告です。  
 `doxy*.warn` は Doxygen 実行時の警告ファイルで、各アプリ配下に出力されます。`docs.warn` は `make docs` 実行時の警告ファイルで、ワークスペース直下に出力されます。  
 ビルド・テスト警告が無い場合は `linux-${OS_NAME}-warns.zip` は生成されません。ドキュメント警告が無い場合は `docs-warns.zip` も生成されません。
 
@@ -273,6 +272,7 @@ raw の warning file も Jenkins のビルド成果物として残したい場�
 source/pages/artifacts/*.zip,
 source/docs.warn,
 source/app/**/doxy*.warn,
+source/app/app_env.warn,
 source/app/c_cpp_properties.warn,
 source/app/**/prod/**/*.warn,
 source/app/**/test/**/*.warn

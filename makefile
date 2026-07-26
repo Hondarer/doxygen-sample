@@ -11,6 +11,8 @@ DOCS_WARN_FILE := $(CURDIR)/docs.warn
 EXTRACT_DOCS_WARNINGS := $(CURDIR)/framework/docsfw/bin/extract_docs_warnings.sh
 TESTFW_BANNER = $(TESTFW_HOME)/bin/banner.sh
 ROOT_RUNNER = $(MAKEFW_HOME)/bin/run_ordered_subdir_target.sh
+APP_ENV_SYNC = $(CURDIR)/bin/sync-app-env.sh
+APP_ENV_WARN_FILE := $(CURDIR)/app/app_env.warn
 FRAMEWORK_MAKE_DIRS = $(TESTFW_HOME)
 
 include $(MAKEFW_HOME)/makefiles/_parallel.mk
@@ -33,6 +35,17 @@ ifeq ($(OS),Windows_NT)
     endif
 endif
 
+# app 依存パス設定 (.vscode, .github, .jenkins) の同期チェック。
+# 差分は warning 扱いとするため、sync-app-env.sh の終了コード 3 は致命扱いしない。
+define APP_ENV_SYNC_CHECK
+	app_env_sync_status=0; \
+	printf 'INFO: Checking app env sync...\n'; \
+	"$(BASH)" "$(APP_ENV_SYNC)" --check || app_env_sync_status=$$?; \
+	if [ $$app_env_sync_status -ne 0 ] && [ $$app_env_sync_status -ne 3 ]; then \
+		exit $$app_env_sync_status; \
+	fi
+endef
+
 .DEFAULT_GOAL := default
 
 .PHONY: default
@@ -46,6 +59,7 @@ default :
 		--app-deps --silent-missing --echo-command --progress \
 		"$$framework_jobs" default "$(FRAMEWORK_MAKE_DIRS)"
 	$(MAKE) -C app
+	@$(APP_ENV_SYNC_CHECK)
 
 .PHONY: with-cov
 with-cov :
@@ -58,6 +72,7 @@ with-cov :
 		--app-deps --silent-missing --echo-command --progress \
 		"$$framework_jobs" default "$(FRAMEWORK_MAKE_DIRS)"
 	$(MAKE) -C app with-cov
+	@$(APP_ENV_SYNC_CHECK)
 
 .PHONY: test
 test :
@@ -80,6 +95,12 @@ skills :
 	@"$(BASH)" "$(CURDIR)/bin/sync-skills.sh"
 	@printf 'INFO: skills sync completed.\n'
 
+.PHONY: sync-app-env
+sync-app-env :
+	@printf 'INFO: Syncing app env settings...\n'
+	@"$(BASH)" "$(APP_ENV_SYNC)" --write
+	@printf 'INFO: app env sync completed.\n'
+
 .PHONY: check-nbsp
 check-nbsp :
 	python3 "$(CURDIR)/bin/check-nbsp.py"
@@ -94,6 +115,7 @@ clean :
 		--app-deps --silent-missing --echo-command --progress \
 		"$$framework_jobs" clean "$(FRAMEWORK_MAKE_DIRS)"
 	$(MAKE) -C app clean
+	rm -f "$(APP_ENV_WARN_FILE)"
 	$(MAKE) cleandocs
 
 .PHONY: cleandocs
