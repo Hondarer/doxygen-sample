@@ -177,6 +177,7 @@ fi
 
 # .vscode/mcp.json (VS Code 形式) を .github/mcp.json (Copilot CLI 形式) へ変換してコピーする。
 # VS Code 形式のトップレベルキー "servers" を "mcpServers" へ読み替え、
+# 環境変数参照 "${env:NAME}" を "${NAME}" へ変換し、
 # type 未指定のエントリには "type": "local" を付与する。
 # see: https://techcommunity.microsoft.com/blog/educatordeveloperblog/action-required-migrate-your-copilot-cli-mcp-config-away-from-vscodemcp-json/4531562
 sync_mcp_json() {
@@ -190,9 +191,21 @@ sync_mcp_json() {
 
     python3 - "$src" "$dst" <<'PYEOF'
 import json
+import re
 import sys
 
 src_path, dst_path = sys.argv[1], sys.argv[2]
+env_reference = re.compile(r"\$\{env:([^}]+)\}")
+
+
+def convert_env_references(value):
+    if isinstance(value, str):
+        return env_reference.sub(lambda match: "${" + match.group(1) + "}", value)
+    if isinstance(value, list):
+        return [convert_env_references(item) for item in value]
+    if isinstance(value, dict):
+        return {key: convert_env_references(item) for key, item in value.items()}
+    return value
 
 with open(src_path, encoding="utf-8") as f:
     vscode = json.load(f)
@@ -200,7 +213,7 @@ with open(src_path, encoding="utf-8") as f:
 servers = vscode.get("servers", {})
 mcp_servers = {}
 for name, entry in servers.items():
-    converted = dict(entry)
+    converted = convert_env_references(dict(entry))
     if converted.get("type") == "http":
         url = converted.get("url")
         if isinstance(url, str) and url.rstrip("/").endswith("sse"):
