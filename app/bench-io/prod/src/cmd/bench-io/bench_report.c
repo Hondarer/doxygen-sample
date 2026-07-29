@@ -17,13 +17,13 @@
 #include <string.h>
 
 #include <com_util/base/platform.h>
+#include <com_util/crt/stdlib.h>
 #include <com_util/crt/stdio.h>
 
 #if defined(PLATFORM_LINUX)
     #include <sys/vfs.h>
 #elif defined(PLATFORM_WINDOWS)
     #include <com_util/base/windows_sdk.h>
-    #include <stdlib.h>
 #endif /* PLATFORM_ */
 
 #include "bench_case.h"
@@ -117,7 +117,10 @@ static void collect_cpu_model(bench_environment *env)
     }
     (void)com_util_fclose(stream);
 #elif defined(PLATFORM_WINDOWS)
-    copy_text(env->cpu_model, sizeof(env->cpu_model), getenv("PROCESSOR_IDENTIFIER"));
+    if (com_util_getenv("PROCESSOR_IDENTIFIER", env->cpu_model, sizeof(env->cpu_model)) != 0)
+    {
+        copy_text(env->cpu_model, sizeof(env->cpu_model), NULL);
+    }
 #else
     copy_text(env->cpu_model, sizeof(env->cpu_model), NULL);
 #endif /* PLATFORM_ */
