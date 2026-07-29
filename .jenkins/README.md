@@ -136,7 +136,7 @@ make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 ```bash
 export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
 
-export PATH="/workspace/app/bench-io/prod/cbin:/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
+export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
 ```
 <!-- END app-env-sync -->
 
