@@ -33,11 +33,16 @@
  *  @param[out]     dest  格納先。NULL を渡してはなりません。
  *  @param[in]      size  @p dest のサイズ (バイト)。1 以上を指定します。
  *  @param[in]      text  複製する文字列。NULL の場合は "unknown" を格納します。
+ *
+ *  格納する文字列に含まれるカンマは空白へ置き換えます。\n
+ *  Windows の `PROCESSOR_IDENTIFIER` は "Intel64 Family 6 Model 85 Stepping 7, GenuineIntel" のように
+ *  カンマを含み、CSV では引用符で囲んでいても awk などの単純な分割で列がずれるためです。
  */
 static void copy_text(char *dest, size_t size, const char *text)
 {
     const char *source = text;
     size_t length;
+    size_t index;
 
     if (source == NULL)
     {
@@ -50,6 +55,14 @@ static void copy_text(char *dest, size_t size, const char *text)
     }
     memcpy(dest, source, length);
     dest[length] = '\0';
+
+    for (index = 0U; index < length; index++)
+    {
+        if (dest[index] == ',')
+        {
+            dest[index] = ' ';
+        }
+    }
 }
 
 /**
