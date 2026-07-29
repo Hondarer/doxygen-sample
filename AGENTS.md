@@ -30,8 +30,7 @@
 ## 作業時の入口
 
 - `makefile` - ルートの入口。`make`、`make test`、`make doxy`、`make docs`、`make clean` を提供する
-- `app/calc/` - C のサンプル アプリ、ライブラリ、テスト、Doxygen 設定
-- `app/calc.net/` - .NET ラッパー、アプリ、テスト、ソリューション
+- `app/<name>/` - 個別アプリケーション。詳細は各 app 配下の `README.md`、`AGENTS.md` を参照する
 - `Directory.Build.props` - .NET 共通設定
 - `framework/*` - 各フレームワークの独立した git ルート。変更前に各ルートの `AGENTS.md` と `README.md` を確認する
 - `Start-VSCode-With-Env.cmd` - Windows で GNU Make と MSVC の環境を整えて VS Code を起動する
@@ -85,7 +84,7 @@ see: `app/c-modernization-kit/docs/vscode-variables.md`
 - Assert 後にリソースの解放、ファイルの削除、ハンドルの終了、グローバル状態の復元などの明示的な後処理がある場合は、その直前に `// Cleanup` を記載すること。
 - 明示的な後処理がない場合は、空の `// Cleanup` を記載しないこと。
 - 終了系 API 自体の挙動を試験する呼び出しや、結果を確定するために必要な終了操作は Act とし、fixture の `TearDown`、ヘルパー内の後処理、RAII による自動解放にはテスト本体の `// Cleanup` を要求しない。
-- 関数の戻り値を確認する場合は、「戻り値が 0 であること。」のように主語を省略せず、「packet_parse の戻り値が POTR_SUCCESS であること。」のように対象の関数名を記載すること。
+- 関数の戻り値を確認する場合は、「戻り値が 0 であること。」のように主語を省略せず、「packet_parse の戻り値が POTR_OK であること。」のように対象の関数名を記載すること。
 - 同じ関数を複数回呼び出す場合は、引数、条件、呼び出し順のいずれかも記載し、どの呼び出しの戻り値を確認しているかを区別すること。
 - マルチ フェーズ テスト (1 つのテスト関数内で Arrange/Pre-Assert/Act/Assert のサイクルを複数回含むテスト。部分反復を含む) は、`framework/testfw/docs/about-test-phase.md` の「シングル フェーズ テストとマルチ フェーズ テスト」に従い、実際に繰り返す構造コメントにだけ `_N` を付与すること。1 回目のサイクルには番号を付けず、`// Cleanup` にも番号を付けないこと。
 
