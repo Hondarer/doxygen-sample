@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
 {
     /* 昇格起動された場合、親コンソールへ再接続して出力を元のコンソールへ戻す。
        引き継ぎフラグを argv から取り除く必要があるため、引数解析より前に呼び出す。 */
-    com_util_console_attach_parent(&argc, argv);
+    com_util_console_attach_parent(&argc, argv, NULL);
 
     com_util_console_init();
 
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 
-    if (parse_result != COM_UTIL_ARGPARSER_OK)
+    if (parse_result != COM_UTIL_OK)
     {
         com_util_argparser_print_error_messages(stderr);
         com_util_argparser_print_usage(stderr);
@@ -352,14 +352,14 @@ int main(int argc, char *argv[])
     svc_tracer_open(&g_service_def, !is_service_mode); /* 失敗しても g_tracer=NULL で継続 */
 
     /* 停止イベント抽象の初期化 */
-    if (com_util_local_lock_create(&g_stop_lock) != COM_UTIL_SYNC_OK)
+    if (com_util_local_lock_create(&g_stop_lock) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "ミューテックスの生成に失敗しました。");
         svc_tracer_close();
         return EXIT_FAILURE;
     }
-    if (com_util_condvar_create(&g_stop_cv) != COM_UTIL_SYNC_OK)
+    if (com_util_condvar_create(&g_stop_cv) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "条件変数の生成に失敗しました。");
         com_util_local_lock_destroy(g_stop_lock);

@@ -69,13 +69,13 @@ static int run_command(char *const argv[])
 {
     int exit_code;
     com_util_process_options_t options;
-    com_util_process_result_t result;
+    int result;
 
     memset(&options, 0, sizeof(options));
     options.argv = argv;
 
     result = com_util_process_run_sync(&options, COM_UTIL_PROCESS_WAIT_FOREVER, &exit_code);
-    if (result != COM_UTIL_PROCESS_OK)
+    if (result != COM_UTIL_OK)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                                "外部コマンドの実行に失敗しました: %s", argv[0]);
@@ -299,7 +299,7 @@ int svc_os_install(const svc_definition *def)
         return rc;
     }
 
-    if (com_util_process_get_executable_path(exec_path, sizeof(exec_path)) != 0)
+    if (com_util_process_get_executable_path(exec_path, sizeof(exec_path)) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "実行ファイルのパスを取得できませんでした。");

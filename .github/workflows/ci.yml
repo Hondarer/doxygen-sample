@@ -69,6 +69,7 @@ jobs:
           # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
           # BEGIN app-env-sync (linux)
           echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/cjson/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$GITHUB_WORKSPACE/app/empty-lib/prod/lib:$GITHUB_WORKSPACE/app/lua/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/sqlite/prod/lib:$GITHUB_WORKSPACE/app/subfolder-sample/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/app/bench-io/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
           echo "$GITHUB_WORKSPACE/app/cjson/prod/cbin" >> $GITHUB_PATH
@@ -246,6 +247,7 @@ jobs:
           # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
           # BEGIN app-env-sync (windows)
           $paths = @(
+            "${{ github.workspace }}\app\bench-io\prod\cbin",
             "${{ github.workspace }}\app\calc\prod\lib",
             "${{ github.workspace }}\app\calc\prod\cbin",
             "${{ github.workspace }}\app\calc.net\prod\lib",

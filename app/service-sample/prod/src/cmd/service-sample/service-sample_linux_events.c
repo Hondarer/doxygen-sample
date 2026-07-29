@@ -555,7 +555,7 @@ static void release_local_resources(void)
 
 int svc_linux_events_start(const svc_definition *def)
 {
-    com_util_sync_result_t result;
+    int result;
     struct sigaction action;
 
     if (def == NULL)
@@ -608,7 +608,7 @@ int svc_linux_events_start(const svc_definition *def)
     }
 
     result = com_util_thread_create(&g_ctx.thread, events_thread_func, NULL);
-    if (result != COM_UTIL_SYNC_OK)
+    if (result != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                               "イベント監視スレッドの起動に失敗したため OS イベント監視は無効です。");
@@ -622,7 +622,7 @@ int svc_linux_events_start(const svc_definition *def)
 
 void svc_linux_events_stop(void)
 {
-    com_util_sync_result_t result;
+    int result;
     uint64_t value;
     ssize_t written;
 
@@ -633,7 +633,7 @@ void svc_linux_events_stop(void)
         (void)written;
 
         result = com_util_thread_join(g_ctx.thread, SVC_EVENTS_JOIN_TIMEOUT_MS);
-        if (result != COM_UTIL_SYNC_OK)
+        if (result != COM_UTIL_OK)
         {
             com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                   "イベント監視スレッドが時間内に終了しないため切り離します。");

@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 
-    if (parse_result != COM_UTIL_ARGPARSER_OK)
+    if (parse_result != COM_UTIL_OK)
     {
         com_util_argparser_print_error_messages(stderr);
         com_util_argparser_print_usage(stderr);
@@ -64,10 +64,10 @@ int main(int argc, char *argv[])
 
     {
         char tmpdir[PLATFORM_PATH_MAX];
-        if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == 0)
+        if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == COM_UTIL_OK)
         {
-            if (com_util_path_concat(configpath, sizeof(configpath), &err,
-                                     tmpdir, PLATFORM_PATH_SEP, "libbase_extdef.txt") != 0)
+            if (com_util_path_concat(configpath, sizeof(configpath), &err, tmpdir, PLATFORM_PATH_SEP,
+                                     "libbase_extdef.txt") != 0)
             {
                 fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
                 return EXIT_FAILURE;

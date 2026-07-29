@@ -34,9 +34,9 @@ void onLoad(void)
 
     DLLMAIN_COM_UTIL_INFO_MSG("base: onLoad called");
 
-    if (com_util_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == 0)
+    if (com_util_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == COM_UTIL_OK)
     {
-        if (com_util_path_concat(leafname, sizeof(leafname), &err, basename, "_extdef.txt") != 0)
+        if (com_util_path_concat(leafname, sizeof(leafname), &err, basename, "_extdef.txt") != COM_UTIL_OK)
         {
             sym_loader_configpath[0] = '\0';
             DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
@@ -44,10 +44,10 @@ void onLoad(void)
         else
         {
             char tmpdir[PLATFORM_PATH_MAX];
-            if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == 0)
+            if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == COM_UTIL_OK)
             {
-                if (com_util_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &err,
-                                         tmpdir, PLATFORM_PATH_SEP, leafname) != 0)
+                if (com_util_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &err, tmpdir,
+                                         PLATFORM_PATH_SEP, leafname) != 0)
                 {
                     sym_loader_configpath[0] = '\0';
                     DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");

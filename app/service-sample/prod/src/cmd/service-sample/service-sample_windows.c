@@ -487,7 +487,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* 実行ファイルの絶対パスを取得する */
-    if (com_util_process_get_executable_path(exe_path, sizeof(exe_path)) != 0)
+    if (com_util_process_get_executable_path(exe_path, sizeof(exe_path)) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "実行ファイルのパスを取得できませんでした。");
