@@ -35,6 +35,7 @@
 
     #include <systemd/sd-daemon.h>
 
+    #include <com_util/crt/stdio.h>
     #include <com_util/runtime/elevated_process.h>
     #include <com_util/runtime/process.h>
 
@@ -246,7 +247,7 @@ void svc_os_notify_status(const char *text)
         return;
     }
     /* 長すぎる場合は切り詰めを許容する */
-    snprintf(message, sizeof(message), "STATUS=%s", text);
+    com_util_snprintf(message, sizeof(message), "STATUS=%s", text);
     sd_notify_send(message);
 }
 
@@ -287,7 +288,7 @@ int svc_os_install(const svc_definition *def)
     int handled;
     int systemd_major_version;
 
-    snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
+    com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
     argv_enable[0] = "systemctl";
     argv_enable[1] = "enable";
     argv_enable[2] = svc_name_buf;
@@ -326,7 +327,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* ユニット ファイルのパスを生成する */
-    written = snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
+    written = com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
     if (written < 0 || (size_t)written >= sizeof(unit_path))
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
@@ -335,24 +336,24 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* ユニット ファイルの内容を生成する */
-    written = snprintf(unit_content, sizeof(unit_content),
-                       "[Unit]\n"
-                       "Description=%s\n"
-                       "After=network.target\n"
-                       "\n"
-                       "[Service]\n"
-                       "Type=notify\n"
-                       "ExecStart=%s run\n"
-                       "ExecReload=/bin/kill -HUP $MAINPID\n"
-                       "Restart=on-failure\n"
-                       "RestartSec=5\n"
-                       "WatchdogSec=30\n"
-                       "OOMScoreAdjust=-1000\n"
-                       "%s"
-                       "\n"
-                       "[Install]\n"
-                       "WantedBy=multi-user.target\n",
-                       def->description, exec_path, managed_oom_preference_line);
+    written = com_util_snprintf(unit_content, sizeof(unit_content),
+                                "[Unit]\n"
+                                "Description=%s\n"
+                                "After=network.target\n"
+                                "\n"
+                                "[Service]\n"
+                                "Type=notify\n"
+                                "ExecStart=%s run\n"
+                                "ExecReload=/bin/kill -HUP $MAINPID\n"
+                                "Restart=on-failure\n"
+                                "RestartSec=5\n"
+                                "WatchdogSec=30\n"
+                                "OOMScoreAdjust=-1000\n"
+                                "%s"
+                                "\n"
+                                "[Install]\n"
+                                "WantedBy=multi-user.target\n",
+                                def->description, exec_path, managed_oom_preference_line);
     if (written < 0 || (size_t)written >= sizeof(unit_content))
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
@@ -417,7 +418,7 @@ int svc_os_uninstall(const svc_definition *def)
     int rc;
     int handled;
 
-    snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
+    com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
     argv_stop[0] = "systemctl";
     argv_stop[1] = "stop";
     argv_stop[2] = svc_name_buf;
@@ -433,7 +434,7 @@ int svc_os_uninstall(const svc_definition *def)
         return rc;
     }
 
-    written = snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
+    written = com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
     if (written < 0 || (size_t)written >= sizeof(unit_path))
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,

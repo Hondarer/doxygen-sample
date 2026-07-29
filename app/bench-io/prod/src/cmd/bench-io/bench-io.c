@@ -536,7 +536,7 @@ static int run_size(const char *dir, size_t size, const char *api_list, const ch
     int api_index;
     int failures = 0;
 
-    snprintf(path, sizeof(path), "%s/bench_%llu.bin", dir, (unsigned long long)size);
+    com_util_snprintf(path, sizeof(path), "%s/bench_%llu.bin", dir, (unsigned long long)size);
 
     if (create_data_file(path, size) != 0)
     {
