@@ -68,7 +68,7 @@
 static int run_command(char *const argv[])
 {
     int exit_code;
-    com_util_process_options_t options;
+    com_util_process_options options;
     int result;
 
     memset(&options, 0, sizeof(options));

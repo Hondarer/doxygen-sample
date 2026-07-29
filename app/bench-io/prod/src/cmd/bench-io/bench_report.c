@@ -130,7 +130,9 @@ static void collect_cpu_model(bench_environment *env)
     }
     (void)com_util_fclose(stream);
 #elif defined(PLATFORM_WINDOWS)
-    if (com_util_getenv("PROCESSOR_IDENTIFIER", env->cpu_model, sizeof(env->cpu_model)) != 0)
+    int exists = 0;
+
+    if (com_util_getenv("PROCESSOR_IDENTIFIER", env->cpu_model, sizeof(env->cpu_model), &exists) != 0 || exists == 0)
     {
         copy_text(env->cpu_model, sizeof(env->cpu_model), NULL);
     }
