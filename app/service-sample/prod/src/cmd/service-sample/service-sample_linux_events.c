@@ -647,4 +647,4 @@ void svc_linux_events_stop(void)
 
 #elif defined(PLATFORM_WINDOWS) && defined(COMPILER_MSVC)
     #pragma warning(disable : 4206)
-#endif /* PLATFORM_LINUX */
+#endif

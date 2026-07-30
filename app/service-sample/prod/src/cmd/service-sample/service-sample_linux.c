@@ -479,4 +479,4 @@ int svc_os_uninstall(const svc_definition *def)
 
 #elif defined(PLATFORM_WINDOWS) && defined(COMPILER_MSVC)
     #pragma warning(disable : 4206)
-#endif /* PLATFORM_LINUX */
+#endif
