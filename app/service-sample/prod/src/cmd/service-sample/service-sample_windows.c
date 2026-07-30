@@ -300,7 +300,7 @@ static void handle_session_change(const DWORD ev_type, const LPVOID ev_data)
     }
 
     notification = (const WTSSESSION_NOTIFICATION *)ev_data;
-    com_util_snprintf(session_id_buf, sizeof(session_id_buf), "%lu", (unsigned long)notification->dwSessionId);
+    snprintf(session_id_buf, sizeof(session_id_buf), "%lu", (unsigned long)notification->dwSessionId);
 
     if (ev_type == WTS_SESSION_LOGON)
     {
@@ -496,7 +496,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* binPath は "\"<パス>\" run" 形式にする (パスにスペースが含まれる場合の対策) */
-    if (com_util_snprintf(bin_path, sizeof(bin_path), "\"%s\" run", exe_path) < 0)
+    if (snprintf(bin_path, sizeof(bin_path), "\"%s\" run", exe_path) < 0)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "パスの生成に失敗しました。");
         return EXIT_FAILURE;

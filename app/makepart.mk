@@ -29,11 +29,10 @@ endif
 # UTF-8 にする (Windows 10 1903 以降)。
 WIN32_MANIFEST = utf8
 
-# あわせて、接続先コンソールの入出力コード ページと VT 処理を設定するために、
-# #include <com_util/console/console.h> (LIBSDIR += $(WORKSPACE_DIR)/app/com_util/prod/lib) のうえで
-# com_util_console_init() を組み込む必要がある。
+# あわせて、接続先コンソールの入出力コード ページと VT 処理を設定する app は、
+# appdeps.mk の APP_DEPS に com_util を指定し、
+# #include <com_util/console/console.h> のうえで com_util_console_init() を組み込む必要がある。
 # com_util_console_dispose() はライブラリ アンロード時に自動的に呼ばれるため不要。
-LIBSDIR += $(WORKSPACE_DIR)/app/com_util/prod/lib
 
 # マルチスレッドを利用するため、リポジトリ全体に pthread を指定しておく
 ifdef PLATFORM_LINUX
