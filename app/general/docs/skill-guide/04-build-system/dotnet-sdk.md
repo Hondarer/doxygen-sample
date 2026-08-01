@@ -1,0 +1,78 @@
+# .NET SDK
+
+## 概要
+
+.NET SDK は、C# などの言語でアプリケーションやライブラリを開発するためのツールセットです。`dotnet` コマンドによりビルド・テスト・公開などの操作を行います。Visual Studio がなくてもコマンド ラインを用いて開発できます。
+
+現代の .NET (Windows 専用であった .NET Framework とは異なる統合プラットフォーム) は、クロスプラットフォームを前提として設計されています。同一のソース コードから、Linux / Windows / macOS 向けに同等の機能を持つ実行体を生成できる点が大きな特徴です。これにより、OS ごとの差異を最小限に抑えた開発・ビルド・テストが可能になります。
+
+対象ワークスペースの `app/example.net/prod/` は C ライブラリ (`libexample`) を .NET から利用するためのラッパーライブラリとサンプル アプリケーションです。`ExampleLib` が C ライブラリへの .NET インターフェースを提供し、`ExampleApp` がそれを利用するサンプル アプリです。ビルドは `framework/makefw/` が提供する makefile テンプレートで `dotnet build` コマンドとして実行され、Linux と Windows で同一機能を提供します。
+
+`Directory.Build.props` (リポジトリ ルートに配置) により、複数の .NET プロジェクトに共通のビルド設定を適用しています。また、`RelWithDebInfo` (Release with Debug Information) ビルド設定を使用した最適化とデバッグ情報の共存についても理解が必要です。
+
+なお、.NET に関する内容は、対象ワークスペースにおいて C と .NET の相互運用 (interop) を理解するための学習資料として位置付けています。C のみを用いた開発を対象とする場合、これらの章は参考情報として扱って問題ありません。
+
+## 習得目標
+
+- [ ] `dotnet build`・`dotnet run`・`dotnet test` などの基本コマンドを実行できる
+- [ ] `.csproj` ファイルの基本構造 (`<Project>`・`<PropertyGroup>`・`<ItemGroup>`) を読み取れる
+- [ ] `Directory.Build.props` による共通設定の仕組みを理解できる
+- [ ] `dotnet publish` で実行可能な成果物を生成できる
+- [ ] `<ProjectReference>` によるプロジェクト参照を理解できる
+- [ ] `TargetFramework` (`net8.0` など) の意味を理解できる
+
+## 学習マテリアル
+
+### 公式ドキュメント
+
+- [dotnet コマンド リファレンス](https://learn.microsoft.com/ja-jp/dotnet/core/tools/) - `dotnet build`・`dotnet run`・`dotnet test` などのリファレンス (日本語)
+- [Directory.Build.props の使用](https://learn.microsoft.com/ja-jp/visualstudio/msbuild/customize-by-directory) - 共通ビルド プロパティのカスタマイズ (日本語)
+- [.NET Standard の概要](https://learn.microsoft.com/ja-jp/dotnet/standard/net-standard) - .NET バージョンと互換性 (日本語)
+
+### チュートリアル・入門
+
+- [.NET チュートリアル - Hello World](https://learn.microsoft.com/ja-jp/dotnet/core/tutorials/with-visual-studio-code) - VS Code で .NET アプリを作成 (日本語)
+- [xUnit による単体テスト](https://learn.microsoft.com/ja-jp/dotnet/core/testing/unit-testing-with-dotnet-test) - .NET テストの入門 (日本語)
+
+## 対象ワークスペースとの関連
+
+### 使用箇所 (具体的なファイル・コマンド)
+
+プロジェクト構成:
+
+```text
+app/example.net/prod/
++-- libsrc/ExampleLib/ExampleLib.csproj      # C ライブラリの .NET ラッパー
++-- src/ExampleApp/ExampleApp.csproj         # サンプルアプリケーション
+```
+
+`Directory.Build.props` (ルートの共通設定):
+
+```xml
+<Project>
+  <PropertyGroup>
+    <!-- すべての .NET プロジェクトに適用される共通設定 -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>
+```
+
+基本的なビルド コマンド:
+
+```bash
+# ExampleLib をビルド
+dotnet build app/example.net/prod/libsrc/ExampleLib/ExampleLib.csproj
+
+# ExampleApp をビルド
+dotnet build app/example.net/prod/src/ExampleApp/ExampleApp.csproj
+
+# ExampleApp を実行
+dotnet run --project app/example.net/prod/src/ExampleApp/ExampleApp.csproj
+```
+
+### 関連ドキュメント
+
+- [.NET RelWithDebInfo ビルド](../../dotnet-relwithdebinfo.md) - RelWithDebInfo 設定の詳細
+- [C# / P/Invoke (スキル ガイド)](../08-dev-environment/dotnet-csharp.md) - .NET から C ライブラリを呼び出す実装
+- [.NET テスト (スキル ガイド)](../05-testing/dotnet-testing.md) - xUnit による .NET テスト

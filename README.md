@@ -1,29 +1,24 @@
-# c-modernization-kit
+# C モダナイゼーション フレームワーク
 
-レガシ C コードのモダナイゼーションのための統合フレームワーク
+既存の C コードを継続的に改善するための統合ワークスペースです。
 
 ## 概要
 
-C 言語のソース コードを対象として Linux/Windows 両対応のコーディング、テスト、ドキュメント生成までのすべての作業を一気通貫で実施できる仕組みの例をデモンストレーションするリポジトリです。
+C および C++ の開発、ビルド、自動テスト、ドキュメント生成を Linux と Windows で共通化します。
+各機能は `framework/` 配下のフレームワークとして分離し、利用する app はワークスペースごとに選択できます。
 
 ## 特徴
 
-- Linux/Windows クロスプラットフォーム対応: Linux は GCC、Windows は MSVC を使用したコーディング、ビルド、デバッグ環境
-- .NET サポート: C ライブラリを .NET から利用するためのラッパー実装例とサンプル アプリケーション
-- 自動テスト: Google Test を利用した自動テスト、テスト コードはプロダクション コードと分離して管理、整理されたエビデンスの生成
-- Docs as Code: Doxygen と Doxybook2 を利用した包括的なドキュメント生成
-- ドキュメント発行: Pandoc を利用した html と docx 形式の出力
-- サンプル コード: 実際のプロジェクトでの使用例を想定したサンプル コード
-
-### 公開される成果物
-
-注: Markdown 側で多言語対応を行っていないので、現段階で以下の言語別ページは目立った作用を発揮していません。また、Doxygen の出力は単一言語で Japanese-en 固定です。
-
-- [GitHub Pages](https://hondarer.github.io/c-modernization-kit/)
+- Linux では GCC、Windows では MSVC を使用し、共通の Make インターフェースからビルドします。
+- Google Test を利用し、プロダクション コードから分離したテストとエビデンスを生成します。
+- Doxygen と Doxybook2 を利用して、C および C++ の API 資料を生成します。
+- Pandoc を利用して、Markdown から HTML と DOCX を生成します。
+- C ライブラリと連携する .NET プロジェクトを、C および C++ と同じワークスペースで管理できます。
 
 ## Windows 環境における注意事項
 
-Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動してください。MinGW PATH と VSBT 環境変数を自動設定し、VS Code を起動します。
+Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動してください。
+このスクリプトは MinGW の PATH と Visual Studio Build Tools の環境変数を設定します。
 
 ```powershell
 .\Start-VSCode-With-Env.cmd
@@ -31,8 +26,8 @@ Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動�
 
 ## サブモジュール
 
-このプロジェクトは以下のサブモジュールを使用しています。  
-Clone 後、サブモジュールの初期化を行ってください。
+このフレームワークは、ビルド、テスト、API ドキュメント生成、Markdown 発行を独立したサブモジュールとして管理します。
+Clone 後にサブモジュールを初期化してください。
 
 ```bash
 git submodule update --init --recursive
@@ -45,6 +40,14 @@ git submodule update --init --recursive
 
 サブモジュールの実配置は `.gitmodules` に定義しています。
 
+## app の構成
+
+`app/general` には、本フレームワークを利用するワークスペースに共通する規範、設計、運用手順を配置しています。
+フレームワークを別のワークスペースへ展開するときも、`app/general` は標準配布に含めます。
+
+それ以外の各 app は、必要な機能とサンプルに応じて選択できます。
+各 app の依存関係は `appdeps.mk`、ビルド対象と成果物は `makepart.mk` を正本とします。
+
 ### framework の依存関係
 
 ```plantuml
@@ -55,7 +58,7 @@ git submodule update --init --recursive
     component "framework/makefw\nmake-framework" as makefw
     component "framework/doxyfw\ndoxygen-framework" as doxyfw
     component "framework/docsfw\npub_markdown" as docsfw
-    component "親レポジトリ" as this
+    component "利用側ワークスペース" as this
 
     testfw --> gtest
     testfw ..> makefw : (CI 時に参照)

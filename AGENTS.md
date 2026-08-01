@@ -72,7 +72,7 @@ make sync-app-env
 ```
 
 `make sync-app-env` は、`app/<name>/**/makepart.mk` の `OUTPUT_DIR` を正本として、実行時のコマンド探索パスとライブラリ探索パスを `.vscode`、`.github/workflows/ci.yml`、`.jenkins` へ生成する。app の追加・削除の際にこれらを手で編集せず、本コマンドを実行すること。  
-see: `app/c-modernization-kit/docs/vscode-variables.md`
+see: `app/general/docs/vscode-variables.md`
 
 ## テスト コメントの注意点
 
@@ -113,7 +113,7 @@ python framework/docsfw/bin/text_style_jp.py <対象ファイル> --in-place
 新規ファイル作成時は `clang-format`、変更時は `git-clang-format` を利用してソースの整形を行うこと。  
 この際、ネストの整形によって Doxygen コメントの字下げが崩れることがあるため、整形後にはコメントの字下げチェックも実施すること。
 
-コーディング規範 (整数型の選択、関数引数の異常入力対応など) は [コーディング規範](docs/c-modernization-kit/coding-guideline.md) に従うこと。
+コーディング規範 (整数型の選択、関数引数の異常入力対応など) は [コーディング規範](docs/general/coding-guideline.md) に従うこと。
 
 非自明な挙動 (OS の仕様やバグなど) への回避策や、調査して判明した根拠をコードに反映するときは、その根拠となる URL を該当箇所のコメントに `see: <URL>` 形式で残すこと。コミット メッセージだけでなくソース内に残し、後から再調査せずに意図を追えるようにする。
 

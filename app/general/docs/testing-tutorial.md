@@ -1,0 +1,1267 @@
+# C 言語テスト実践チュートリアル
+
+このチュートリアルでは、Linux/Windows クロスプラットフォーム環境において、Google Test フレームワークを使用して C 言語プログラムをテストする方法を詳しく説明します。
+
+## 目次
+
+1. [テスト フレームワークの概要](#テスト フレームワークの概要)
+2. [プロジェクト構造](#プロジェクト構造)
+3. [環境構築](#環境構築)
+    - [Linux 環境](#linux-環境)
+    - [Windows 環境](#windows-環境)
+4. [モックの作成方法](#モックの作成方法)
+5. [関数のテスト方法](#関数のテスト方法)
+6. [main 関数を含むプログラムのテスト](#main 関数を含むプログラムのテスト)
+7. [makefile の作成](#makefile の作成)
+8. [テストの実行](#テストの実行)
+9. [実践例](#実践例)
+10. [ベスト プラクティス](#ベスト プラクティス)
+11. [トラブルシューティング](#トラブルシューティング)
+    - [共通の問題](#共通の問題)
+    - [Windows 固有の問題](#windows-固有の問題)
+
+---
+
+## テスト フレームワークの概要
+
+対象プロジェクトでは、Google Test (gtest/gmock) を使用して C 言語プログラムのユニット テストを行います。
+Linux では GCC、Windows では MSVC を使用したクロスプラットフォーム開発環境をサポートしています。
+
+### 主な特徴
+
+- **クロスプラットフォーム対応**: Linux (GCC) と Windows (MSVC) の両方でシームレスに動作
+- **C 言語と C++の統合**: C 言語で書かれたコードを C++ (Google Test) でテスト
+- **モック フレームワーク**: Google Mock を使用した依存関係のモック化
+- **リンカー ラップ機能**: Linux では `-Wl,--wrap`、Windows では適切なリンカー オプションを使用した関数の置き換え
+- **テスト フェーズの明確化**: 4 つの必須フェーズと任意の Cleanup フェーズでテストを構造化
+
+### テストの各フェーズ
+
+本フレームワークでは、テスト コードを以下の 4 つの必須フェーズに分けて記述します:
+
+1. **Arrange [状態]**: テストの初期状態を設定
+2. **Pre-Assert [Pre-Assert確認_正常系] [Pre-Assert確認_異常系] [Pre-Assert手順]**: モックの期待動作を設定
+3. **Act [手順]**: テスト対象のメソッドを実行
+4. **Assert [確認_正常系] [確認_異常系]**: 実行結果を検証
+
+- Assert 後に明示的な後処理がある場合だけ、5 番目の任意フェーズとして **Cleanup** を記載します。
+- リソースの解放、ファイルの削除、ハンドルの終了、グローバル状態の復元などが Cleanup に該当します。
+- 明示的な後処理がない場合は、空の `// Cleanup` を記載しません。
+- 終了系 API 自体の挙動を試験する呼び出しや、結果を確定するために必要な終了操作は Act として扱います。
+- fixture の `TearDown`、ヘルパー内の後処理、RAII による自動解放には、テスト本体の `// Cleanup` を記載しません。
+- Cleanup にはテスト エビデンス用のタグを付けません。
+- `TEST`、`TEST_F`、`TEST_P` などのテスト本体では、`{` の次の非空行を `// Arrange` とします。
+- ローカル変数の宣言、モック オブジェクトの生成、テスト データや設定の準備は、すべて `// Arrange` より後に記載します。
+- `[状態]` タグは、Arrange フェーズの内容をテスト エビデンスへ出力する場合に使用します。
+- `[状態]` タグを付けない場合も `// Arrange` は省略しません。
+
+---
+
+## プロジェクト構造
+
+```
+workspace/
++-- framework/testfw/                 # テストフレームワーク (サブモジュール、論理名: testfw)
+|   +-- bin/                         # テスト支援コマンド
+|   +-- include/                     # フレームワーク提供のモック (stdio等)
+|   +-- include_override/            # オーバーライド用ヘッダー
+|   +-- libsrc/                      # フレームワーク提供のモック実装
+|   +-- docs/                        # テストフレームワークドキュメント
++-- framework/makefw/                           # Make ビルドフレームワーク (サブモジュール)
+|   +-- makefiles/                   # makefile テンプレート
+|       +-- prepare.mk              # 準備処理
+|       +-- makemain.mk             # ビルドルール生成
++-- app/example/test/                    # テストコード (対象プロジェクト固有)
+|   +-- include/                     # プロジェクト固有のモックヘッダー
+|   |   +-- mock_example.h             # exampleHandlerのモック
+|   |   +-- mock_examplebase.h         # add, subtract, multiply, divide のモック
+|   +-- libsrc/                      # プロジェクト固有のモック実装
+|   |   +-- mock_example/              # exampleHandler モックライブラリ
+|   |   |   +-- makefile            # 標準テンプレート
+|   |   |   +-- makepart.mk         # プロジェクト固有の設定
+|   |   |   +-- mock_example.cc
+|   |   |   +-- mock_exampleHandler.cc
+|   |   +-- mock_examplebase/          # examplebase 関数モックライブラリ
+|   |       +-- makefile            # 標準テンプレート
+|   |       +-- makepart.mk         # プロジェクト固有の設定
+|   |       +-- mock_examplebase.cc
+|   |       +-- mock_add.cc
+|   |       +-- mock_subtract.cc
+|   |       +-- mock_multiply.cc
+|   |       +-- mock_divide.cc
+|   +-- src/                         # テストコード
+|   |   +-- libexamplebaseTest/         # ライブラリ関数のテスト
+|   |   |   +-- addTest/
+|   |   |       +-- makefile         # 標準テンプレート
+|   |   |       +-- makepart.mk      # プロジェクト固有の設定
+|   |   |       +-- addTest.cc
+|   |   +-- main/                    # main関数を含むプログラムのテスト
+|   |       +-- addTest/
+|   |       |   +-- makefile         # 標準テンプレート
+|   |       |   +-- makepart.mk      # プロジェクト固有の設定
+|   |       |   +-- addTest.cc
+|   |       +-- exampleTest/
+|   |           +-- makefile         # 標準テンプレート
+|   |           +-- makepart.mk      # プロジェクト固有の設定
+|   |           +-- exampleTest.cc
++-- app/example/prod/                    # テスト対象のソースコード
+    +-- include/
+    |   +-- libexamplebase.h            # 静的リンク用API
+    |   +-- libexample.h                # 動的リンク用API
+    |   +-- libexample_const.h          # 定数定義
+    +-- libsrc/
+    |   +-- examplebase/
+    |       +-- add.c                # add関数の実装
+    |       +-- subtract.c           # subtract関数の実装
+    |       +-- multiply.c           # multiply関数の実装
+    |       +-- divide.c             # divide関数の実装
+    +-- src/
+        +-- add/
+        |   +-- add.c                # addコマンドのmain関数
+        +-- example/
+            +-- example.c               # exampleコマンドのmain関数
+```
+
+---
+
+## 環境構築
+
+### Linux 環境
+
+#### 必要なパッケージ
+
+```bash
+# Debian/Ubuntu 系
+sudo apt-get install -y \
+    build-essential \
+    g++ \
+    make \
+    libgtest-dev \
+    libgmock-dev \
+    gcovr \
+    lcov
+
+# Red Hat/CentOS 系
+sudo dnf install -y \
+    gcc \
+    g++ \
+    make \
+    gtest-devel \
+    gmock-devel \
+    python3-pip
+
+sudo pip3 install gcovr
+```
+
+### Windows 環境
+
+#### 必要なツール
+
+- **Visual Studio Build Tools** (または Visual Studio) - MSVC コンパイラとリンカー
+- **GNU Make** - Make ビルド システム (make.exe)
+- **Git for Windows** - MinGW ツールチェーンを含む
+- **Google Test/Mock** - テスト フレームワーク
+
+#### 環境設定スクリプト
+
+Windows では、`Start-VSCode-With-Env.ps1` を実行して VS Code を起動します:
+
+```powershell
+.\Start-VSCode-With-Env.ps1
+```
+
+### サブモジュールの初期化
+
+```bash
+# Linux / Windows 共通
+cd /path/to/workspace
+git submodule update --init --recursive
+```
+
+### ワークスペース ルートの設定
+
+プロジェクトのルート ディレクトリに `.workspaceRoot` ファイルを作成します:
+
+```bash
+# Linux
+touch .workspaceRoot
+
+# Windows (PowerShell)
+New-Item .workspaceRoot -ItemType File
+
+# Windows (コマンド プロンプト)
+type nul > .workspaceRoot
+```
+
+このファイルにより、makefile がプロジェクト ルートを自動検出できます。
+
+---
+
+## モックの作成方法
+
+モックを作成することで、テスト対象のコードが依存する関数の動作を制御できます。
+
+### ステップ 1: モック ヘッダー ファイルの作成
+
+`app/example/test/include/mock_xxxxx.h` にモック ヘッダーを作成します。
+
+#### 例: mock_examplebase.h
+
+```cpp
+#ifndef _MOCK_EXAMPLEBASE_H
+#define _MOCK_EXAMPLEBASE_H
+
+#include <stdio.h>
+#include <gmock/gmock.h>
+
+// テスト対象のヘッダーをインクルード
+#include <libexamplebase.h>
+
+// モック クラスの定義
+class Mock_examplebase
+{
+public:
+    // MOCK_METHOD マクロで関数をモック化
+    // 構文: MOCK_METHOD(戻り値の型, 関数名, (引数リスト));
+    MOCK_METHOD(int, add, (int, int, int *));
+    MOCK_METHOD(int, subtract, (int, int, int *));
+    MOCK_METHOD(int, multiply, (int, int, int *));
+    MOCK_METHOD(int, divide, (int, int, int *));
+
+    Mock_examplebase();
+    ~Mock_examplebase();
+};
+
+// グローバルなモック インスタンスへのポインター
+extern Mock_examplebase *_mock_examplebase;
+
+#endif // _MOCK_EXAMPLEBASE_H
+```
+
+#### ポイント
+
+- **MOCK_METHOD マクロ**: Google Mock の機能で、関数のシグネチャを定義します
+- **extern 宣言**: モック インスタンスをグローバルに共有するための宣言
+- **C++クラス**: C 言語の関数を C++のモック クラスでラップします
+
+### ステップ 2: モック クラスの実装
+
+`app/example/test/libsrc/mock_xxxxx/mock_xxxxx.cc` にモック クラスの実装を作成します。
+
+#### 例: mock_examplebase.cc
+
+```cpp
+#include <testfw.h>
+#include <mock_examplebase.h>
+
+// グローバル インスタンスの実体
+Mock_examplebase *_mock_examplebase = nullptr;
+
+// コンストラクター: デフォルト動作を設定
+Mock_examplebase::Mock_examplebase()
+{
+    // デフォルト動作を設定 (オプション)
+    ON_CALL(*this, add(_, _, _))
+        .WillByDefault(Invoke([](int a, int b, int *result) {
+            *result = a + b;
+            return EXAMPLE_SUCCESS;
+        })); // モックの既定の挙動を定義する例
+
+    ON_CALL(*this, subtract(_, _, _))
+        .WillByDefault(Return(EXAMPLE_SUCCESS)); // 一般的にはモックの既定の挙動は NOP にしておき、テスト プログラムで具体的な挙動を決める
+
+    ON_CALL(*this, multiply(_, _, _))
+        .WillByDefault(Return(EXAMPLE_SUCCESS));
+
+    ON_CALL(*this, divide(_, _, _))
+        .WillByDefault(Return(EXAMPLE_SUCCESS));
+
+    _mock_examplebase = this;
+}
+
+// デストラクター: グローバル ポインターをクリア
+Mock_examplebase::~Mock_examplebase()
+{
+    _mock_examplebase = nullptr;
+}
+```
+
+### ステップ 3: モック関数の実装
+
+`app/example/test/libsrc/mock_xxxxx/mock_関数名.cc` に C 言語関数のモック実装を作成します。
+
+#### 例: mock_add.cc
+
+```cpp
+#include <testfw.h>
+#include <mock_examplebase.h>
+
+// C 言語の関数として実装
+// この関数がテスト時に本物の add() 関数の代わりに呼ばれます
+// WEAK_ATR 属性により、リンク時に弱いシンボルとして扱われる
+WEAK_ATR int add(int a, int b, int *result)
+{
+    int rtc = 0;
+
+    // モック インスタンスが存在する場合はモックを呼び出す
+    if (_mock_examplebase != nullptr)
+    {
+        rtc = _mock_examplebase->add(a, b, result);
+    }
+
+    // トレース出力 (デバッグ用)
+    if (getTraceLevel() > TRACE_NONE)
+    {
+        printf("  > %s %d, %d, 0x%p", __func__, a, b, (void *)result);
+        if (getTraceLevel() >= TRACE_DETAIL)
+        {
+            printf(" -> %d, %d\n", *result, rtc);
+        }
+        else
+        {
+            printf("\n");
+        }
+    }
+
+    return rtc;
+}
+```
+
+#### ポイント
+
+- **WEAK_ATR 属性**: リンク時に弱いシンボルとして扱われ、実装がない場合にモック関数が使用される
+- **C 言語関数**: `extern "C"` は不要 (`.cc` ファイルでも関数名が C++ にならない)
+- **モック インスタンス チェック**: `_mock_examplebase != nullptr` でモックの有無を確認
+- **トレース機能**: デバッグ時に関数呼び出しを確認できる
+
+### モック ライブラリの makefile
+
+`app/example/test/libsrc/mock_xxxxx/` ディレクトリに以下のファイルを作成します。
+
+#### makefile (標準テンプレート)
+
+`app/example/test/libsrc/mock_xxxxx/makefile` は標準テンプレートをそのまま使用します。
+
+```makefile
+# makefile テンプレート
+# すべての最終階層 makefile で使用する標準テンプレート
+# 本ファイルの編集は禁止する。makepart.mk を作成して拡張・カスタマイズすること。
+
+# ワークスペースのディレクトリ
+find-up = \
+    $(if $(wildcard $(1)/$(2)),$(1),\
+        $(if $(filter $(1),$(patsubst %/,%,$(dir $(1)))),,\
+            $(call find-up,$(patsubst %/,%,$(dir $(1))),$(2))\
+        )\
+    )
+WORKSPACE_DIR := $(strip $(call find-up,$(CURDIR),.workspaceRoot))
+
+# 準備処理 (ビルド テンプレートより前に include)
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/prepare.mk
+
+##### makepart.mk の内容は、このタイミングで処理される #####
+
+# ビルド テンプレートを include
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/makemain.mk
+```
+
+#### makepart.mk (プロジェクト固有の設定)
+
+`app/example/test/libsrc/mock_xxxxx/makepart.mk` にプロジェクト固有の設定を記述します。
+
+```makefile
+# 出力先ディレクトリ (ライブラリの場合のみ必要)
+OUTPUT_DIR := $(WORKSPACE_DIR)/app/example/test/lib
+
+# ソース ファイル (必要に応じて追加)
+SRCS := \
+	mock_examplebase.cc \
+	mock_add.cc \
+	mock_subtract.cc \
+	mock_multiply.cc \
+	mock_divide.cc
+```
+
+---
+
+## 関数のテスト方法
+
+通常の関数 (main を含まない) のテスト方法を説明します。
+
+### テスト コードの基本構造
+
+```cpp
+#include <testfw.h>
+#include <mock_stdio.h>
+#include <libexamplebase.h>
+
+// テスト フィクスチャ クラス
+class addTest : public Test
+{
+};
+
+// テスト ケース
+TEST_F(addTest, test_1_add_2)
+{
+    // Arrange
+    int result;
+
+    // Pre-Assert
+    // - モックの期待動作を設定 (この例では不要)
+
+    // Act
+    int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
+}
+```
+
+### 実践例: add 関数のテスト
+
+`app/example/test/src/libexamplebaseTest/addTest/addTest.cc`
+
+```cpp
+#include <testfw.h>
+#include <mock_stdio.h>
+#include <libexamplebase.h>
+
+class addTest : public Test
+{
+};
+
+// 正の数の加算テスト
+TEST_F(addTest, test_1_add_2)
+{
+    // Arrange
+    int result;
+
+    // Pre-Assert
+
+    // Act
+    int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
+}
+
+// 交換法則のテスト
+TEST_F(addTest, test_2_add_1)
+{
+    // Arrange
+    int result;
+
+    // Pre-Assert
+
+    // Act
+    int rtc = add(2, 1, &result); // [手順] - add(2, 1, &result) を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
+}
+
+// NULL ポインターのテスト
+TEST_F(addTest, test_null_result)
+{
+    // Arrange
+
+    // Pre-Assert
+
+    // Act
+    int rtc = add(1, 2, NULL); // [手順] - add(1, 2, NULL) を呼び出す。
+
+    // Assert
+    EXPECT_EQ(EXAMPLE_ERROR, rtc); // [確認_異常系] - add の戻り値が EXAMPLE_ERROR であること。
+}
+```
+
+---
+
+## main 関数を含むプログラムのテスト
+
+main 関数を含むプログラムをテストするには、リンカー ラップ機能を使用します。
+
+### リンカー ラップ機能とは
+
+GCC の `-Wl,--wrap=main` オプションを使用すると:
+
+- `main` 関数は `__wrap_main` として定義される
+- 元の `main` 関数は `__real_main` として参照可能になる
+- `gtest_wrapmain` ライブラリが `__wrap_main` を提供し、Google Test を起動
+
+### テスト コードの構造
+
+```cpp
+#include <testfw.h>
+#include <mock_stdio.h>
+#include <mock_examplebase.h>
+
+class addTest : public Test
+{
+};
+
+TEST_F(addTest, less_argc)
+{
+    // Arrange
+    int argc = 2;
+    const char *argv[] = {"addTest", "1"}; // [状態] - main() に与える引数を、"1" **(不足)** とする。
+
+    // Pre-Assert
+
+    // Act
+    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+
+    // Assert
+    EXPECT_NE(0, rtc); // [確認_異常系] - main() の戻り値が 0 以外であること。
+}
+
+TEST_F(addTest, normal)
+{
+    // Arrange
+    NiceMock<Mock_stdio> mock_stdio;
+    Mock_examplebase mock_examplebase;
+    int argc = 3;
+    const char *argv[] = {"addTest", "1", "2"}; // [状態] - main() に与える引数を、"1", "2" とする。
+
+    // Pre-Assert
+    EXPECT_CALL(mock_examplebase, add(1, 2, _))
+        .WillOnce([](int, int, int *result) {
+            *result = 3;
+            return EXAMPLE_SUCCESS;
+        }); // [Pre-Assert確認_正常系] - add(1, 2, &result) が 1 回呼び出されること。
+            // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、EXAMPLE_SUCCESS を返す。
+
+    EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("3\n")))
+        .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
+
+    // Act
+    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+
+    // Assert
+    EXPECT_EQ(0, rtc); // [確認_正常系] - main() の戻り値が 0 であること。
+}
+```
+
+### NiceMock とは
+
+`NiceMock<T>` は、未設定のモック呼び出しを許容するラッパーです。
+
+- **NiceMock**: 未設定の呼び出しを許容 (警告なし)
+- **NaggyMock**: 未設定の呼び出しで警告 (テストは通る)
+- **StrictMock**: 未設定の呼び出しでテスト失敗
+
+```cpp
+// 例: stdio のモックは多数の関数があるため、
+// すべてを EXPECT_CALL で設定するのは煩雑
+// NiceMock を使うことで、必要な呼び出しだけを検証できる
+NiceMock<Mock_stdio> mock_stdio;
+```
+
+---
+
+## makefile の作成
+
+### テスト コード用 makefile
+
+テスト ディレクトリに以下のファイルを作成します。
+
+#### makefile (標準テンプレート)
+
+`app/example/test/src/libexamplebaseTest/addTest/makefile` は標準テンプレートをそのまま使用します。
+
+```makefile
+# makefile テンプレート
+# すべての最終階層 makefile で使用する標準テンプレート
+# 本ファイルの編集は禁止する。makepart.mk を作成して拡張・カスタマイズすること。
+
+# ワークスペースのディレクトリ
+find-up = \
+    $(if $(wildcard $(1)/$(2)),$(1),\
+        $(if $(filter $(1),$(patsubst %/,%,$(dir $(1)))),,\
+            $(call find-up,$(patsubst %/,%,$(dir $(1))),$(2))\
+        )\
+    )
+WORKSPACE_DIR := $(strip $(call find-up,$(CURDIR),.workspaceRoot))
+
+# 準備処理 (ビルド テンプレートより前に include)
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/prepare.mk
+
+##### makepart.mk の内容は、このタイミングで処理される #####
+
+# ビルド テンプレートを include
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/makemain.mk
+```
+
+#### makepart.mk (プロジェクト固有の設定)
+
+`app/example/test/src/libexamplebaseTest/addTest/makepart.mk` にプロジェクト固有の設定を記述します。
+
+```makefile
+# テスト対象のソース ファイル
+TEST_SRCS := \
+	$(WORKSPACE_DIR)/app/example/prod/libsrc/examplebase/add.c
+```
+
+### main 関数テスト用 makefile
+
+#### makefile (標準テンプレート)
+
+`app/example/test/src/main/addTest/makefile` は標準テンプレートをそのまま使用します。
+
+```makefile
+# makefile テンプレート
+# すべての最終階層 makefile で使用する標準テンプレート
+# 本ファイルの編集は禁止する。makepart.mk を作成して拡張・カスタマイズすること。
+
+# ワークスペースのディレクトリ
+find-up = \
+    $(if $(wildcard $(1)/$(2)),$(1),\
+        $(if $(filter $(1),$(patsubst %/,%,$(dir $(1)))),,\
+            $(call find-up,$(patsubst %/,%,$(dir $(1))),$(2))\
+        )\
+    )
+WORKSPACE_DIR := $(strip $(call find-up,$(CURDIR),.workspaceRoot))
+
+# 準備処理 (ビルド テンプレートより前に include)
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/prepare.mk
+
+##### makepart.mk の内容は、このタイミングで処理される #####
+
+# ビルド テンプレートを include
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/makemain.mk
+```
+
+#### makepart.mk (プロジェクト固有の設定)
+
+`app/example/test/src/main/addTest/makepart.mk` にプロジェクト固有の設定を記述します。
+
+```makefile
+# テスト対象のソース ファイル
+TEST_SRCS := \
+	$(WORKSPACE_DIR)/app/example/prod/src/add/add.c
+
+# エントリ ポイントの変更
+# テスト対象のソース ファイルにある main() は直接実行されず、
+# テスト コード内から __real_main() 経由で実行される
+USE_WRAP_MAIN := 1
+
+# ライブラリの指定
+LIBS += mock_examplebase mock_libc
+```
+
+### makefile のポイント
+
+#### makefile と makepart.mk の分離
+
+- **makefile**: 標準テンプレート (すべてのテスト ディレクトリで共通)
+- **makepart.mk**: プロジェクト固有の設定を記述
+
+この分離により、ビルド システムの更新が容易になり、保守性が向上します。
+
+#### ワークスペース フォルダーの検出
+
+makefile テンプレート内で `find-up` 関数を使用して `.workspaceRoot` ファイルを検出し、プロジェクト ルートを特定します。
+
+```makefile
+find-up = \
+    $(if $(wildcard $(1)/$(2)),$(1),\
+        $(if $(filter $(1),$(patsubst %/,%,$(dir $(1)))),,\
+            $(call find-up,$(patsubst %/,%,$(dir $(1))),$(2))\
+        )\
+    )
+WORKSPACE_DIR := $(strip $(call find-up,$(CURDIR),.workspaceRoot))
+```
+
+#### テンプレートの読み込み順序
+
+```makefile
+# 1. prepare.mk を先に読み込む
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/prepare.mk
+
+# 2. makepart.mk の内容が処理される (変数設定など)
+
+# 3. makemain.mk を最後に読み込む
+include $(WORKSPACE_DIR)/framework/makefw/makefiles/makemain.mk
+```
+
+#### main 関数のラップ
+
+- `USE_WRAP_MAIN := 1`: main 関数をラップして `__real_main` として呼び出し可能にする
+    - Linux では `-Wl,--wrap=main` オプションが自動的に設定される
+    - Windows では適切なリンカー オプションが自動的に設定される
+
+#### ライブラリの指定
+
+- `LIBS`: リンクするライブラリ (プレフィックス `-l` なしで指定)
+    - `mock_xxxxx`: モック ライブラリ
+    - `mock_libc`: 標準 C 関数のモック (stdio 等)
+
+例:
+
+```makefile
+LIBS += mock_examplebase mock_libc
+```
+
+## テストの実行
+
+### 全テストの実行
+
+プロジェクト ルートから:
+
+```bash
+# Linux / Windows 共通
+cd test
+make clean    # クリーン ビルド
+make          # ビルド
+make test     # テスト実行
+```
+
+> **Windows の注意**: コマンド プロンプトで環境設定スクリプトを実行してから make を実行してください。
+
+### 個別テストの実行
+
+特定のテスト ディレクトリで:
+
+```bash
+# Linux / Windows 共通
+cd app/example/test/src/libexamplebaseTest/addTest
+make test
+```
+
+### 特定のテスト ケースのみ実行
+
+フィルター機能を使用:
+
+```bash
+# Linux
+# 方法 1: 環境変数で指定
+export GTEST_FILTER=*test_1_add_2*
+make test
+export -n GTEST_FILTER  # フィルターを解除
+
+# 方法 2: make コマンドに指定
+make test GTEST_FILTER=*test_1_add_2*
+```
+
+```cmd
+REM Windows (コマンドプロンプト)
+REM 方法1: 環境変数で指定
+set GTEST_FILTER=*test_1_add_2*
+make test
+set GTEST_FILTER=
+
+REM 方法2: makeコマンドに指定
+make test GTEST_FILTER=*test_1_add_2*
+```
+
+```powershell
+# Windows (PowerShell)
+# 方法1: 環境変数で指定
+$env:GTEST_FILTER="*test_1_add_2*"
+make test
+Remove-Item Env:\GTEST_FILTER
+
+# 方法2: makeコマンドに指定
+make test GTEST_FILTER=*test_1_add_2*
+```
+
+### カバレッジ レポートの生成
+
+```bash
+# Linux
+cd test
+make test  # テスト実行 (カバレッジ データ収集)
+
+# gcovr でカバレッジ レポート生成
+gcovr --exclude-unreachable-branches
+```
+
+> **注意**: Windows でのコード カバレッジ取得は、使用するツールによって手順が異なります。
+> MSVC 環境では、Visual Studio のコード カバレッジ ツールまたはサード パーティー ツールの使用を検討してください。
+
+### テスト出力例
+
+```
+[==========] Running 2 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 2 tests from addTest
+[ RUN      ] addTest.test_1_add_2
+[       OK ] addTest.test_1_add_2 (0 ms)
+[ RUN      ] addTest.test_2_add_1
+[       OK ] addTest.test_2_add_1 (0 ms)
+[----------] 2 tests from addTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 2 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 2 tests.
+```
+
+---
+
+## 実践例
+
+### 例 1: exampleHandler 関数のモックを使用したテスト
+
+`app/example/test/src/main/exampleTest/exampleTest.cc`
+
+```cpp
+#include <testfw.h>
+#include <mock_stdio.h>
+#include <mock_example.h>
+
+class exampleTest : public Test
+{
+};
+
+// 引数不足のテスト
+TEST_F(exampleTest, less_argc)
+{
+    // Arrange
+    int argc = 2;
+    const char *argv[] = {"exampleTest", "1"}; // [状態] - main() に与える引数を、"1" **(不足)** とする。
+
+    // Pre-Assert
+
+    // Act
+    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+
+    // Assert
+    EXPECT_NE(0, rtc); // [確認_異常系] - main() の戻り値が 0 以外であること。
+}
+
+// 正常系のテスト
+TEST_F(exampleTest, normal)
+{
+    // Arrange
+    NiceMock<Mock_stdio> mock_stdio;
+    Mock_example mock_example;
+    int argc = 4;
+    const char *argv[] = {"exampleTest", "1", "+", "2"}; // [状態] - main() に与える引数を、"1", "+", "2" とする。
+
+    // Pre-Assert
+    EXPECT_CALL(mock_example, exampleHandler(EXAMPLE_KIND_ADD, 1, 2, _))
+        .WillOnce([](int, int, int, int *result) {
+            *result = 3;
+            return EXAMPLE_SUCCESS;
+        }); // [Pre-Assert確認_正常系] - exampleHandler(EXAMPLE_KIND_ADD, 1, 2, &result) が 1 回呼び出されること。
+            // [Pre-Assert手順] - exampleHandler(EXAMPLE_KIND_ADD, 1, 2, &result) にて result に 3 を設定し、EXAMPLE_SUCCESS を返す。
+
+    EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("3\n")))
+        .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
+
+    // Act
+    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+
+    // Assert
+    EXPECT_EQ(0, rtc); // [確認_正常系] - main() の戻り値が 0 であること。
+}
+```
+
+このテストの makepart.mk:
+
+```makefile
+# テスト対象のソース ファイル
+TEST_SRCS := \
+	$(WORKSPACE_DIR)/app/example/prod/src/example/example.c
+
+# エントリ ポイントの変更
+USE_WRAP_MAIN := 1
+
+# ライブラリの指定
+LIBS += mock_example mock_libc
+```
+
+### 例 2: モックの高度な使い方
+
+#### 呼び出し回数の検証
+
+```cpp
+TEST_F(MyTest, call_times_check)
+{
+    Mock_examplebase mock;
+
+    // 期待: add が正確に 2 回呼ばれること
+    EXPECT_CALL(mock, add(_, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    // 実際の呼び出し
+    add(1, 2);
+    add(3, 4);
+    // テスト終了時に自動検証される
+}
+```
+
+#### 呼び出し順序の検証
+
+```cpp
+TEST_F(MyTest, call_order_check)
+{
+    Mock_examplebase mock;
+    InSequence seq;  // 順序を保証
+
+    EXPECT_CALL(mock, add(1, 2)).Times(1);
+    EXPECT_CALL(mock, add(3, 4)).Times(1);
+
+    // この順序で呼ばれる必要がある
+    add(1, 2);
+    add(3, 4);
+}
+```
+
+#### 引数の詳細な検証
+
+```cpp
+TEST_F(MyTest, argument_check)
+{
+    Mock_stdio mock_stdio;
+
+    // 第 4 引数が "Hello" という文字列であることを検証
+    EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("Hello\n")))
+        .Times(1);
+
+    printf("%s", "", "", "Hello\n");
+}
+```
+
+#### 複数回呼び出しでの戻り値変化
+
+```cpp
+TEST_F(MyTest, multiple_returns)
+{
+    Mock_examplebase mock;
+
+    EXPECT_CALL(mock, add(_, _))
+        .WillOnce(Return(10))       // 1 回目は 10
+        .WillOnce(Return(20))       // 2 回目は 20
+        .WillRepeatedly(Return(0)); // 3 回目以降は 0
+
+    EXPECT_EQ(10, add(1, 2));  // 1 回目
+    EXPECT_EQ(20, add(3, 4));  // 2 回目
+    EXPECT_EQ(0, add(5, 6));   // 3 回目以降
+}
+```
+
+---
+
+## ベスト プラクティス
+
+### テスト コードの構造化
+
+4 つのフェーズを明確にコメントで記述:
+
+```cpp
+TEST_F(MyTest, test_case)
+{
+    // Arrange
+    // - テスト データの準備
+
+    // Pre-Assert
+    // - モックの期待動作設定
+
+    // Act
+    // - テスト対象の実行
+
+    // Assert
+    // - 結果の検証
+}
+```
+
+### テスト ケースの命名規則
+
+テスト ケース名は具体的かつ分かりやすく:
+
+- **Good**: `test_add_positive_numbers`
+- **Good**: `test_main_with_insufficient_args`
+- **Bad**: `test1`, `test_normal`
+
+### モックのスコープ
+
+モック オブジェクトはテスト ケース内で宣言:
+
+```cpp
+TEST_F(MyTest, test_case)
+{
+    // このスコープ内でモックが有効
+    Mock_examplebase mock;
+
+    // テスト コード
+}
+// スコープを抜けるとモックが破棄される
+```
+
+### NiceMock の活用
+
+複雑なモック (stdio 等) は NiceMock を使用:
+
+```cpp
+// 多数の関数を持つモックは NiceMock で簡潔に
+NiceMock<Mock_stdio> mock_stdio;
+
+// 検証したい呼び出しのみ EXPECT_CALL で指定
+EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("result\n")))
+    .WillOnce(DoDefault());
+```
+
+### テストの独立性
+
+各テスト ケースは独立して実行可能にする:
+
+- テスト ケース間で状態を共有しない
+- グローバル変数の使用は最小限に
+- SetUp/TearDown を活用
+
+```cpp
+class MyTest : public Test
+{
+protected:
+    void SetUp() override
+    {
+        // 各テスト ケース実行前の初期化
+    }
+
+    void TearDown() override
+    {
+        // 各テスト ケース実行後のクリーンアップ
+    }
+};
+```
+
+### エラー ケースのテスト
+
+正常系だけでなく異常系もテスト:
+
+```cpp
+// 正常系
+TEST_F(MyTest, normal_case) { /* ... */ }
+
+// 境界値
+TEST_F(MyTest, boundary_case) { /* ... */ }
+
+// エラー ケース
+TEST_F(MyTest, error_case) { /* ... */ }
+
+// NULL ポインター
+TEST_F(MyTest, null_pointer_case) { /* ... */ }
+```
+
+### コメントの活用
+
+テストの意図を日本語コメントで明確に:
+
+```cpp
+// Act
+int rtc = add(1, 2); // [手順] - add(1, 2) を呼び出す。
+
+// Assert
+EXPECT_EQ(3, rtc); // [確認_正常系] - add の戻り値が 3 であること。
+```
+
+### makefile の保守性
+
+makefile と makepart.mk を分離:
+
+- **makefile**: 標準テンプレート (すべてのディレクトリで共通、編集禁止)
+- **makepart.mk**: プロジェクト固有の設定 (TEST_SRCS, LIBS, USE_WRAP_MAIN など)
+
+共通処理はフレームワークに集約:
+
+- `framework/makefw/makefiles/prepare.mk`: 準備処理
+- `framework/makefw/makefiles/makemain.mk`: ビルド ルール生成
+
+この分離により、ビルド システムの更新が容易になり、保守性が向上します。
+
+### カバレッジの確認
+
+定期的にカバレッジを確認:
+
+```bash
+make test
+gcovr --exclude-unreachable-branches --html --html-details -o coverage.html
+```
+
+### CI/CD への統合
+
+テストを自動化:
+
+```bash
+#!/bin/bash
+# test-runner.sh (Linux)
+
+cd test
+make clean
+make
+make test
+
+if [ $? -ne 0 ]; then
+    echo "Tests failed!"
+    exit 1
+fi
+
+echo "All tests passed!"
+```
+
+```cmd
+@echo off
+REM test-runner.bat (Windows)
+
+cd test
+make clean
+make
+make test
+
+if %ERRORLEVEL% neq 0 (
+    echo Tests failed!
+    exit /b 1
+)
+
+echo All tests passed!
+```
+
+### クロスプラットフォーム開発のヒント
+
+異なるプラットフォームでコードを保守する際のベスト プラクティス:
+
+#### プラットフォーム固有のコードを最小限に
+
+- できるだけ標準 C 言語の機能のみを使用
+- プラットフォーム固有の処理は条件付きコンパイルで分離
+
+```c
+#ifdef _WIN32
+    // Windows 固有の処理
+#else
+    // Linux 固有の処理
+#endif
+```
+
+#### ビルド システムの活用
+
+- makefw サブモジュールがプラットフォーム検出を自動化
+- 各プラットフォームに適したコンパイラ オプションを自動設定
+- makefile は共通のテンプレートを使用
+
+#### 定期的なクロスプラットフォーム テスト
+
+- 両方のプラットフォームで定期的にテストを実行
+- CI/CD パイプラインで両環境をテスト
+- プラットフォーム固有の問題を早期に発見
+
+#### ドキュメントの明確化
+
+- プラットフォーム固有の手順を明記
+- 環境設定の要件を文書化
+- トラブルシューティング情報を共有
+
+---
+
+## トラブルシューティング
+
+### 共通の問題
+
+#### リンク エラー: undefined reference
+
+**原因**: 必要なライブラリがリンクされていない
+
+**解決策**: makefile の `LIBS` に追加
+
+```makefile
+LIBS += -lmock_examplebase -ltest_com
+```
+
+#### 多重定義エラー: multiple definition
+
+**原因**: 同じシンボルが複数回定義されている
+
+**解決策**:
+
+- モック関数の実装ファイルを確認
+- `TEST_SRCS` に同じソースを重複して追加していないか確認
+
+#### テストが実行されない
+
+**原因**: `__real_main` が未定義
+
+**解決策**: makepart.mk に `USE_WRAP_MAIN := 1` を追加
+
+```makefile
+USE_WRAP_MAIN := 1
+```
+
+これにより、ビルド システムが自動的にプラットフォームに応じた適切なリンカー オプションを設定します。
+
+#### モックが呼ばれない
+
+**原因**: リンク順序の問題
+
+**解決策**:
+
+1. モック ライブラリを makepart.mk の LIBS に追加
+2. `TEST_SRCS` に実体のソースを含めない
+
+```makefile
+# モックを使う場合は実体のソースを含めない
+# TEST_SRCS := $(WORKSPACE_DIR)/app/example/prod/libsrc/examplebase/add.c  # NG
+
+# モック ライブラリをリンク (プレフィックス -l なし)
+LIBS += mock_examplebase  # OK
+```
+
+### Windows 固有の問題
+
+#### 環境変数が設定されていないエラー
+
+**原因**: Visual Studio Build Tools の環境変数が設定されていない
+
+**解決策**: `Start-VSCode-With-Env.ps1` で環境設定を実行
+
+```powershell
+. .\Start-VSCode-With-Env.ps1 -EnvOnly
+```
+
+#### ビルド エラー: コンパイラ オプションの違い
+
+**原因**: GCC と MSVC ではコンパイラ オプションが異なる
+
+**解決策**: makefw サブモジュールのビルド フレームワークが自動的にプラットフォームを検出し、  
+適切なコンパイラ オプションを設定します。makefile の設定を確認してください。
+
+---
+
+## 参考資料
+
+- [GoogleTest User's Guide](https://google.github.io/googletest/)
+- [GoogleMock for Dummies](https://github.com/google/googletest/blob/main/docs/gmock_for_dummies.md)
+- testfw サブモジュール内のドキュメント:
+    - `framework/testfw/docs/how-to-mock.md`
+    - `framework/testfw/docs/how-to-test.md`
+    - `framework/testfw/docs/about-test-phase.md`
+    - `framework/testfw/docs/how-to-expect.md`
+    - `framework/testfw/docs/how-to-extern.md`
+
+---
+
+## まとめ
+
+このチュートリアルでは、以下の内容を説明しました:
+
+1. **クロスプラットフォーム対応**: Linux (GCC) と Windows (MSVC) の両方でシームレスに動作するテスト環境
+2. **環境構築**: Linux と Windows それぞれの環境設定手順
+3. **テスト フレームワークの構造**: Google Test を使用した C 言語のテスト環境
+4. **モックの作成**: ヘッダー、クラス、関数の 3 段階でのモック実装
+    - WEAK_ATR 属性を使用したモック関数の実装
+    - ON_CALL を使用したデフォルト動作の設定
+5. **関数のテスト**: 通常の関数のユニット テスト方法
+    - ステータス コードとポインター経由の結果取得パターン
+6. **main 関数のテスト**: リンカー ラップ機能を使用した main 関数のテスト
+    - `USE_WRAP_MAIN := 1` による自動設定
+7. **makefile の作成**: makefile と makepart.mk の分離による保守性の向上
+    - 標準テンプレート (makefile) とプロジェクト固有の設定 (makepart.mk) の分離
+    - makefw サブモジュールによるクロスプラットフォーム対応
+8. **実践例**: 実際のコードを使った具体的なテスト例
+9. **トラブルシューティング**: プラットフォーム固有の問題と解決方法
+
+これらの知識を活用して、Linux/Windows 両対応の堅牢で保守性の高いテスト コードを作成してください。

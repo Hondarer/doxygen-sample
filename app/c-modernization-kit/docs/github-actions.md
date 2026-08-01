@@ -614,12 +614,12 @@ make
 make test
 ```
 
-**注意**: Windows 環境では、事前に必要な環境設定を行う必要があります。詳細は [CLAUDE.md](../CLAUDE.md) の「Windows にてあらかじめ実施しなくてはいけない作業」を参照してください。
+**注意**: Windows 環境では、事前に必要な環境設定を行う必要があります。詳細はルート [README](../../../README.md) の「Windows 環境における注意事項」を参照してください。
 
 ## 関連ドキュメント
 
-- [VS Code と CI の環境変数メンテナンス手順](vscode-variables.md) - `app` 配下の構成と依存関係から更新対象を判断する手引き
-- [テスト チュートリアル](testing-tutorial.md) - テストの書き方
-- [ビルド設計](build-design.md) - makefile の構成
+- [デモ用 app の構成](demo-app-composition.md) - このリポジトリで組み合わせる app と依存関係
+- [VS Code と CI の環境変数メンテナンス手順](../../general/docs/vscode-variables.md) - `app` 配下の構成から更新対象を判断する手引き
+- [テスト チュートリアル](../../general/docs/testing-tutorial.md) - テストの書き方
+- [ビルド設計](../../general/docs/build-design.md) - makefile の一般的な構成
 - [Oracle Linux コンテナー](https://github.com/Hondarer/oracle-linux-container) - 開発コンテナーの詳細
-

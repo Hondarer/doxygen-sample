@@ -29,7 +29,7 @@ skill は、特定の作業で判断に迷いやすい点、参照先、実装�
 
 生成された集約先ではなく正本側を編集してください。
 
-同期の仕組みは [`docs/c-modernization-kit/sync-skills.md`](../../docs/c-modernization-kit/sync-skills.md) を参照してください。
+同期の仕組みは [`docs/general/sync-skills.md`](../../docs/general/sync-skills.md) を参照してください。
 
 ### 個人的・一時的な利用
 
@@ -51,4 +51,4 @@ skill は、特定の作業で判断に迷いやすい点、参照先、実装�
 ## 関連文書
 
 - [`AGENTS.md`](../../AGENTS.md) - このリポジトリ全体の作業方針
-- [`docs/c-modernization-kit/sync-skills.md`](../../docs/c-modernization-kit/sync-skills.md) - skill 集約の設計と同期手順
+- [`docs/general/sync-skills.md`](../../docs/general/sync-skills.md) - skill 集約の設計と同期手順

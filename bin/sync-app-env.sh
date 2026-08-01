@@ -6,7 +6,7 @@
 # app の追加・削除に伴う .vscode / .github / .jenkins の手作業をなくすことが目的で、
 # app 側に追加のメタ ファイルは必要としない。
 #
-# see: app/c-modernization-kit/docs/vscode-variables.md
+# see: app/general/docs/vscode-variables.md
 
 set -euo pipefail
 
