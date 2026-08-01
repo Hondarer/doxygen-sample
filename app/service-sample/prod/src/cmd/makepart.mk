@@ -2,6 +2,10 @@
 OUTPUT_DIR := $(MYAPP_DIR)/prod/cbin
 
 # ライブラリの指定 (static library を利用)
+# systemd / Windows SCM に登録されサービスとして起動されるため、動的リンクでは
+# 共有ライブラリを解決できない (systemd はシェル環境の LD_LIBRARY_PATH を継承しない)。
+# 他の com_util 利用共有ライブラリもロードしないため、静的リンクとする。
+# see: app/com_util/docs/link-policy.md
 LIBS += com_util_static
 ifdef PLATFORM_WINDOWS
     CFLAGS   += /DCOM_UTIL_STATIC

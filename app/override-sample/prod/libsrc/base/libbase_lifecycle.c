@@ -17,11 +17,10 @@
  */
 
 #include "sym_loader_libbase.h"
+#include <com_util/base/error.h>
 #include <com_util/base/shared_lib_lifecycle.h>
-#include <com_util/runtime/module.h>
 #include <com_util/crt/path.h>
-#include <errno.h>
-#include <stdio.h>
+#include <com_util/runtime/module.h>
 
 /**
  *  @brief          ライブラリ ロード時に呼び出されます。
@@ -30,13 +29,13 @@ void onLoad(void)
 {
     char basename[COM_UTIL_SYM_LOADER_NAME_MAX] = {0};
     char leafname[COM_UTIL_SYM_LOADER_NAME_MAX + sizeof("_extdef.txt")] = {0};
-    int err = 0;
+    com_util_error error;
 
     DLLMAIN_COM_UTIL_INFO_MSG("base: onLoad called");
 
     if (com_util_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == COM_UTIL_OK)
     {
-        if (com_util_path_concat(leafname, sizeof(leafname), &err, basename, "_extdef.txt") != COM_UTIL_OK)
+        if (com_util_path_concat(leafname, sizeof(leafname), &error, basename, "_extdef.txt") != COM_UTIL_OK)
         {
             sym_loader_configpath[0] = '\0';
             DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
@@ -44,16 +43,16 @@ void onLoad(void)
         else
         {
             char tmpdir[PLATFORM_PATH_MAX];
-            if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == COM_UTIL_OK)
+            if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == COM_UTIL_OK)
             {
-                if (com_util_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &err, tmpdir,
-                                         PLATFORM_PATH_SEP, leafname) != 0)
+                if (com_util_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &error, tmpdir,
+                                         PLATFORM_PATH_SEP, leafname) != COM_UTIL_OK)
                 {
                     sym_loader_configpath[0] = '\0';
                     DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
                 }
             }
-            else if (err == ENAMETOOLONG)
+            else if (com_util_error_is(&error, COM_UTIL_CAUSE_NAME_TOO_LONG) != 0)
             {
                 sym_loader_configpath[0] = '\0';
                 DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");

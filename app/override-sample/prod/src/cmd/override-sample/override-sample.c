@@ -15,9 +15,9 @@
 
 #include <base.h>
 #include <com_util/argparser/argparser.h>
+#include <com_util/base/error.h>
 #include <com_util/console/console.h>
 #include <com_util/crt/path.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -57,23 +57,23 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int err = 0;
     int result;
     int rtc;
     char configpath[PLATFORM_PATH_MAX];
 
     {
+        com_util_error error;
         char tmpdir[PLATFORM_PATH_MAX];
-        if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &err) == COM_UTIL_OK)
+        if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == COM_UTIL_OK)
         {
-            if (com_util_path_concat(configpath, sizeof(configpath), &err, tmpdir, PLATFORM_PATH_SEP,
-                                     "libbase_extdef.txt") != 0)
+            if (com_util_path_concat(configpath, sizeof(configpath), &error, tmpdir, PLATFORM_PATH_SEP,
+                                     "libbase_extdef.txt") != COM_UTIL_OK)
             {
                 fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
                 return EXIT_FAILURE;
             }
         }
-        else if (err == ENAMETOOLONG)
+        else if (com_util_error_is(&error, COM_UTIL_CAUSE_NAME_TOO_LONG) != 0)
         {
             fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
             return EXIT_FAILURE;
