@@ -146,6 +146,29 @@ function Find-LatestVersionDirectory {
     return ($sorted | Select-Object -First 1).Name
 }
 
+# 複数の VS エディション候補から、MSVC ツールセットのバージョンが最大のものを返す
+# 同一 VS バージョン配下に複数エディションが共存する場合、エディション名の走査順ではなく
+# ツールセットのバージョン番号そのもので比較する
+function Find-LatestMsvcToolset {
+    param([string[]]$BaseCandidates)
+    $best = $null
+    foreach ($base in $BaseCandidates) {
+        $toolsPath = Join-Path $base "VC\Tools\MSVC"
+        $version = Find-LatestVersionDirectory $toolsPath
+        if (-not $version) { continue }
+        $parsedVersion = $null
+        try { $parsedVersion = [version]$version } catch { $parsedVersion = [version]"0.0" }
+        if ((-not $best) -or ($parsedVersion -gt $best.ParsedVersion)) {
+            $best = [PSCustomObject]@{
+                Path          = $toolsPath
+                Version       = $version
+                ParsedVersion = $parsedVersion
+            }
+        }
+    }
+    return $best
+}
+
 # ---- 候補ディレクトリの走査 ----
 
 # Visual Studio インストールの候補パスを構築
@@ -203,31 +226,40 @@ if (-not $diaSDKPath) {
     Write-Host "DIA SDK:             $diaSDKPath"
 }
 
-# MSVC ツールセットの自動検出
-if (-not $msvcToolSetPath) {
-    $msvcCandidates = $vsBaseCandidates | ForEach-Object { Join-Path $_ "VC\Tools\MSVC" }
-    $msvcToolSetPath = Find-FirstValidPath $msvcCandidates
-    if ($msvcToolSetPath) {
+# MSVC ツールセットとバージョンの自動検出
+# パスとバージョンをともに指定していない場合のみ、全エディション候補からツールセットの
+# バージョン番号が最大のものを選ぶ (エディション名の走査順には依存しない)
+if ((-not $msvcToolSetPath) -and (-not $msvcToolSetVersion)) {
+    $msvcBest = Find-LatestMsvcToolset $vsBaseCandidates
+    if ($msvcBest) {
+        $msvcToolSetPath = $msvcBest.Path
+        $msvcToolSetVersion = $msvcBest.Version
         Write-Host "MSVC ToolSet:        $msvcToolSetPath"
-    } else {
-        Write-Error "MSVC ToolSet not found in candidate directories:"
-        $msvcCandidates | ForEach-Object { Write-Host "  - $_" }
-        exit 1
-    }
-} else {
-    Write-Host "MSVC ToolSet:        $msvcToolSetPath"
-}
-
-# MSVC ツールセットバージョンの自動検出
-if (-not $msvcToolSetVersion) {
-    $msvcToolSetVersion = Find-LatestVersionDirectory $msvcToolSetPath
-    if ($msvcToolSetVersion) {
         Write-Host "MSVC version:        $msvcToolSetVersion"
     } else {
-        Write-Error "No MSVC ToolSet version found in: $msvcToolSetPath"
+        Write-Error "MSVC ToolSet not found in candidate directories:"
+        $vsBaseCandidates | ForEach-Object { Write-Host "  - $(Join-Path $_ 'VC\Tools\MSVC')" }
         exit 1
     }
 } else {
+    if (-not $msvcToolSetPath) {
+        $msvcCandidates = $vsBaseCandidates | ForEach-Object { Join-Path $_ "VC\Tools\MSVC" }
+        $msvcToolSetPath = Find-FirstValidPath $msvcCandidates
+        if (-not $msvcToolSetPath) {
+            Write-Error "MSVC ToolSet not found in candidate directories:"
+            $msvcCandidates | ForEach-Object { Write-Host "  - $_" }
+            exit 1
+        }
+    }
+    Write-Host "MSVC ToolSet:        $msvcToolSetPath"
+
+    if (-not $msvcToolSetVersion) {
+        $msvcToolSetVersion = Find-LatestVersionDirectory $msvcToolSetPath
+        if (-not $msvcToolSetVersion) {
+            Write-Error "No MSVC ToolSet version found in: $msvcToolSetPath"
+            exit 1
+        }
+    }
     Write-Host "MSVC version:        $msvcToolSetVersion"
 }
 
