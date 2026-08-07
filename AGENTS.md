@@ -129,10 +129,21 @@ python framework/docsfw/bin/text_style_jp.py <対象ファイル> --in-place
 | `prod/include_internal/` | ライブラリ内部共有ヘッダー (`.c` をまたいで参照) | `<lib/subdir/file.h>` |
 | `prod/libsrc/` | ソース ファイル (`.c`) のみ。ヘッダーは置かない | - |
 
-### _internal サフィックスの付与ルール
+### _internal の付与ルール
+
+#### ヘッダー ファイル名
 
 - 同名の公開ヘッダーが存在する場合のみ `_internal` を付与する (例: `console.h` が公開にあるため `console_internal.h`)
 - 対応する公開ヘッダーが存在しない場合はサフィックスなし (例: `path_format.h`)
+
+#### シンボル名 (関数・型・外部リンケージ変数)
+
+- `prod/include_internal/` で宣言する関数と型は `<lib>_internal_<rest>` とする (例: `sample_internal_registry_add`)
+- `prod/include_internal/` で `extern` する変数は `g_<lib>_internal_<rest>` とする (例: `g_sample_internal_default_registry`)
+- 公開 (`prod/include/`) の関数と型は `<lib>_<rest>`、公開共有変数は `g_<lib>_<rest>` とし、`_internal_` を付けない
+- 公開共有変数は必要最低限に厳選する。詳細は [コーディング規範](docs/general/coding-guideline.md) を参照する
+- `static` 関数にはライブラリ接頭辞も `_internal_` も付けない。ファイル内共有変数は `s_<rest>`
+- ファイル名規則とシンボル規則は付与条件が異なる。詳細は [コーディング規範](docs/general/coding-guideline.md) の「命名規則」を参照する
 
 ### makepart.mk の INCDIR ルール
 

@@ -5,8 +5,8 @@
 C / C++ コードでの整数型の選択、関数引数の異常入力対応、変数宣言位置の扱いなど、コーディング規範を本書に集約します。  
 適用範囲は主に `app/` 配下の C / C++ コードです。
 
-本書は今後、命名規則、エラー処理、ログ / トレース、テスト規約、ヘッダー設計など、コーディング規範を順次追加していくことを想定しています。  
-現版では「typedef struct の命名規則」「整数型の選択」「関数引数の異常入力対応」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「関数引数の const 付与と Doxygen 方向タグ」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
+本書は、ログ / トレース、テスト規約、ヘッダー設計など、コーディング規範を順次追加していくことを想定しています。  
+現版では「命名規則」「構造体パディングの扱い」「整数型の選択」「関数引数の異常入力対応」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「関数引数の const 付与と Doxygen 方向タグ」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
 
 本書は一般的な方針を定めるものです。  
 各 app のドキュメントに優先事項、特化事項がある場合は、それに従ってください。
@@ -16,20 +16,293 @@ C / C++ コードでの整数型の選択、関数引数の異常入力対応、
 
 関連する既存ガイドラインは [参照](#参照) を参照してください。
 
-## typedef struct の命名規則
+## 命名規則
 
-### 基本ルール
+### 適用範囲と用語の定義
 
-`typedef struct` は、構造体タグ名と typedef 名を同一にします。  
-typedef 名には `_t` サフィックスを付けません。
+本章は `app/` 配下の C / C++ コードで定義するすべての識別子を対象とします。  
+外部 OSS 由来のコード、過去資産の保守的移植が app 配下の AGENTS.md で宣言されているもの、OS / SDK が定義する型やマクロの alias は対象外です。
+
+命名を決める前に、対象のシンボルがどのスコープに属するかを次の手順で判定します。  
+上から順に評価し、最初に一致した行のスコープとします。
+
+| 判定順 | スコープ | 判定基準 |
+|---|---|---|
+| 1 | 公開 | `prod/include/` 配下のヘッダーで宣言されている |
+| 2 | ライブラリ内共有 | `prod/include_internal/` 配下のヘッダーで宣言されている |
+| 3 | ファイル内 | どのヘッダーでも宣言されず、`static` が付いている |
+| 4 | 関数内ローカル | 関数本体の内側で宣言されている |
+
+スコープはヘッダーの配置と `static` の有無で判定します。  
+ライブラリ内共有の関数・型・外部リンケージ変数は、名前にも公開境界のマーカー (`_internal_`) を含め、公開シンボルと区別します。
+
+ヘッダー **ファイル名** の `_internal` サフィックスは、同名の公開ヘッダーが存在するときに限り付けます。  
+シンボル規則の付与条件とは異なります。詳細は後述の「ヘッダー ファイル名の _internal」を参照してください。
+
+### スコープ別一覧
+
+`<lib>` はライブラリ接頭辞を表すプレースホルダーです。
+
+| スコープ | リンケージ | 宣言場所 | 記法 | 接頭辞 | 例 |
+|---|---|---|---|---|---|
+| 関数内ローカル変数 | なし | 関数本体 | snake_case | 付けない | `result`、`buf_size` |
+| static 関数 | 内部 | `.c` 内 | snake_case | 付けない | `parse_header` |
+| ファイル内共有変数 | 内部 | `.c` のファイル スコープ | snake_case | `s_` | `s_instance_count` |
+| ライブラリ内共有関数 | 外部 | `include_internal/` | snake_case | `<lib>_internal_` | `sample_internal_registry_add` |
+| ライブラリ内共有変数 | 外部 | `include_internal/` の `extern` | snake_case | `g_<lib>_internal_` | `g_sample_internal_default_config` |
+| 公開関数 | 外部 | `include/` | snake_case | `<lib>_` | `sample_file_get_size` |
+| 公開共有変数 | 外部 | `include/` の `extern` | snake_case | `g_<lib>_` | `g_sample_default_limits` (必要最低限に厳選) |
+| 型 (struct / enum / union / 関数ポインター) | - | 宣言場所に従う | snake_case | 公開は `<lib>_`、ライブラリ内共有は `<lib>_internal_` | `sample_context`、`sample_internal_registry`、`sample_hook_fn` |
+| 列挙定数 / マクロ | - | - | 全大文字 | `<LIB>_` | `SAMPLE_TRACE_LEVEL_INFO` |
+
+表の各行は、次の原理から導かれます。  
+個別のケースで判断に迷う場合は、この原理に立ち返って決定してください。
+
+- 変数の `s_` / `g_` は **リンケージ** と「これは変数である」ことを表します。`static` なら `s_`、外部リンケージなら `g_` です。
+- ライブラリ接頭辞は **リンカー名前空間** を表します。外部リンケージを持つシンボルにのみ付け、`static` 関数・`s_` 変数には付けません。
+- `_internal_` は **公開境界** を表します。`include_internal/` で宣言する関数・型には `<lib>_internal_`、外部リンケージ変数には `g_<lib>_internal_` の形で付けます。公開ヘッダーで宣言するシンボルと `static` には付けません。
+
+### 予約識別子の回避
+
+規格が処理系用に予約している識別子の形式は使用しません。  
+将来の libc や処理系の拡張とシンボルが衝突し、原因の分かりにくいビルド エラーや未定義動作を招くためです。  
+本リポジトリはテストや一部実装が C++ であるため、C ソースでも C++ の予約規則を踏まえた形式を避けます。
+
+| 禁止する形式 | 根拠 |
+|---|---|
+| `_t` サフィックス | POSIX.1 の名前空間規定は、標準ヘッダーをインクルードしたときに `_t` で終わる型名を処理系用に予約します |
+| アンダースコアで始まるファイル スコープ識別子 | C 標準は、アンダースコアで始まるすべての識別子を、ファイル スコープの通常識別子およびタグ名前空間で予約します |
+| 連続するアンダースコア (`__`) を含む識別子 | C++ 標準は、識別子の任意の位置に連続する `__` を含む名前を処理系用に予約します。C 単独では途中の `__` への制約は相対的に緩いですが、C++ とヘッダーやテストを共有するため、ユーザーが定義する識別子では使いません |
+
+`_t` の禁止は `typedef struct` / `typedef enum` / `typedef union` / 関数ポインター typedef のすべてに適用します。  
+アンダースコア始まりの禁止と `__` の禁止は、関数名、変数名、型名、マクロ名、インクルード ガードなど、ユーザーが **定義** する識別子に適用します。  
+インクルード ガードにおける予約識別子の詳細は [`include-guard-guideline.md`](include-guard-guideline.md) を参照してください。
+
+`__` を避けるのは、次の理由によります。
+
+- C++ では `__` を含む識別子の定義が未定義動作になりうる
+- 処理系や将来のコンパイラ拡張が同じ綴りをマクロや組込み識別子として使うと、衝突の診断が分かりにくい
+- ライブラリ内共有の境界は `__` ではなく `_internal_` で表す (単一の `_` の並びであり、連続 `__` ではない)
+
+処理系が提供する識別子やキーワード拡張の **参照** は禁止対象外です。  
+`__FILE__`、`__LINE__`、`__func__`、`__declspec`、`__attribute__`、`_WIN32`、`__GNUC__` など、コンパイラや OS が定義するものを条件判定や属性に使うのは問題ありません。
+
+例外は次の 2 つに限ります。
+
+- OS / SDK / 外部 ABI が定義する型の alias で、元の型名を保存する必要があるもの。この場合は、例外である理由をヘッダーのコメントに残します
+- 外部 OSS 由来のコード。改変しません
+
+アンダースコア始まりは、次の 3 つの用途で使われがちです。  
+それぞれの代替を以下のとおり定めます。
+
+| 用途 | 規則 | 例 |
+|---|---|---|
+| マクロが名前を占有した関数の実体 | 呼び出し元情報を引数で受ける形とし、`_at` サフィックスを付ける | `sample_log_write_at(context, message, file, line)` |
+| 既定インスタンス版と明示ハンドル版の対 | 明示ハンドル版を正名とし、既定インスタンス版に `_default_` を挟む | `sample_parser_parse(parser, ...)` と `sample_parser_default_parse(...)` |
+| テスト専用フック | `_for_test` サフィックスのみで表し、前置きを付けない | `sample_shutdown_reset_for_test()` |
+
+既定インスタンス版と明示ハンドル版の対で明示ハンドル版を正名とするのは、ハンドルを先頭引数に取る形が引数順序の規約に準拠した形であり、既定インスタンス版はそこからハンドルを暗黙化した派生形だからです。  
+規約に準拠した形が装飾のない名前を持つようにします。
+
+### 関数内ローカル変数
+
+snake_case とし、接頭辞は付けません。  
+ハンガリアン記法 (`sz`、`lp`、`dw` などの型を表す接頭辞) は使用しません。
+
+関数の結果コードを受ける変数名は、新規コードでは `ret` を第一選択とします。
+
+```c
+/* 望ましい */
+int ret = sample_file_get_size(&size, path);
+if (ret != SAMPLE_OK)
+{
+    return ret;
+}
+```
+
+`rc` や `rtc` など、結果コードを表す他の短い別名は、レビューで `ret` への統一を勧めてよいが、修正を必須としません。  
+既存コードの `rc` 等を、本規則だけを目的に全面置換しません。
+
+次の名前は、結果コードを受ける変数には採用しません。
+
+| 名前 | 採用しない理由 |
+|---|---|
+| `result` | 計算結果、サイズ、ポインターなど本体の戻り値にも使う語で、結果コード専用として紛らわしい。世間の C では結果コード受けに `ret` / `rc` の方が多い |
+| `err` | 成功 (`0` / `*_OK`) も含む変数を、エラー専用のように読ませる |
+| `status` | Win32 や状態機械の status と混同しやすく、本リポジトリの結果コード体系 (`*_OK` / 負の分類) との対応が弱い |
+
+結果コードを受ける変数に、呼び出しごとに異なる長い名前 (`open_result`、`file_get_size_ret` など) は付けません。  
+同一関数内で結果コードを受ける変数の役割は「直前の API の結果コード」に定まることが多く、短い共通名の方が走査とレビューに向きます。  
+本体の出力値は、対応する引数名から `_out` を除いた名前など、意味のある名前を使います。
+
+同一関数内で複数の API の結果コードを順に受ける場合、同じ `ret` を代入し直して構いません。  
+直前の呼び出し以外の結果コードを後で参照する必要があるときだけ、別変数を使います。
+
+```c
+/* 望ましい (同じ ret の使い回し) */
+int ret;
+
+ret = sample_open(path, &handle);
+if (ret != SAMPLE_OK)
+{
+    return ret;
+}
+
+ret = sample_read(handle, buffer, size);
+if (ret != SAMPLE_OK)
+{
+    sample_close(handle);
+    return ret;
+}
+```
+
+出力引数を受ける一時変数は、対応する引数名から `_out` を除いた名前とします。
+
+ループ カウンターの `i`、`j`、`k` と、走査用の汎用ポインター `p` は、宣言と使用が同一の短い範囲に収まる場合に限り使用できます。
+
+### static 関数
+
+snake_case とし、**ライブラリ接頭辞も `<lib>_internal_` も付けません**。
+
+ライブラリ接頭辞は外部リンケージを持つシンボルの目印です。  
+`static` 関数に付けると外部から参照できるかのように読め、`nm` による公開シンボルの点検でも偽陽性を生みます。  
+`<lib>_internal_` はライブラリ内共有 (外部リンケージ) の目印であり、ファイル内に閉じた `static` 関数には付けません。
+
+```c
+/* 望ましい */
+static int parse_header(const unsigned char *buffer, size_t size);
+
+/* 望ましくない (ライブラリ接頭辞が付いている) */
+static int sample_parse_header(const unsigned char *buffer, size_t size);
+
+/* 望ましくない (static なのに internal マーカーが付いている) */
+static int sample_internal_parse_header(const unsigned char *buffer, size_t size);
+```
+
+同一ファイル内で機能のまとまりを表す接頭辞 (`argparser_`、`config_` など) は、ライブラリ接頭辞と異なるため使用できます。
+
+### ファイル内共有変数
+
+`s_` を前置きし、続きを snake_case とします。  
+`const` を付けた読み取り専用のテーブルも同様です。
+
+```c
+/* 望ましい */
+static size_t s_instance_count;
+static const char s_hex_chars[] = "0123456789abcdef";
+
+/* 望ましくない (全大文字はマクロと紛らわしい) */
+static const char DESCRIPTOR_MAGIC[4] = { 'S', 'M', 'P', 'L' };
+
+/* 望ましくない (static なのに外部リンケージを示唆する g_) */
+static volatile sig_atomic_t g_stop_requested;
+```
+
+関数内で宣言する `static` 変数は、ファイル内共有変数ではないため `s_` を付けません。  
+関数内ローカル変数の規則に従います。
+
+### ライブラリ内共有関数
+
+`<lib>_internal_` を必須とし、続きを snake_case とします。  
+`internal` はライブラリ接頭辞の直後に置き、語の途中や末尾には置きません。
+
+```c
+/* include_internal/sample/trace/trace_common.h */
+int sample_internal_trace_resolve_timestamp(sample_timespec *timestamp_out);
+
+/* 望ましくない (ライブラリ接頭辞がない) */
+int trace_resolve_timestamp(sample_timespec *timestamp_out);
+
+/* 望ましくない (公開と同じ接頭辞で、internal マーカーがない) */
+int sample_trace_resolve_timestamp(sample_timespec *timestamp_out);
+
+/* 望ましくない (internal の位置が接頭辞の直後ではない) */
+int sample_trace_internal_resolve_timestamp(sample_timespec *timestamp_out);
+```
+
+公開関数は `<lib>_`、ライブラリ内共有関数は `<lib>_internal_` とし、名前でも公開境界を表します。  
+ヘッダー配置による境界と名前の境界を一致させ、`nm` やコード レビューで契約外シンボルを判別できるようにします。
+
+昇格・降格では、宣言の移動に加えて接頭辞の付け替え (`sample_internal_foo` と `sample_foo` の相互変換) が必要です。  
+呼び出し側もあわせて改名します。
+
+### ライブラリ内共有変数
+
+`g_<lib>_internal_` を前置きし、続きを snake_case とします。  
+`g_` の直後にライブラリ接頭辞、その直後に `internal_` を置き、語の途中や末尾には置きません。
+
+外部リンケージを持つ変数は、リンク時にライブラリ全体で 1 つの名前空間を共有します。  
+接頭辞がないと、利用側のコードやほかのライブラリと衝突します。  
+公開境界を `g_<lib>_internal_` で表すことで、公開共有変数の `g_<lib>_` とも区別し、シンボル衝突を避けやすくします。
+
+```c
+/* include_internal/sample/base/registry_internal.h */
+extern sample_internal_registry g_sample_internal_default_registry;
+
+/* 望ましくない (公開と同じ形で、internal マーカーがない) */
+extern sample_internal_registry g_sample_default_registry;
+```
+
+### 公開関数
+
+`<lib>_` を必須とし、続きを snake_case とします。  
+`<lib>_internal_` は付けません。
+
+カテゴリ名詞と動詞の並び順、生成と破棄の動詞の対応など、公開 API 名の詳細な構成規則は各 app の特化事項ドキュメントで定めます。  
+本書は接頭辞と記法までを定めます。
+
+### 公開共有変数
+
+公開ヘッダーで `extern` する共有変数は、必要最低限に厳選します。
+
+C では既定値テーブルなどの読み取り専用データ シンボルを公開せざるを得ない場面があるため、全面禁止とはしません。  
+状態や設定を外に出す必要がある場合は、まずアクセサー関数の公開を検討します。
+
+公開する場合は次を満たします。
+
+- 名前は `g_<lib>_` を前置きし、続きを snake_case とする (`_internal_` は付けない)
+- 読み取り専用を優先し、可能な限り `const` を付ける
+- 変更可能なプロセス大域状態の公開は避ける
+
+共有ライブラリの境界をまたぐデータ シンボルは、Windows で `__declspec(dllimport)` の扱いが関数と異なり、インポート ライブラリとの不整合を起こしやすいです。  
+また、値の変更経路が追跡できず、スレッド安全性の保証も困難になります。  
+これらのリスクを理由に、件数と役割を最小に保ちます。
+
+```c
+/* 公開が妥当な例 (読み取り専用の既定値) */
+extern const sample_limits g_sample_default_limits;
+
+/* 望ましくない (変更可能な状態の公開) */
+extern sample_context *g_sample_current_context;
+```
+
+### 型の命名規則
+
+型名は snake_case とします。  
+公開ヘッダーで定義する型には `<lib>_` を前置きします。  
+`include_internal/` のヘッダーで定義する型には `<lib>_internal_` を前置きします。  
+`.c` の内部だけで使う型には接頭辞を付けません。
+
+いずれの型でも `_t` サフィックスは付けません。
+
+#### typedef struct
+
+構造体タグ名と typedef 名を同一にします。
 
 完全定義は次の形式で記述します。
 
 ```c
+/* 公開型 */
 typedef struct sample_context
 {
     int value;
 } sample_context;
+
+/* ライブラリ内共有型 */
+typedef struct sample_internal_registry
+{
+    size_t count;
+} sample_internal_registry;
 ```
 
 不透明型は次の形式で宣言します。
@@ -43,10 +316,8 @@ API の引数や戻り値でポインターを扱う場合は、型名に `*` �
 
 ```c
 sample_context *sample_context_create(void);
-void sample_context_destroy(sample_context *context);
+void sample_context_dispose(sample_context *context);
 ```
-
-### 禁止する形式
 
 次のように、ポインターを typedef で隠す形式は禁止します。
 
@@ -63,10 +334,166 @@ typedef struct
 } sample_context;
 ```
 
-### 対象外
+#### typedef enum
 
-このルールは `typedef struct` を対象とします。  
-`typedef enum`、関数ポインター typedef、固定幅整数型、標準ライブラリ型、外部 ABI / OS / SDK 由来型の alias は対象外です。
+`typedef struct` と同じく、タグ名と typedef 名を同一にします。  
+匿名 enum の typedef は使用しません。
+
+匿名 enum を禁止するのは、前方宣言ができず、デバッガーの変数表示やコンパイラの診断メッセージに型名が現れないためです。
+
+```c
+/* 望ましい */
+typedef enum sample_trace_level
+{
+    SAMPLE_TRACE_LEVEL_INFO = 0,
+    SAMPLE_TRACE_LEVEL_WARNING = 1,
+} sample_trace_level;
+
+/* 望ましくない (匿名かつ _t サフィックス) */
+typedef enum
+{
+    SAMPLE_TRACE_LEVEL_INFO,
+} sample_trace_level_t;
+```
+
+列挙定数は全大文字とし、`<LIB>_` を前置きします。  
+値が ABI として固定される enum では、全列挙定数に明示的な値を書き、新しい定数は末尾へ追加します。
+
+#### 関数ポインター typedef
+
+サフィックスは `_fn` に統一します。  
+`_callback` / `_func` / `_handler` およびそれらに `_t` を付けた形は使用しません。
+
+```c
+/* 望ましい (公開) */
+typedef void (*sample_hook_fn)(sample_context *context, void *user_data);
+
+/* 望ましい (ライブラリ内共有) */
+typedef void (*sample_internal_sink_write_fn)(const void *data, size_t size);
+
+/* 望ましくない */
+typedef void (*sample_hook_callback_t)(sample_context *context, void *user_data);
+```
+
+`_fn` の直前に `callback`、`func`、`handler` を重ねません。  
+`sample_hook_callback_fn` は冗長です。
+
+#### typedef union
+
+`typedef struct` と同じ規則に従います。  
+タグ名と typedef 名を同一にし、匿名 union の typedef は使用しません。
+
+#### 型命名の対象外
+
+次の型は本節の対象外です。
+
+- 固定幅整数型と標準ライブラリ型 (`uint32_t`、`size_t` など)
+- OS / SDK / 外部 ABI が定義する型の alias
+- 外部 OSS 由来のコードが定義する型
+
+### マクロの命名
+
+全大文字とアンダースコアで構成し、`<LIB>_` を前置きします。
+
+```c
+/* 望ましい */
+#define SAMPLE_PATH_MAX 260
+
+/* 望ましくない (ライブラリ接頭辞がなく、他ライブラリと衝突しうる) */
+#define PATH_MAX_LEN 260
+```
+
+公開ヘッダーで定義するマクロには、必ずライブラリ接頭辞を付けます。  
+`include_internal/` で定義するマクロも `<LIB>_` を前置きします。マクロ名に `_INTERNAL_` を必須とはしません。  
+`.c` の内部だけで使うマクロは接頭辞を省略できます。
+
+例外として、関数と同名で呼び出し元情報を注入するマクロは、関数の見た目を保つため小文字で定義します。  
+この場合は、注入先となる実体の関数名を「予約識別子の回避」の `_at` 規則に従って命名します。
+
+```c
+#define sample_log_write(context, message) \
+    sample_log_write_at((context), (message), __FILE__, __LINE__)
+```
+
+### ヘッダー ファイル名の _internal
+
+ヘッダー **ファイル名** の `_internal` サフィックスは、次の条件のときだけ付けます。
+
+- 同名の公開ヘッダーが `prod/include/` に存在する (例: 公開 `console.h` に対する `console_internal.h`)
+- 対応する公開ヘッダーが存在しない場合はサフィックスなし (例: `path_format.h`、`trace_common.h`)
+
+この規則はシンボル名の `<lib>_internal_` とは付与条件が異なります。
+
+| 対象 | 付与条件 | 例 |
+|---|---|---|
+| ヘッダー ファイル名 | 同名の公開ヘッダーがあるときだけ | `console_internal.h` / `path_format.h` |
+| ライブラリ内共有の関数・型 | `include_internal/` で宣言するすべて | `sample_internal_console_flush` / `sample_internal_registry` |
+| ライブラリ内共有の外部リンケージ変数 | `include_internal/` で `extern` するすべて | `g_sample_internal_default_registry` |
+
+ファイル名に `_internal` が無くても、`include_internal/` 配下で宣言する関数・型・外部リンケージ変数には公開境界のマーカーを付けます。
+
+### 既存コードへの適用と例外条件
+
+- 新規コードでは、最初から本章の規則に従います。
+- 既存ファイルを変更する際は、変更ファイル内の同種のシンボルすべてに本章を適用します。
+- ライブラリ内共有の関数・型が `<lib>_` のまま、または共有変数が `g_<lib>_` のままになっている既存コードは、本規則を目的とした全面改名は求めません。変更対象ファイルに触れる機会に合わせて `<lib>_internal_` / `g_<lib>_internal_` へ移行します。
+- 大規模な改名リファクタリングを行う際は、**1 commit = 1 カテゴリ (または 1 ヘッダー)** 単位で進めます。改名以外の変更 (戻り値の意味変更、引数の追加、ロジックの修正) を同じ commit に含めません。
+- ABI 凍結を宣言しているシンボルについては、各 app のドキュメントの凍結リストが本章に優先します。凍結の範囲と根拠は当該ドキュメントに明記します。
+
+改名を伴う機械的な置換では、次の手順で安全性を確認します。
+
+1. 置換前の旧名の出現件数を記録する
+2. 新名が未使用であること (衝突がないこと) を確認する
+3. 識別子境界を指定して置換する。行番号を指定した置換は行わない
+4. 置換後に旧名が 0 件であること、新名の件数が 1 で記録した件数と一致することを確認する
+5. 識別子以外のトークンが変化していないことを差分で確認する
+
+### 検証
+
+```bash
+# 外部 OSS とビルド生成物を除外する共通条件
+EXCL='app/(lua|sqlite|cjson)/|/obj/|doxybook2_|/prod/(lib|cbin)/'
+
+# _t サフィックスの検出 (例外として明記した alias のみが残る)
+grep -rnE '(^|[[:space:]])typedef[[:space:]].*[A-Za-z0-9_]+_t[[:space:]]*(\)|;)|^\}[[:space:]]*[a-z0-9_]+_t[[:space:]]*;' \
+  app --include=*.h --include=*.c | grep -vE "$EXCL"
+
+# アンダースコア始まりのファイル スコープ識別子 (0 件であること)
+grep -rnE '(^|[^A-Za-z0-9_"])_[a-z][A-Za-z0-9_]*[[:space:]]*\(' \
+  app --include=*.h --include=*.c | grep -vE "$EXCL"
+
+# ユーザー定義らしき識別子中の連続 __ (処理系マクロの参照は目視で除外。レビュー併用)
+grep -rnE '\b[A-Za-z0-9_]*__[A-Za-z0-9_]*\b' app --include=*.h --include=*.c --include=*.cc --include=*.cpp \
+  | grep -vE "$EXCL" | grep -vE '__FILE__|__LINE__|__func__|__FUNCTION__|__PRETTY_FUNCTION__|__declspec|__attribute__|__stdcall|__cdecl|__fastcall|__restrict|__inline|__forceinline|__asm|__volatile|__GNUC__|__clang__|__cplusplus|__x86_64__|__i386__|__linux__|__APPLE__|__WIN32|__WIN64|_WIN32|_MSC_VER|__COUNTER__|__DATE__|__TIME__|__TIMESTAMP__'
+
+# 匿名 typedef (0 件であること)
+grep -rnE 'typedef[[:space:]]+(enum|struct|union)[[:space:]]*(\{|$)' \
+  app --include=*.h --include=*.c | grep -vE "$EXCL"
+
+# 関数ポインター typedef のサフィックス (0 件であること)
+grep -rnE 'typedef[[:space:]].*\(\*[A-Za-z_][A-Za-z0-9_]*\)' \
+  app --include=*.h --include=*.c | grep -vE "$EXCL" | grep -vE '\*[a-z0-9_]+_fn\)'
+
+# static 関数のライブラリ接頭辞 (0 件であること。<lib> は対象ライブラリの接頭辞)
+grep -rnE '^static[[:space:]][^(;]*\b<lib>_[a-z0-9_]*[[:space:]]*\(' \
+  app --include=*.c | grep -vE "$EXCL"
+
+# static 関数への internal マーカー (0 件であること。<lib> は対象ライブラリの接頭辞)
+grep -rnE '^static[[:space:]][^(;]*\b<lib>_internal_[a-z0-9_]*[[:space:]]*\(' \
+  app --include=*.c | grep -vE "$EXCL"
+
+# 公開ヘッダーに internal マーカー付き識別子が出ていないこと (0 件であること。<lib> は対象ライブラリの接頭辞)
+grep -rnE '\b<lib>_internal_' app/*/prod/include --include=*.h | grep -vE "$EXCL"
+
+# 公開ヘッダーの extern 変数 (件数は最小であること。新規追加時は必要性をレビューする)
+grep -rnE '^[[:space:]]*extern[[:space:]]' app/*/prod/include --include=*.h \
+  | grep -vE "$EXCL" | grep -vE '\('
+```
+
+`include_internal/` の関数・型・変数がすべて公開境界マーカー付きであることの機械検証は、公開型を引数に取る内部関数や、ファイル スコープ以外の識別子を偽陽性として拾いやすいため、目視とコード レビューを併用してください。
+
+`static` 変数の `s_` 接頭辞は、関数定義を偽陽性として拾うため、機械的な検出だけでは判定できません。  
+`^static` で始まる行を抽出し、宣言子が関数ではないものを目視で選別してください。
 
 ## 構造体パディングの扱い
 
@@ -127,7 +554,7 @@ LP64 の Linux x86_64 では `long` が 64bit ですが、LLP64 の Windows x64 
 
 ### 値の意味に対応する型
 
-値に対応する標準型、OS API 型、または対象ワークスペースの共通型がある場合は、ビット幅だけで型を決めず、値の意味に対応する型を優先します。
+値に対応する標準型、OS API 型、または対象ワークスペースの共通型がある場合は、ビット幅だけで型を決めず、値の意味に対応する型を優先します。  
 `size_t`、`ptrdiff_t`、`ssize_t`、`off_t`、`time_t` は、特定の意味と演算規則を持つ型であり、単なる 32 bit または 64 bit の整数型として使用しません。
 
 | 値の意味 | 選択する型 | 使用条件 |
@@ -249,15 +676,15 @@ void sample_sleep_ms(int ms)
 呼び出し側の成否判定は、コード名との比較を正とします。
 
 ```c
-int rc = sample_resource_attach(path, &handle);
-if (rc != SAMPLE_OK)
+int ret = sample_resource_attach(path, &handle);
+if (ret != SAMPLE_OK)
 {
-    return rc;
+    return ret;
 }
 ```
 
-全エラーが負値のため `rc < 0` も等価ですが、名前比較を推奨します。  
-特定のエラーを区別する場合は、`rc == SAMPLE_ERR_TIMEOUT` のようにコード名で比較します。  
+全エラーが負値のため `ret < 0` も等価ですが、名前比較を推奨します。  
+特定のエラーを区別する場合は、`ret == SAMPLE_ERR_TIMEOUT` のようにコード名で比較します。  
 `-1` などの数値リテラルとの比較は行いません。
 
 ### 戻り値とエラー詳細の役割分担
@@ -337,7 +764,7 @@ cd <module-dir> && make test
 コピー元が `count` より短い場合は残りの領域を null 文字で埋めるため、文字列のコピーだけを目的とする処理では不要な書き込みも発生します。
 
 null 終端文字列全体をコピーする場合は、コピー先の容量を受け取り、バッファー不足を戻り値で通知する API を使用します。  
-展開先が共通の文字列コピー API を定めている場合は、その API を使用して戻り値を確認してください。
+展開先が共通の文字列コピー API を定めている場合は、その API を使用して戻り値を確認してください。  
 意図的に文字列を切り詰める場合は、コピー後の null 終端を保証し、切り詰める条件を呼び出し側の仕様として明記してください。
 
 ## 変数宣言位置と命令文の関係
@@ -362,7 +789,7 @@ null 終端文字列全体をコピーする場合は、コピー先の容量を
 ```c
 int process_items(const item_t *items, int count)
 {
-    int result = 0;
+    int total = 0;
 
     if ((items == NULL) || (count <= 0))
     {
@@ -371,28 +798,28 @@ int process_items(const item_t *items, int count)
 
     for (int i = 0; i < count; ++i)
     {
-        result += items[i].value;
+        total += items[i].value;
     }
 
-    return result;
+    return total;
 }
 ```
 
 ```c
 int load_and_apply(config_handle_t *handle, const char *path)
 {
-    int rc = read_config_file(path);
-    if (rc != 0)
+    int ret = read_config_file(path);
+    if (ret != 0)
     {
-        return rc;
+        return ret;
     }
 
     /* read_config_file の結果を見てから宣言したほうが意図を読み取りやすい */
     config_t cfg = {0};
-    rc = parse_config(path, &cfg);
-    if (rc != 0)
+    ret = parse_config(path, &cfg);
+    if (ret != 0)
     {
-        return rc;
+        return ret;
     }
 
     return apply_config(handle, &cfg);
@@ -444,7 +871,7 @@ if (pos > MAX_BODY - ELLIPSIS_LEN)
 
 ## 関数引数の const 付与と Doxygen 方向タグ
 
-対象ワークスペースのすべての C コード (`app/` 配下) で、関数引数には次のルールで `const` を付与し、
+対象ワークスペースのすべての C コード (`app/` 配下) で、関数引数には次のルールで `const` を付与し、  
 Doxygen の `@param[in/out/in,out]` を厳密化します。新規関数だけでなく、既存関数の変更時にも適用します。
 
 ### 引数の分類
@@ -667,7 +1094,7 @@ int exampleHandler(const int kind, const int a, const int b, int *result)
 ### エクスポート / 呼び出し規約マクロを定義側に付けない理由
 
 - MSVC は先行する宣言から `__declspec(dllexport)` と `__stdcall` を継承します。
-- `.c` は対応する公開ヘッダーを include 済みです (例: `exampleHandler.c` は `<example/example_spec.h>` を include)。
+- `.c` は対応する公開ヘッダーを include 済みです (例: `exampleHandler.c` は `<example/example_spec.h>` を include)。  
   このため定義側にマクロを重ねても情報が重複するだけで、新たな意味を持ちません。
 - 重複を排し、宣言を唯一の契約源とすることで保守性を上げます。
 
@@ -819,6 +1246,9 @@ clang-format も実コードと誤認し、コメント内容を再インデン�
 
 - [`source-style-guideline.md`](source-style-guideline.md) - `.gitattributes` / `.editorconfig` / `.clang-format` によるソース スタイル維持
 - [`include-guard-guideline.md`](include-guard-guideline.md) - インクルード ガード命名規則
+- [POSIX の名前空間規定](https://pubs.opengroup.org/onlinepubs/9699919799/functions/V2_chap02.html#tag_15_02_02) - `_t` で終わる型名が処理系用に予約されること
+- [C の予約識別子 (cppreference)](https://en.cppreference.com/w/c/language/identifier) - アンダースコアで始まる識別子がファイル スコープで予約されること
+- [C++ の識別子 (cppreference)](https://en.cppreference.com/w/cpp/language/identifiers) - 連続する `__` を含む識別子が処理系用に予約されること
 - 各 app の特化事項ドキュメント (`docs/{app}/` 配下) - プラットフォーム抽象化、標準時刻型、共通結果コードなどの app 固有規則
 - [POSIX `<stddef.h>`](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/stddef.h.html) - `size_t` / `ptrdiff_t` の定義
 - [POSIX `<sys/types.h>`](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_types.h.html) - `ssize_t` / `off_t` / `time_t` の定義
