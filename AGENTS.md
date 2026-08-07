@@ -13,8 +13,8 @@
 - サブモジュール配下のファイルを参照、編集する場合は、サブモジュール配下の AGENTS.md もあわせて参照すること。
 - `app/{サブフォルダー}` 配下のファイルを参照、編集する場合は、`app/{サブフォルダー}` 配下の AGENTS.md もあわせて参照すること。  
   `app/{サブフォルダー}` はサブモジュールの場合もあれば通常のサブフォルダーの場合もあるが、等しく `app/` 以下の別カテゴリのソース ファイル群として扱う。
-- `app/{サブフォルダー}` 配下のコードでは `goto` を使用しない。既存コードを変更する際に `goto` があった場合は、`goto` の除去を行う。
-- `app/{サブフォルダー}` 配下のコードでは三項演算子を使用しない。既存コードを変更する際に三項演算子があった場合は、三項演算子の除去を行う。
+- `app/{サブフォルダー}` 配下のコードにおける `goto` と三項演算子の扱いは、[コーディング規範](app/general/docs/coding-guideline.md) の「制御構造の制限」に従うこと。  
+  `goto` は、以前の全面禁止から、関数末尾の解放ラベルへの前方ジャンプに限って許容する方針へ改定済み。三項演算子は引き続き禁止であり、既存コードを変更する際に三項演算子があった場合は除去する。
 
 ## リポジトリ概要
 
@@ -113,7 +113,7 @@ python framework/docsfw/bin/text_style_jp.py <対象ファイル> --in-place
 新規ファイル作成時は `clang-format`、変更時は `git-clang-format` を利用してソースの整形を行うこと。  
 この際、ネストの整形によって Doxygen コメントの字下げが崩れることがあるため、整形後にはコメントの字下げチェックも実施すること。
 
-コーディング規範 (整数型の選択、関数引数の異常入力対応など) は [コーディング規範](docs/general/coding-guideline.md) に従うこと。
+コーディング規範 (整数型の選択、関数引数の異常入力対応など) は [コーディング規範](app/general/docs/coding-guideline.md) に従うこと。
 
 非自明な挙動 (OS の仕様やバグなど) への回避策や、調査して判明した根拠をコードに反映するときは、その根拠となる URL を該当箇所のコメントに `see: <URL>` 形式で残すこと。コミット メッセージだけでなくソース内に残し、後から再調査せずに意図を追えるようにする。
 
@@ -141,9 +141,9 @@ python framework/docsfw/bin/text_style_jp.py <対象ファイル> --in-place
 - `prod/include_internal/` で宣言する関数と型は `<lib>_internal_<rest>` とする (例: `sample_internal_registry_add`)
 - `prod/include_internal/` で `extern` する変数は `g_<lib>_internal_<rest>` とする (例: `g_sample_internal_default_registry`)
 - 公開 (`prod/include/`) の関数と型は `<lib>_<rest>`、公開共有変数は `g_<lib>_<rest>` とし、`_internal_` を付けない
-- 公開共有変数は必要最低限に厳選する。詳細は [コーディング規範](docs/general/coding-guideline.md) を参照する
+- 公開共有変数は必要最低限に厳選する。詳細は [コーディング規範](app/general/docs/coding-guideline.md) を参照する
 - `static` 関数にはライブラリ接頭辞も `_internal_` も付けない。ファイル内共有変数は `s_<rest>`
-- ファイル名規則とシンボル規則は付与条件が異なる。詳細は [コーディング規範](docs/general/coding-guideline.md) の「命名規則」を参照する
+- ファイル名規則とシンボル規則は付与条件が異なる。詳細は [コーディング規範](app/general/docs/coding-guideline.md) の「命名規則」を参照する
 
 ### makepart.mk の INCDIR ルール
 
