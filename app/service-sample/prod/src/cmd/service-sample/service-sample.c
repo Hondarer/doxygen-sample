@@ -56,7 +56,7 @@ com_util_tracer *svc_get_tracer(void)
  */
 static int svc_tracer_open(const svc_definition *def, const int enable_stderr)
 {
-    com_util_trace_level_t stderr_level;
+    com_util_trace_level stderr_level;
 
     g_tracer = com_util_tracer_create();
     if (g_tracer == NULL)
