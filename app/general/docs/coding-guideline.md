@@ -143,13 +143,22 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 snake_case とし、接頭辞は付けません。  
 ハンガリアン記法 (`sz`、`lp`、`dw` などの型を表す接頭辞) は使用しません。
 
-関数の結果コードを受ける変数名は、新規コードでは `ret` を第一選択とします。
+#### 結果コード変数 (ret と result)
 
-`ret` は、関数先頭で初期化子を伴わずに宣言することを推奨します。  
-初回の呼び出しで `int ret = sample_file_get_size(...);` と宣言と代入をまとめる書き方は避けます。
+新規コードでは、結果コードに次の 2 役を使い分けます。
+
+| 変数 | 役割 | 初期化 |
+|---|---|---|
+| `ret` | 呼び出した API の結果コードを一時的に受ける作業変数 | 原則として初期化子を付けない (`int ret;`) |
+| `result` | 自関数が呼び出し元へ返す結果コードを蓄える変数 | 付けてよい (例: `int result = SAMPLE_OK;`) |
+
+`rc` と `rtc` は、`ret` と同じ役割 (API 結果コードの一時受け) の別名です。  
+レビューでは `ret` への統一を勧めますが、修正を必須としません。  
+既存コードの `rc` / `rtc` 等を、本規則だけを目的に全面置換しません。  
+`result` の別名として `rc` / `rtc` を使いません。
 
 ```c
-/* 望ましい (関数先頭で宣言し、代入は呼び出しの位置で行う) */
+/* 望ましい (単純な透過 return — result は増やさない) */
 int ret;
 
 ret = sample_file_get_size(&size, path);
@@ -157,39 +166,79 @@ if (ret != SAMPLE_OK)
 {
     return ret;
 }
+
+return SAMPLE_OK;
+```
+
+```c
+/* 望ましい (複数経路で結果コードを組み立てる) */
+int ret;
+int result = SAMPLE_OK;
+
+ret = sample_open(path, &handle);
+if (ret != SAMPLE_OK)
+{
+    result = ret;
+    goto out;
+}
+
+ret = sample_read(handle, buffer, size);
+if (ret != SAMPLE_OK)
+{
+    result = ret;
+    goto out;
+}
+
+out:
+    if (handle != NULL)
+    {
+        sample_close(handle);
+    }
+    return result;
+```
+
+単純に `return ret;` だけで足りるときは、`result` を導入しません。
+
+結果コード以外の値 (サイズ、個数、合計、ポインターなど) を `return` する変数には、`ret` / `rc` / `rtc` も `result` も使いません。  
+`size`、`count`、`total` など、意味のある名前を使います。
+
+```c
+/* 望ましい (結果コード以外の return) */
+size_t total = 0;
+/* ... */
+return total;
+```
+
+`ret` は、関数先頭で初期化子を伴わずに宣言します。  
+初回の呼び出しで `int ret = sample_file_get_size(...);` と宣言と代入をまとめる書き方は避けます。  
+`rc` / `rtc` を使う場合も同じです。
+
+```c
+/* 望ましい (関数先頭で宣言し、代入は呼び出しの位置で行う) */
+int ret;
+
+ret = sample_file_get_size(&size, path);
 ```
 
 ```c
 /* 望ましくない (初回呼び出しだけ宣言を兼ねている) */
 int ret = sample_file_get_size(&size, path);
-if (ret != SAMPLE_OK)
-{
-    return ret;
-}
-
-ret = sample_file_read(...);
 ```
 
 > [!NOTE]
-> `ret` は「直前の API の結果コード」を受ける、関数全体で共有する作業用の変数です。  
-> 初回の呼び出しだけが宣言を兼ねる形にすると、その 1 行が「変数の導入」と「API の呼び出し」の 2 つの責務を持ち、2 回目以降の代入と見た目が揃わなくなります。  
-> 関数先頭で宣言を分けておくことで、`ret` の役割が呼び出し箇所によらず一定になり、`ret` を受ける呼び出しを追加・削除しても宣言行に影響しません。  
-> これは [変数宣言位置と命令文の関係](#変数宣言位置と命令文の関係) の「利用箇所に近い位置へ置く」原則に対する、`ret` に限った例外です。
+> `ret` に初期化子を付けないのは、次の理由によります。  
+> 代入漏れの経路では、GCC / Clang の `-Wuninitialized` / `-Wmaybe-uninitialized` や MSVC の未初期化警告が働きやすくなります。  
+> 一方、`int ret = SAMPLE_OK;` のように成功値で初期化すると、まだ API を呼んでいないのに成功を返してしまう経路を隠すことがあります。  
+> 失敗値で初期化する案も、本リポジトリの使い方とは合いません。同じ `ret` に複数ライブラリ・複数カテゴリの API の結果コードを順に載せるため、初期値として載せるべき「不明エラー」定数を一意に決められません。  
+> 最初に呼ぶ API の不明エラー定数を常に入れる規則にすると、呼び出し順や対象 API が変わったときに初期化行も追従させる必要があり、保守性を損ないます。  
+> リテラルの `-1` で埋めると、結果コードは名前付き定数との比較を正とする方針から外れます。  
+> 以上より、作業用の `ret` は初期化せず、成功を既定にして複数出口から返す cleanup では蓄積側の `result` に初期値を付けます。  
+> これは「あらゆる変数を未初期化にせよ」という一般則ではありません。MISRA や C++ Core Guidelines ES.20 は常時初期化を勧める側です。本規範の例外は、結果コード用の作業変数 `ret` (および別名の `rc` / `rtc`) に限ります。
 
-`rc` や `rtc` など、結果コードを表す他の短い別名は、レビューで `ret` への統一を勧めてよいが、修正を必須としません。  
-既存コードの `rc` 等を、本規則だけを目的に全面置換しません。
-
-次の名前は、結果コードを受ける変数には採用しません。
-
-| 名前 | 採用しない理由 |
-|---|---|
-| `result` | 計算結果、サイズ、ポインターなど本体の戻り値にも使う語で、結果コード専用として紛らわしい。世間の C では結果コード受けに `ret` / `rc` の方が多い |
-| `err` | 成功 (`0` / `*_OK`) も含む変数を、エラー専用のように読ませる |
-| `status` | Win32 や状態機械の status と混同しやすく、本リポジトリの結果コード体系 (`*_OK` / 負の分類) との対応が弱い |
-
-結果コードを受ける変数に、呼び出しごとに異なる長い名前 (`open_result`、`file_get_size_ret` など) は付けません。  
-同一関数内で結果コードを受ける変数の役割は「直前の API の結果コード」に定まることが多く、短い共通名の方が走査とレビューに向きます。  
-本体の出力値は、対応する引数名から `_out` を除いた名前など、意味のある名前を使います。
+> [!NOTE]
+> `ret` を関数先頭で宣言するのは、[変数宣言位置と命令文の関係](#変数宣言位置と命令文の関係) の「利用箇所に近い位置へ置く」原則に対する例外です。  
+> `ret` は「直前の API の結果コード」を受ける、関数全体で共有する作業変数です。  
+> 初回の呼び出しだけが宣言を兼ねると、「変数の導入」と「API の呼び出し」が 1 行に混ざり、2 回目以降の代入と見た目が揃いません。
 
 同一関数内で複数の API の結果コードを順に受ける場合、同じ `ret` を代入し直して構いません。  
 直前の呼び出し以外の結果コードを後で参照する必要があるときだけ、別変数を使います。
@@ -211,6 +260,25 @@ if (ret != SAMPLE_OK)
     return ret;
 }
 ```
+
+> [!NOTE]
+> 短い `ret` を連続する API 呼び出しで使い回すのは、Linux カーネルや BoringSSL / AWS-LC の cleanup パターンなど、システム系 C で広く見られる形です。  
+> ローカル変数を短く保つ方針は [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) にも示されています。  
+> Python などで「変数の使い回しを避ける」と教わるのは、意味の異なる値を同じ名前に載せることへの警戒が本筋です。  
+> 結果コードという同一の役割を上書きするだけなら、呼び出しごとに `open_result` のような長い名前を付ける必要はありません。情報は増えず、走査とレビューの負荷だけが増えます。
+
+結果コード用の変数に、呼び出しごとに異なる長い名前 (`open_result`、`file_get_size_ret` など) は付けません。  
+本体の出力値は、対応する引数名から `_out` を除いた名前など、意味のある名前を使います。
+
+次の名前は、結果コード変数には採用しません。
+
+| 名前 | 採用しない理由 |
+|---|---|
+| `err` | 成功 (`0` / `*_OK`) も含む変数を、エラー専用のように読ませる |
+| `status` | Win32 や状態機械の status と混同しやすく、本リポジトリの結果コード体系 (`*_OK` / 負の分類) との対応が弱い |
+
+`result` は **自関数が返す結果コードの蓄積** に限り使います。  
+計算の合計や変換結果など、結果コードではない値には `result` を使わず、`total` や `size` などの意味名を使います。
 
 出力引数を受ける一時変数は、対応する引数名から `_out` を除いた名前とします。
 
@@ -894,6 +962,79 @@ Sleep(timeout_dword);
 > 幅を狭める / 広げる変更は、ファイル形式や通信形式の互換性を壊します。  
 > 型を変更する場合は、当該ライブラリの互換性方針を確認してください。
 
+### 真偽値の型
+
+真偽値に `bool` (`<stdbool.h>`) を使ってよいかは、**その型が現れるヘッダーの位置** で決まります。
+
+| 場所 | 真偽値の型 |
+|---|---|
+| 公開ヘッダー (`prod/include/`) の引数、戻り値、構造体メンバー | `int` の 0 / 非 0。`bool` を使わない |
+| ライブラリ内共有ヘッダー (`prod/include_internal/`) | `bool` を使用できる |
+| `.c` 内のローカル変数、`static` 関数 | `bool` を使用できる |
+
+公開 API が真偽の答えを返す場合は、`int *xxx_out` の出力引数とします。  
+詳細は [真偽値や状態を返す API の設計](#真偽値や状態を返す-api-の設計) を参照してください。
+
+`bool` を使う箇所では `<stdbool.h>` をインクルードします。  
+[前提とする言語標準](#前提とする言語標準) は C17 であるため、`bool` は言語キーワードではありません。
+
+#### 境界での変換
+
+`int` から `bool` へ変換するときは、0 との比較を明示します。
+
+```c
+/* 望ましい */
+bool is_enabled = (flags != 0);
+
+/* 望ましくない: flags が 0 / 1 へ潰れ、フラグ ワードとしての値を失う */
+bool is_enabled = flags;
+```
+
+`bool` から `int` への変換は、代入するだけで 0 / 1 になります。
+
+```c
+/* ライブラリ内部の bool を、公開 API の出力引数へ渡す */
+*equal_out = is_equal;
+```
+
+#### 禁止事項
+
+- `memcpy`、`fread`、共用体、ポインター キャストで `bool` の記憶域へ書き込まない
+- ファイル形式、通信形式、共有メモリなど、レイアウトを固定するデータに `bool` を置かない
+
+> [!WARNING]
+> `_Bool` は 0 か 1 しか保持しない前提でコンパイラが最適化します。  
+> 記憶域へ 2 以上のバイトを書き込むと、`if (b)` と `b == true` が食い違う未定義動作になります。  
+> 過去資産のコードが `memcpy` や `fread` で構造体ごと読み書きする場合に踏みやすく、再現条件をつかみにくい不具合になります。
+
+> [!WARNING]
+> C# の `bool` は P/Invoke で既定 4 バイト (Win32 `BOOL`) としてマーシャリングされます。  
+> 公開 API が 1 バイトの `bool` を返すと、`[MarshalAs(UnmanagedType.I1)]` を明示しない限り値が壊れます。  
+> **宣言を誤ってもコンパイルは通る** ため、実行時まで検出できません。
+
+> [!NOTE]
+> 公開ヘッダーから `bool` を除くのは、次の理由によります。
+>
+> - `sizeof(_Bool)` は実装定義であり、ABI として契約に書けない。「幅に意味がある値は固定幅型」という [基本ルール](#整数型の選択) の判定 2 と整合しない
+> - 上記 2 つの WARNING が示すとおり、レガシ資産との接続と .NET 相互運用のいずれでも、静かに壊れる経路が生まれる
+> - 本リポジトリには Win32 の `BOOL` (`int`) がすでに存在する。ここへ `bool` を加えると、境界ごとに 3 種類から選ぶ判断が恒常的に発生する
+>
+> 一方、これらの理由はいずれも値が翻訳単位の外へ出るときにだけ効きます。  
+> ライブラリ内部では ABI もマーシャリングも関与せず、記憶域への書き込み経路も自分で管理できるため、`bool` の可読性の利得を採ります。
+
+> [!IMPORTANT]
+> `prod/include_internal/` であっても、レイアウトが外部との契約になっている構造体のメンバーには `bool` を使いません。  
+> ファイル形式、通信形式、共有メモリのレコードが該当します。  
+> 判断基準は [予約フィールド](#予約フィールド) の適用対象と同じです。
+
+#### 命名
+
+真偽値を `int` で表す箇所は、型から真偽と読み取れません。  
+名前で示します。
+
+- 変数と構造体メンバー: `is_` / `has_` を前置きする (`is_open`、`has_pending`)
+- 出力引数: `_out` の直前を真偽を表す語にする (`equal_out`、`exists_out`、`has_match_out`)
+
 ## 関数引数の異常入力対応
 
 ### 基本ルール
@@ -1103,6 +1244,8 @@ if (ret != SAMPLE_OK)
 - 真偽の答えは `int *xxx_out` の出力引数で返し、戻り値は結果コードとします。
 - 出力引数の値は、戻り値が `SAMPLE_OK` の場合のみ有効とします。
 
+公開ヘッダーで `bool` を使わない理由は [真偽値の型](#真偽値の型) を参照してください。
+
 ```c
 /* 望ましい: 成否と真偽値を分離 */
 int sample_paths_equal(const char *lhs, const char *rhs, int *equal_out, int *errno_out);
@@ -1173,10 +1316,11 @@ cd <module-dir> && make test
 
 ### 結果コードを受ける変数の例外
 
-結果コードを受ける `ret` は、本節の「利用箇所に近い位置へ置く」原則の例外とし、関数先頭で初期化子を伴わずに宣言することを推奨します。  
-初回の呼び出しだけが宣言を兼ねる `int ret = sample_open(...);` の形は避けます。
+結果コード用の `ret` (および別名の `rc` / `rtc`、使う場合の `result`) は、本節の「利用箇所に近い位置へ置く」原則の例外とし、関数先頭で宣言します。  
+`ret` (および `rc` / `rtc`) は初期化子を付けず、初回の呼び出しだけが宣言を兼ねる `int ret = sample_open(...);` の形は避けます。  
+`result` は自関数が返す結果コードの蓄積に限り、初期化して構いません。
 
-理由と例は [関数内ローカル変数](#関数内ローカル変数) を参照してください。
+理由と例は [関数内ローカル変数](#関数内ローカル変数) の「結果コード変数 (ret と result)」を参照してください。
 
 ### for ループ変数
 
@@ -1945,7 +2089,9 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - MISRA C:2012 Dir 4.6 (`typedefs that indicate size and signedness should be used in place of the basic numerical types`) - 幅に依存する値へ実装定義幅の基本型を使わないこと
 - [SEI CERT C INT00-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int00-c/) - 処理系のデータ モデルを理解し、仮定を静的表明で裏付けること
 - [SEI CERT C INT01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int01-c/) - オブジェクトのサイズを表す値に `size_t` を使うこと
-- [Linux kernel coding style 7) Centralized exiting of functions](https://www.kernel.org/doc/html/latest/process/coding-style.html#centralized-exiting-of-functions) - 共通の後始末がある関数における goto の使用とラベル命名
+- [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) - ローカル変数を短く保つ方針、および共通の後始末がある関数における goto の使用とラベル命名
+- [BoringSSL API Conventions](https://boringssl.googlesource.com/boringssl/+/HEAD/API-CONVENTIONS.md) - `int ret = 0;` と `goto err` による結果コードの組み立て例
+- [C++ Core Guidelines ES.20](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es20-always-initialize-an-object) - 常時初期化を勧める側の一般則 (本規範の `ret` 未初期化は結果コード作業変数に限る例外)
 - [SEI CERT C MEM12-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem12-c/) - 資源の確保と解放を伴う関数でエラー時に goto チェーンを使うこと
 - MISRA C:2012 Rule 15.1 / 15.2 / 15.3 - goto の使用を戒める 15.1 は Advisory、前方ジャンプを求める 15.2 とラベル スコープを定める 15.3 が Required
 - [Edsger W. Dijkstra, `Go To Statement Considered Harmful`](https://www.cs.utexas.edu/~EWD/transcriptions/EWD02xx/EWD215.html) - 非構造的なジャンプに対する批判
