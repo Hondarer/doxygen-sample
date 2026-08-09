@@ -32,10 +32,8 @@ Jenkins Execute shell
                         |    HOST_USER/UID/GID でユーザーとホームディレクトリを初期化
                         +- su - "$HOST_USER" -c "bash -l /workspace/.jenkins/inner-build.sh"
                                   |
-                                  +- MAKEFW_HOME を有効化 (必須) / export DOCSFW_HOME / DOXYFW_HOME / TESTFW_HOME
+                                  +- load-app-env.sh            # .vscode/.env.linux を読み込み
                                   +- make                       # ビルド
-                                  +- export LD_LIBRARY_PATH     # テスト用ライブラリパス設定
-                                  +- export PATH                # テスト用コマンドパス設定
                                   +- make test                  # テスト実行
                                   +- pages/artifacts/*.zip      # テスト結果・ログ・ビルド警告収集
                                   +- make skills                # skill 同期 (BUILD_DOCS=1 時)
@@ -107,13 +105,13 @@ Jenkins の Execute shell が `bash source/.jenkins/build.sh` で呼び出す場
 |---|---|
 | `OS_NAME` | ビルド ログ・アーティファクトのファイル名に使用する OS 識別子 |
 | `BUILD_DOCS` | ドキュメント生成の有無。`1`=あり、`0`=なし |
-| `MAKEFW_HOME` | make テンプレート群の場所。`make` 系ターゲットで必須 (`/workspace/framework/makefw`) |
-| `DOCSFW_HOME` | Markdown 発行フレームワークの場所。未設定時は `/workspace/framework/docsfw` |
-| `DOXYFW_HOME` | Doxygen 生成フレームワークの場所。未設定時は `/workspace/framework/doxyfw` |
-| `TESTFW_HOME` | テスト フレームワークの場所。未設定時は `/workspace/framework/testfw` |
+| `MAKEFW_HOME` | make テンプレート群の場所。省略可。未設定時は `.vscode/.env.linux` の値 (`/workspace/framework/makefw`) |
+| `DOCSFW_HOME` | Markdown 発行フレームワークの場所。省略可。未設定時は `.vscode/.env.linux` の値 |
+| `DOXYFW_HOME` | Doxygen 生成フレームワークの場所。省略可。未設定時は `.vscode/.env.linux` の値 |
+| `TESTFW_HOME` | テスト フレームワークの場所。省略可。未設定時は `.vscode/.env.linux` の値 |
 
-`DOCSFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME` は `inner-build.sh` が `/workspace` 基準の既定値を設定します。`MAKEFW_HOME` は root `makefile` で必須のため、`/workspace/framework/makefw` を参照するよう Jenkins 側で必ず有効にしてください。  
-Jenkins ジョブ側で別の framework 配置を使う場合は、コンテナー内で参照できるパスを指定してください。
+`MAKEFW_HOME`、`DOCSFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME` は `inner-build.sh` が `.vscode/.env.linux` から読み込むため、Jenkins 側での設定は不要です。  
+Jenkins ジョブ側で別の framework 配置を使う場合は、`build.sh` の呼び出し前に該当の変数を `export` してください。読み込みは `--no-clobber` で行うため、先に設定された値が優先されます。
 
 ### 処理内容
 
@@ -122,27 +120,23 @@ Jenkins ジョブ側で別の framework 配置を使う場合は、コンテナ�
 ```bash
 git config --global --add safe.directory /workspace
 cd /workspace && mkdir -p logs
-export DOCSFW_HOME="${DOCSFW_HOME:-/workspace/framework/docsfw}"
-export DOXYFW_HOME="${DOXYFW_HOME:-/workspace/framework/doxyfw}"
+eval "$(bash /workspace/bin/load-app-env.sh \
+    --env-file /workspace/.vscode/.env.linux \
+    --workspace /workspace \
+    --format shell --no-clobber)"
 make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 ```
 
-#### テスト環境のパス設定
+#### 環境変数の読み込み
 
-`.github/workflows/ci.yml` の `Set PATH and library path for running tests` ステップに準拠しています。
+`bin/load-app-env.sh` が `.vscode/.env.linux` を読み、`${workspaceFolder}` と `${env:NAME}` を解決した値を `export` します。
+VS Code の `launch.json` と `tasks.json` が参照するファイルと同一であり、`.github/workflows/ci.yml` の `Load app environment` ステップとも同じ源泉です。
 
-設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しません。
-共有ライブラリの間接依存 (`DT_NEEDED`) のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行うため、`make` の実行に `LD_LIBRARY_PATH` は不要です。
-`make` より後に置くことで、ビルドが `LD_LIBRARY_PATH` に依存していないことを検証し続けます。
+読み込む値は framework home 系 (`MAKEFW_HOME` など) と、実行時のコマンド探索パス (`PATH`)、共有ライブラリ探索パス (`LD_LIBRARY_PATH`) です。
+`PATH` と `LD_LIBRARY_PATH` の内容は `bin/sync-app-env.sh` が `app/<name>/**/makepart.mk` の `OUTPUT_DIR` から導出して env ファイルへ反映するため、app を追加・削除しても本スクリプトの変更は発生しません。
 
-<!-- bin/sync-app-env.sh が生成する区間。手で編集しないこと。 -->
-<!-- BEGIN app-env-sync -->
-```bash
-export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
-
-export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
-```
-<!-- END app-env-sync -->
+ビルドは `LD_LIBRARY_PATH` に依存しません。共有ライブラリの間接依存 (`DT_NEEDED`) のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行います。  
+see: [ライブラリ探索パスの扱い (Linux)](../framework/makefw/docs/library-search-paths.md)
 
 #### テスト実行
 
@@ -164,7 +158,7 @@ make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"
 | `docs-html-{lang}.zip` | `pages/{lang}/html/` 以下の Markdown HTML | `BUILD_DOCS=1` かつ生成済みの場合 |
 | `docs-docx-{lang}.zip` | `pages/{lang}/docx/` 以下の DOCX | `BUILD_DOCS=1` かつ生成済みの場合 |
 
-`.warn` ファイルはコンパイル・リンク時に生成されるビルド警告ファイルです。`makefw` が各ターゲットの `lib/` または `bin/` に `${TARGET}.warn` として出力します。`app/c_cpp_properties.warn` は、`INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。`app/app_env.warn` は、`app/*/**/makepart.mk` の `OUTPUT_DIR` から導出した実行時パスと `.vscode`、`.github/workflows/ci.yml`、`.jenkins` の記載との不一致を知らせる dry-run 警告です。  
+`.warn` ファイルはコンパイル・リンク時に生成されるビルド警告ファイルです。`makefw` が各ターゲットの `lib/` または `bin/` に `${TARGET}.warn` として出力します。`app/c_cpp_properties.warn` は、`INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。`app/app_env.warn` は、`app/*/**/makepart.mk` の `OUTPUT_DIR` から導出した実行時パスと `.vscode` 配下の記載との不一致を知らせる dry-run 警告です。  
 `doxy*.warn` は Doxygen 実行時の警告ファイルで、各アプリ配下に出力されます。`docs.warn` は `make docs` 実行時の警告ファイルで、ワークスペース直下に出力されます。  
 ビルド・テスト警告が無い場合は `linux-${OS_NAME}-warns.zip` は生成されません。ドキュメント警告が無い場合は `docs-warns.zip` も生成されません。
 
@@ -288,9 +282,8 @@ source/app/**/test/**/*.warn
 |---|---|
 | `build-and-test-linux` (コンテナー内) | `inner-build.sh` |
 | `build-and-test-linux` (コンテナー起動) | `build.sh` |
-| workflow-wide `env`: `MAKEFW_HOME`, `DOCSFW_HOME`, `DOXYFW_HOME`, `TESTFW_HOME` | Jenkins では `MAKEFW_HOME` を明示設定し、`inner-build.sh` は `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` を `/workspace` 基準で export |
 | `Check NBSP` | `inner-build.sh` の `python3 /workspace/bin/check-nbsp.py --force` |
-| `Set PATH and library path for running tests` | `inner-build.sh` の `LD_LIBRARY_PATH`, `PATH` 設定 |
+| `Load app environment` | `inner-build.sh` の `load-app-env.sh` 呼び出し (同じ env ファイルを参照) |
 | `upload-artifact: linux-*-test-results` | `linux-${OS_NAME}-test-results.zip` |
 | `upload-artifact: linux-*-logs` | `linux-${OS_NAME}-logs.zip` (`*-test.log` を除く) |
 | `upload-artifact: linux-*-warns` | `linux-${OS_NAME}-warns.zip` |

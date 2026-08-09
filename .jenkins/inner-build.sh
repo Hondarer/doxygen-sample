@@ -15,29 +15,19 @@ git config --global --add safe.directory /workspace
 cd /workspace
 mkdir -p logs
 
-export MAKEFW_HOME="${MAKEFW_HOME:-/workspace/framework/makefw}"
-export DOCSFW_HOME="${DOCSFW_HOME:-/workspace/framework/docsfw}"
-export DOXYFW_HOME="${DOXYFW_HOME:-/workspace/framework/doxyfw}"
-export TESTFW_HOME="${TESTFW_HOME:-/workspace/framework/testfw}"
+# framework home 系と実行時パスは .vscode/.env.linux を源泉として読み込む。
+# app が増減しても本スクリプトの変更は不要である。
+# --no-clobber により、Jenkins ジョブ側で先に export した値 (MAKEFW_HOME など) は保持する。
+# see: app/general/docs/vscode-variables.md
+eval "$(bash /workspace/bin/load-app-env.sh \
+    --env-file /workspace/.vscode/.env.linux \
+    --workspace /workspace \
+    --format shell --no-clobber)"
 
 python3 /workspace/bin/check-nbsp.py --force
 
 # ビルドログを保存しながら make を実行
 make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
-
-# bin/sync-app-env.sh が生成する区間。手で編集しないこと。
-# BEGIN app-env-sync
-# ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。
-# 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を
-# 付与して行うため、LD_LIBRARY_PATH は不要である。
-# make より後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを検証し続ける。
-
-# テスト実行時に必要な共有ライブラリ検索パスを設定 (.github/workflows/ci.yml に準拠)
-export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
-
-# テスト実行時に必要なコマンド検索パスを設定 (.github/workflows/ci.yml に準拠)
-export PATH="/workspace/app/calc/prod/cbin:/workspace/app/calc.net/prod/cbin:/workspace/app/cjson/prod/cbin:/workspace/app/com_util/prod/cbin:/workspace/app/lua/prod/cbin:/workspace/app/override-sample/prod/cbin:/workspace/app/porter/prod/cbin:/workspace/app/service-sample/prod/cbin:/workspace/app/sqlite/prod/cbin:/workspace/app/subfolder-sample/prod/cbin:/workspace/app/tutorial/prod/cbin:${PATH}"
-# END app-env-sync
 
 # テストログを保存しながら make test を実行
 make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"

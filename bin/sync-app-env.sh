@@ -1,10 +1,14 @@
 #!/bin/bash
 #
 # app/<name>/**/makepart.mk の OUTPUT_DIR を正本として、実行時のコマンド探索パスと
-# ライブラリ探索パスを VS Code と CI の各設定ファイルへ同期する。
+# ライブラリ探索パスを .vscode 配下の各設定ファイルへ同期する。
 #
-# app の追加・削除に伴う .vscode / .github / .jenkins の手作業をなくすことが目的で、
-# app 側に追加のメタ ファイルは必要としない。
+# app の追加・削除に伴う手作業をなくすことが目的で、app 側に追加のメタ ファイルは
+# 必要としない。
+#
+# CI と Jenkins は生成対象ではない。これらは bin/load-app-env.sh を介して
+# .vscode/.env.linux / .vscode/.env.windows を読むため、app が増減しても
+# .github/workflows/ci.yml と .jenkins 配下の変更は発生しない。
 #
 # see: app/general/docs/vscode-variables.md
 
@@ -288,10 +292,6 @@ done
 MERGE_DOCS_ENTRIES+=("${FIXED_MERGE_DOCS[@]}")
 MERGE_SUBFOLDER_DOCS=$(join_by ' ' "${MERGE_DOCS_ENTRIES[@]}")
 
-CI_LINUX_LDPATH=$(build_path_value '$GITHUB_WORKSPACE/app/' '/prod/lib' ':' '$LD_LIBRARY_PATH' "${LIB_APPS[@]}")
-JENKINS_LDPATH=$(build_path_value '/workspace/app/' '/prod/lib' ':' '${LD_LIBRARY_PATH:-}' "${LIB_APPS[@]}")
-JENKINS_PATH=$(build_path_value '/workspace/app/' '/prod/cbin' ':' '${PATH}' "${CBIN_APPS[@]}")
-
 #
 # ファイル書き換えユーティリティ
 #
@@ -299,40 +299,6 @@ JENKINS_PATH=$(build_path_value '/workspace/app/' '/prod/cbin' ':' '${PATH}' "${
 # 生成済みファイルの一時出力先
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-
-# BEGIN / END マーカーで囲まれた区間を、指定ファイルの内容で置き換える
-replace_marker_region() {
-    local src="$1"
-    local dst="$2"
-    local begin_marker="$3"
-    local end_marker="$4"
-    local body_file="$5"
-
-    awk -v begin_marker="$begin_marker" -v end_marker="$end_marker" -v body_file="$body_file" '
-        index($0, begin_marker) > 0 {
-            print
-            while ((getline line < body_file) > 0) {
-                print line
-            }
-            close(body_file)
-            in_region = 1
-            found = 1
-            next
-        }
-        index($0, end_marker) > 0 {
-            in_region = 0
-            print
-            next
-        }
-        !in_region { print }
-        END {
-            if (!found) {
-                printf "marker not found: %s\n", begin_marker > "/dev/stderr"
-                exit 1
-            }
-        }
-    ' "$src" > "$dst"
-}
 
 # 差分を判定し、--write のときだけ書き戻す
 apply_file() {
@@ -440,106 +406,10 @@ sync_pub_markdown_config() {
     apply_file "$target" "$generated"
 }
 
-#
-# .github/workflows/ci.yml
-#
-
-sync_ci_yml() {
-    local target="$WORKSPACE_DIR/.github/workflows/ci.yml"
-    local generated="$TMP_DIR/ci.yml"
-    local stage1="$TMP_DIR/ci.yml.stage1"
-    local body_linux="$TMP_DIR/ci-linux.body"
-    local body_windows="$TMP_DIR/ci-windows.body"
-    local app
-    local -a win_lines=()
-    local i
-
-    {
-        printf '          echo "LD_LIBRARY_PATH=%s" >> $GITHUB_ENV\n' "$CI_LINUX_LDPATH"
-        for app in "${CBIN_APPS[@]}"; do
-            printf '          echo "$GITHUB_WORKSPACE/app/%s/prod/cbin" >> $GITHUB_PATH\n' "$app"
-        done
-    } > "$body_linux"
-
-    mapfile -t win_lines < <(build_windows_entries '${{ github.workspace }}\app\' '\')
-    {
-        printf '          $paths = @(\n'
-        for (( i = 0; i < ${#win_lines[@]}; i++ )); do
-            if (( i + 1 < ${#win_lines[@]} )); then
-                printf '            "%s",\n' "${win_lines[i]}"
-            else
-                printf '            "%s"\n' "${win_lines[i]}"
-            fi
-        done
-        printf '          )\n'
-    } > "$body_windows"
-
-    replace_marker_region "$target" "$stage1" \
-        '# BEGIN app-env-sync (linux)' '# END app-env-sync (linux)' "$body_linux"
-    replace_marker_region "$stage1" "$generated" \
-        '# BEGIN app-env-sync (windows)' '# END app-env-sync (windows)' "$body_windows"
-
-    apply_file "$target" "$generated"
-}
-
-#
-# .jenkins/inner-build.sh
-#
-
-sync_jenkins_inner_build() {
-    local target="$WORKSPACE_DIR/.jenkins/inner-build.sh"
-    local generated="$TMP_DIR/inner-build.sh"
-    local body="$TMP_DIR/inner-build.body"
-
-    {
-        printf '# ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。\n'
-        printf '# 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を\n'
-        printf '# 付与して行うため、LD_LIBRARY_PATH は不要である。\n'
-        printf '# make より後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを検証し続ける。\n'
-        printf '\n'
-        printf '# テスト実行時に必要な共有ライブラリ検索パスを設定 (.github/workflows/ci.yml に準拠)\n'
-        printf 'export LD_LIBRARY_PATH="%s"\n' "$JENKINS_LDPATH"
-        printf '\n'
-        printf '# テスト実行時に必要なコマンド検索パスを設定 (.github/workflows/ci.yml に準拠)\n'
-        printf 'export PATH="%s"\n' "$JENKINS_PATH"
-    } > "$body"
-
-    replace_marker_region "$target" "$generated" \
-        '# BEGIN app-env-sync' '# END app-env-sync' "$body"
-
-    apply_file "$target" "$generated"
-}
-
-#
-# .jenkins/README.md
-#
-
-sync_jenkins_readme() {
-    local target="$WORKSPACE_DIR/.jenkins/README.md"
-    local generated="$TMP_DIR/jenkins-README.md"
-    local body="$TMP_DIR/jenkins-README.body"
-
-    {
-        printf '```bash\n'
-        printf 'export LD_LIBRARY_PATH="%s"\n' "$JENKINS_LDPATH"
-        printf '\n'
-        printf 'export PATH="%s"\n' "$JENKINS_PATH"
-        printf '```\n'
-    } > "$body"
-
-    replace_marker_region "$target" "$generated" \
-        '<!-- BEGIN app-env-sync -->' '<!-- END app-env-sync -->' "$body"
-
-    apply_file "$target" "$generated"
-}
-
 sync_env_linux
 sync_env_windows
 sync_settings_json
 sync_pub_markdown_config
-sync_ci_yml
-sync_jenkins_inner_build
-sync_jenkins_readme
 
 #
 # 結果の報告

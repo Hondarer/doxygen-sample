@@ -12,11 +12,9 @@ permissions:
   pages: write
   id-token: write
 
+# framework home 系 (MAKEFW_HOME など) と実行時パスは .vscode/.env.* を源泉とし、
+# 各ジョブの Load app environment ステップで読み込む。ここには定義しない。
 env:
-  MAKEFW_HOME: ${{ github.workspace }}/framework/makefw
-  DOCSFW_HOME: ${{ github.workspace }}/framework/docsfw
-  DOXYFW_HOME: ${{ github.workspace }}/framework/doxyfw
-  TESTFW_HOME: ${{ github.workspace }}/framework/testfw
   OPENCPPCOVERAGE_VERSION: "0.9.9.0"
   REPORTGENERATOR_VERSION: "5.4.3"
 
@@ -53,6 +51,9 @@ jobs:
       - name: Check NBSP
         run: python3 bin/check-nbsp.py --force
 
+      - name: Load app environment
+        run: bash bin/load-app-env.sh --env-file .vscode/.env.linux --workspace "$GITHUB_WORKSPACE" --format github
+
       - name: Record make version
         run: make --version
 
@@ -63,30 +64,6 @@ jobs:
         run: |
           set -o pipefail
           make 2>&1 | tee logs/linux-${{ matrix.os-name }}-build.log
-
-      # ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。
-      # 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を
-      # 付与して行うため、LD_LIBRARY_PATH は不要である。
-      # Build ステップより後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを
-      # CI で検証し続ける。開発者の対話環境 (.vscode/.env.linux) は同じ値をシェル全体に
-      # 設定するため、ここを前倒しすると同種の欠陥がローカルと同様に CI でも隠れる。
-      - name: Set PATH and library path for running tests
-        run: |
-          # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
-          # BEGIN app-env-sync (linux)
-          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/app/calc/prod/lib:$GITHUB_WORKSPACE/app/calc.net/prod/lib:$GITHUB_WORKSPACE/app/cjson/prod/lib:$GITHUB_WORKSPACE/app/com_util/prod/lib:$GITHUB_WORKSPACE/app/empty-lib/prod/lib:$GITHUB_WORKSPACE/app/lua/prod/lib:$GITHUB_WORKSPACE/app/override-sample/prod/lib:$GITHUB_WORKSPACE/app/porter/prod/lib:$GITHUB_WORKSPACE/app/sqlite/prod/lib:$GITHUB_WORKSPACE/app/subfolder-sample/prod/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/app/calc/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/calc.net/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/cjson/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/com_util/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/lua/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/override-sample/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/porter/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/service-sample/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/sqlite/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/subfolder-sample/prod/cbin" >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/app/tutorial/prod/cbin" >> $GITHUB_PATH
-          # END app-env-sync (linux)
 
       - name: Run tests
         run: |
@@ -133,6 +110,10 @@ jobs:
 
       - name: Check NBSP
         run: python3 bin/check-nbsp.py --force
+
+      - name: Load app environment
+        run: bash bin/load-app-env.sh --env-file .vscode/.env.windows --workspace '${{ github.workspace }}' --format github
+        shell: bash
 
       - name: Restore OpenCppCoverage cache
         uses: actions/cache@v6
@@ -247,42 +228,6 @@ jobs:
           make 2>&1 | tee logs/windows-build.log
         shell: bash
 
-      # Linux 側と同じく、テストの「実行」に必要な値のみを設定する。
-      # MSVC はインポート ライブラリで解決するためビルドは PATH に依存しない。
-      - name: Set PATH for running tests
-        run: |
-          # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
-          # BEGIN app-env-sync (windows)
-          $paths = @(
-            "${{ github.workspace }}\app\calc\prod\lib",
-            "${{ github.workspace }}\app\calc\prod\cbin",
-            "${{ github.workspace }}\app\calc.net\prod\lib",
-            "${{ github.workspace }}\app\calc.net\prod\cbin",
-            "${{ github.workspace }}\app\cjson\prod\lib",
-            "${{ github.workspace }}\app\cjson\prod\cbin",
-            "${{ github.workspace }}\app\com_util\prod\lib",
-            "${{ github.workspace }}\app\com_util\prod\cbin",
-            "${{ github.workspace }}\app\empty-lib\prod\lib",
-            "${{ github.workspace }}\app\lua\prod\lib",
-            "${{ github.workspace }}\app\lua\prod\cbin",
-            "${{ github.workspace }}\app\override-sample\prod\lib",
-            "${{ github.workspace }}\app\override-sample\prod\cbin",
-            "${{ github.workspace }}\app\porter\prod\lib",
-            "${{ github.workspace }}\app\porter\prod\cbin",
-            "${{ github.workspace }}\app\service-sample\prod\cbin",
-            "${{ github.workspace }}\app\sqlite\prod\lib",
-            "${{ github.workspace }}\app\sqlite\prod\cbin",
-            "${{ github.workspace }}\app\subfolder-sample\prod\lib",
-            "${{ github.workspace }}\app\subfolder-sample\prod\cbin",
-            "${{ github.workspace }}\app\tutorial\prod\cbin"
-          )
-          # END app-env-sync (windows)
-          foreach ($p in $paths) {
-            Add-Content -Path $env:GITHUB_PATH -Value $p
-            Write-Host "Added $p to PATH"
-          }
-        shell: pwsh
-
       - name: Run tests
         run: |
           set -o pipefail
@@ -347,6 +292,9 @@ jobs:
 
       - name: Check NBSP
         run: python3 bin/check-nbsp.py --force
+
+      - name: Load app environment
+        run: bash bin/load-app-env.sh --env-file .vscode/.env.linux --workspace "$GITHUB_WORKSPACE" --format github
 
       - name: Restore docsfw npm and puppeteer cache
         uses: actions/cache@v6

@@ -57,7 +57,8 @@ OUTPUT_DIR := $(MYAPP_DIR)/prod/cbin
 OUTPUT_DIR := $(MYAPP_DIR)/prod/lib
 ```
 
-生成対象は `.vscode` の 4 ファイルにとどまらず、`.github/workflows/ci.yml`、`.jenkins/inner-build.sh`、`.jenkins/README.md` も同時に更新されます。
+生成対象は `.vscode` の 4 ファイルだけです。
+`.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は `bin/load-app-env.sh` を介して `.env.linux` / `.env.windows` を読むため、app の増減で編集は発生しません。
 
 ルートの `make` の完了後には `bash bin/sync-app-env.sh --check` が自動で走り、差異があれば `app/app_env.warn` が生成されます。
 
@@ -74,6 +75,9 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 - `${env:PATH}` で既存の PATH を末尾に追加
 - Linux は `:` 区切り、パス区切りは `/`
 - Windows は `;` 区切り、パス区切りは `\`
+
+CI と Jenkins は `bin/load-app-env.sh` でこのファイルを読み、`${workspaceFolder}` と `${env:NAME}` を解決して適用します。
+プレースホルダーの記法を変える場合は、同スクリプトもあわせて確認します。
 
 ## launch.json / tasks.json の envFile 参照
 
@@ -114,9 +118,9 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 - `make sync-app-env` を実行したか
 - 生成された差分に、想定外の app の増減がないか
 - `bash bin/sync-app-env.sh --check` が終了コード 0 で完了するか
-- マーカー (`# BEGIN app-env-sync` など) の内側を手で編集していないか
 
 ## 参照ドキュメント
 
 - `docs/vscode-variables.md` - VS Code における環境変数と保守手順の詳細
 - `bin/sync-app-env.sh` - 実行時パス設定の生成スクリプト
+- `bin/load-app-env.sh` - env ファイルを CI と Jenkins へ読み込むスクリプト

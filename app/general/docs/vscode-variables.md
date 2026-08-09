@@ -66,16 +66,13 @@ test ! -f app/c_cpp_properties.warn
 
 ## 概要
 
-対象ワークスペースでは、実行時に必要なライブラリ探索パスとコマンド探索パスを複数の場所で管理しています。
+対象ワークスペースでは、実行時に必要なライブラリ探索パスとコマンド探索パスを `.vscode/.env.linux` と `.vscode/.env.windows` に集約しています。
 
-- VS Code の統合ターミナル
-- VS Code の `make test` タスク
-- VS Code のデバッグ構成
-- GitHub Actions
-- Jenkins
+- VS Code の `make test` タスクとデバッグ構成は `envFile` で直接参照する
+- GitHub Actions と Jenkins は `bin/load-app-env.sh` を介して同じファイルを読む
+- VS Code の統合ターミナルは `envFile` を扱えないため、`.vscode/settings.json` へ同じ内容を複製する
 
-更新要否の判断は、GitHub Actions の設定そのものではなく、`app` 配下の各アプリケーションの構成と依存関係に基づいて行います。  
-ただし、現時点では GitHub Actions の CI が成功しているため、`ci.yml` は少なくとも現在の必要十分な実装例として参照できます。
+更新要否の判断は、これらの設定ファイルではなく、`app` 配下の各アプリケーションの構成と依存関係に基づいて行います。
 
 ## VS Code で環境変数が効く場所
 
@@ -84,7 +81,7 @@ test ! -f app/c_cpp_properties.warn
 `terminal.integrated.env.*` は、VS Code の統合ターミナルにだけ反映されます。  
 新しく開いたターミナルには反映されますが、既存のターミナルには反映されません。
 
-対象ワークスペースでは、Linux では `LD_LIBRARY_PATH` と `PATH`、Windows では `PATH` を設定しています。
+対象ワークスペースでは、Linux では `LD_LIBRARY_PATH` と `PATH`、Windows では `PATH` を設定しています。  
 これらの値は `bin/sync-app-env.sh` が生成します。
 
 ### .vscode/tasks.json
@@ -113,6 +110,10 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 `launch.json` と `tasks.json` が共通で参照する環境変数定義ファイルです。  
 `PATH` と `LD_LIBRARY_PATH` の行は `bin/sync-app-env.sh` が生成するため、手で編集しません。
 
+これらのファイルは VS Code 専用ではありません。  
+GitHub Actions と Jenkins も同じファイルを読むため、実行時パスと framework home の定義箇所はワークスペース全体でこの 2 ファイルに集約されています。  
+see: [CI と Jenkins での読み込み](#ci-と-jenkins-での読み込み)
+
 `MAKEFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME`、`DOCSFW_HOME` もここで定義します。  
 `MAKEFW_HOME` は make テンプレート群 (`framework/makefw`) の場所を表し、`make` / `make test` / `make doxy` などの実行で必須です。未設定だと `MAKEFW_HOME is required. Export MAKEFW_HOME before running make` で停止します。  
 `DOXYFW_HOME` は Doxygen 生成フレームワークの場所を表し、`make doxy` はこの値を使って doxyfw を呼び出します。  
@@ -124,7 +125,7 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 
 ## 実行時パスの正本
 
-`.vscode` と CI に書かれている実行時のコマンド探索パスとライブラリ探索パスは、これらのファイルが正本ではありません。
+`.vscode` に書かれている実行時のコマンド探索パスとライブラリ探索パスは、これらのファイルが正本ではありません。  
 `app/<name>` 配下の `makepart.mk` が設定する `OUTPUT_DIR` が正本であり、各設定ファイルはその派生物です。
 
 `bin/sync-app-env.sh` が `app/<name>/**/makepart.mk` を make で評価し、次の規則で導出します。
@@ -134,7 +135,7 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 - `test/lib` のように `prod/` 以外を指す `OUTPUT_DIR` は対象外とする
 - 並び順は app 名の `LC_ALL=C sort` とし、Windows の `PATH` は app ごとに `lib`、`cbin` の順に並べる
 
-`LIB_TYPE` (static / shared / both) による絞り込みは行いません。
+`LIB_TYPE` (static / shared / both) による絞り込みは行いません。  
 静的ライブラリだけを出力する app のディレクトリが探索パスに載っても実害がないため、判定を `OUTPUT_DIR` の 1 つに統一しています。
 
 `.vscode/pub_markdown.config.yaml` の `mergeSubfolderDocs` は、`app/<name>/docs` の有無から導出します。
@@ -143,16 +144,36 @@ app の一覧は `framework/makefw/bin/resolve_app_deps.sh --app-order` から�
 
 ### 実行時パスの適用範囲
 
-ここで生成する `PATH` と `LD_LIBRARY_PATH` は、ビルド済みの実行体を「実行」するために必要な設定であり、ビルド自体はこれらに依存しません。
-共有ライブラリが `DT_NEEDED` として要求する間接依存のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行うため、リンクの成否は `LD_LIBRARY_PATH` に左右されません。
+生成する `PATH` と `LD_LIBRARY_PATH` は、ビルド済みの実行体を実行するために必要な設定です。  
+ビルド自体はこれらに依存しません。  
+共有ライブラリが `DT_NEEDED` として要求する間接依存のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行うため、リンクの成否は `LD_LIBRARY_PATH` に左右されません。  
+see: [ライブラリ探索パスの扱い (Linux)](../../../framework/makefw/docs/library-search-paths.md)
 
-この区別があるため、CI では `make` の後にパス設定を置き、`make test` の直前で有効化します。
-パス設定をビルドより前へ移すと、ビルドが `LD_LIBRARY_PATH` に依存する欠陥が CI で検出できなくなります。
+### CI と Jenkins での読み込み
 
-開発者の対話環境では `.vscode/.env.linux` や統合ターミナルの設定によって `LD_LIBRARY_PATH` がシェル全体へ適用されるため、この種の依存はローカルでは表面化しません。
-ローカルで成功するビルドが CI で失敗する場合は、まずこの非対称性を疑ってください。
+`.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は、実行時パスを自前で定義しません。  
+`bin/load-app-env.sh` が `.vscode/.env.linux` または `.vscode/.env.windows` を読み、VS Code のプレースホルダーを解決した値を適用します。
 
-### 生成対象と生成区間
+| プレースホルダー | 解決後 |
+|---|---|
+| `${workspaceFolder}` | `--workspace` に渡したワークスペース ルート |
+| `${env:NAME}` | 実行時の環境変数 `NAME` の値 |
+
+出力形式は 2 つです。
+
+- `--format shell` - `export KEY='VALUE'` を標準出力へ出す。Jenkins が `eval` で取り込む
+- `--format github` - `PATH` 以外を `$GITHUB_ENV` へ、`PATH` の各エントリを `$GITHUB_PATH` へ書く
+
+`--no-clobber` を付けると、すでに設定済みのキーは上書きしません。  
+ただし値が自身のキーを `${env:<同一キー>}` として参照する合成型のキー (`PATH`) は常に適用します。  
+Jenkins ジョブ側で `MAKEFW_HOME` などを別配置へ差し替える運用は、この指定で維持しています。
+
+読み込みは各ジョブのビルド前に 1 回だけ行い、キーによる読み分けはしません。  
+`.env.linux` の `LD_LIBRARY_PATH` は既存値を末尾に連結しない定義であり、CI でもそのまま適用します。
+
+app を追加・削除しても `bin/load-app-env.sh` と CI 設定は app 名を持たないため、変更が発生するのは `.vscode` 配下の 4 ファイルだけです。
+
+### 生成対象
 
 | 対象 | ファイル | 生成される箇所 |
 |---|---|---|
@@ -160,16 +181,13 @@ app の一覧は `framework/makefw/bin/resolve_app_deps.sh --app-order` から�
 | VS Code テスト タスク / デバッグ (Linux) | `.vscode/.env.linux` | `PATH` と `LD_LIBRARY_PATH` の行 |
 | VS Code テスト タスク / デバッグ (Windows) | `.vscode/.env.windows` | `PATH` の行 |
 | Markdown 発行 | `.vscode/pub_markdown.config.yaml` | `mergeSubfolderDocs` の行 |
-| GitHub Actions | `.github/workflows/ci.yml` | `# BEGIN app-env-sync (linux)` / `(windows)` の区間 |
-| Jenkins 実装 | `.jenkins/inner-build.sh` | `# BEGIN app-env-sync` の区間 |
-| Jenkins 説明 | `.jenkins/README.md` | `<!-- BEGIN app-env-sync -->` の区間 |
 
-マーカーで囲まれた区間の中身は毎回上書きされるため、手で編集しないでください。
-`.vscode` の 4 ファイルはキー単位の行置換であり、その行以外は保持されます。
+いずれもキー単位の行置換であり、その行以外は保持されます。  
+`.github/workflows/ci.yml` と `.jenkins` 配下は生成対象ではありません。
 
 ### 同期の流れ
 
-ルートの `make` (および `make with-cov`) の完了後に `bash bin/sync-app-env.sh --check` が自動で走ります。
+ルートの `make` (および `make with-cov`) の完了後に `bash bin/sync-app-env.sh --check` が自動で走ります。  
 差異がある場合は `app/app_env.warn` が生成され、CI の warn artifact 収集にもそのまま乗ります。
 
 警告が出たら、ワークスペース ルートで次を実行して各ファイルを更新します。
@@ -185,12 +203,12 @@ bash bin/sync-app-env.sh --write
 bash bin/sync-app-env.sh --check
 ```
 
-`--check` は差異があるときに終了コード 3 を返します。
+`--check` は差異があるときに終了コード 3 を返します。  
 これは warning を表す終了コードであり、ビルドは失敗しません。
 
 ### app を追加・削除したときにすること
 
-`.vscode` と CI を手で編集する必要はありません。
+`.vscode` と CI を手で編集する必要はありません。  
 `make sync-app-env` を実行し、生成された差分をコミットします。
 
 `.gitmodules` への submodule 登録と `README.md` のサブモジュール一覧は自動生成の対象外のため、従来どおり手で更新します。
@@ -210,14 +228,14 @@ bash bin/sync-app-env.sh --check
 |---|---|---|
 | VS Code タスク / デバッグ | `.vscode/.env.linux`, `.vscode/.env.windows` | `MAKEFW_HOME`, `DOCSFW_HOME`, `DOXYFW_HOME`, `TESTFW_HOME` |
 | VS Code 統合ターミナル | `.vscode/settings.json` | `MAKEFW_HOME`, `DOCSFW_HOME`, `DOXYFW_HOME`, `TESTFW_HOME` |
-| GitHub Actions 全ジョブ | `.github/workflows/ci.yml` | workflow-wide `env` の `MAKEFW_HOME`, `DOCSFW_HOME`, `DOXYFW_HOME`, `TESTFW_HOME` |
-| Jenkins コンテナー内ビルド | `.jenkins/inner-build.sh` | `/workspace` 基準の framework home 変数。特に `MAKEFW_HOME` は `make` 実行で必須 |
 | Jenkins 説明 | `.jenkins/README.md` | Jenkins 上の既定値と上書き方法 |
 | CI 詳細説明 | 展開先の CI/CD 仕様書 | CI 上の既定値とドキュメント発行での利用 |
 
+`.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は `.vscode/.env.*` から読み込むため、更新は不要です。
+
 ## 個別 README の実行例を更新する
 
-利用者向けの README に、古い `app/<name>/prod/...` パスや手動 `LD_LIBRARY_PATH` 設定例が残っていないかを確認します。
+利用者向けの README に、古い `app/<name>/prod/...` パスや手動 `LD_LIBRARY_PATH` 設定例が残っていないかを確認します。  
 これらは自動生成の対象外です。特に、アプリ固有 README のトラブルシュート節は見落としやすい箇所です。
 
 ## 再チェック用チェックリスト
@@ -241,7 +259,7 @@ rg -n 'OUTPUT_DIR' --glob 'app/**/makepart.mk'
 ### 設定箇所の確認
 
 ```bash
-rg -n "LD_LIBRARY_PATH|GITHUB_ENV|GITHUB_PATH|terminal.integrated.env|Set PATH for tests|Set PATH and library path for tests" \
+rg -n "LD_LIBRARY_PATH|terminal.integrated.env|load-app-env" \
   .vscode .github .jenkins -S
 ```
 
@@ -274,8 +292,8 @@ LD_LIBRARY_PATH=$PWD/app/example/prod/lib:$PWD/app/example.net/prod/lib:$PWD/app
 - `.vscode/.env.linux`
 - `.vscode/.env.windows`
 - `.vscode/settings.json`
-- `.github/workflows/ci.yml`
-- `.jenkins/inner-build.sh`
 
-これらはいずれも `bin/sync-app-env.sh` の生成物です。
+これらはいずれも `bin/sync-app-env.sh` の生成物です。  
 内容に疑問がある場合は、`app/<name>/**/makepart.mk` の `OUTPUT_DIR` に立ち戻って確認してください。
+
+`.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は生成物ではなく、`bin/load-app-env.sh` で上記のファイルを読む固定の実装です。
