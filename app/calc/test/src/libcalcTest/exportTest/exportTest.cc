@@ -64,7 +64,7 @@ TEST_F(exportTest, symbol_names_match)
 
     // Assert
     testing::expectExportNamesMatch(expected, actual,
-                                     kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows は完全一致、Linux は不足のみ) 。
+                                     kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致) 。
 }
 
 // 公開ヘッダー (calc/ サブディレクトリのみ) の変数宣言が dllexport マクロ (CALC_EXPORT) を

@@ -2547,6 +2547,91 @@ grep -nE '(pthread_mutex_lock|EnterCriticalSection)' <dir>/*.c
 > [!IMPORTANT]
 > grep は補助です。最終判定は impl の手読みで行います。
 
+### 二重ポインターと const
+
+1 段のポインターでは `T *` から `const T *` への暗黙変換は安全です。  
+2 段では `T **` から `const T **` への暗黙変換はできません。  
+これは不便さではなく、const を破る経路を塞ぐ言語規則です。
+
+```c
+const T c = ...;
+T *p;
+const T **pp = &p; /* もしこれが許されると */
+*pp = &c;          /* p が const オブジェクトを指す */
+*p = ...;          /* const を非 const 経由で書き換える → 未定義動作 */
+```
+
+#### 型の読み方
+
+| 型 | 意味 | 典型用途 |
+|---|---|---|
+| `T **` | 内側も外側も書き換え可 | ハンドル出力 `T **out`、可変なポインター配列 |
+| `const T **` | 「`const T *` へのポインター」。**スロットは書き換え可**、指す先の `T` は const | 解析結果として `const char *` を格納する先 |
+| `T *const *` | 「`T *` への const ポインター」。**スロットは書き換え不可**、指す先の `T` は非 const 可 | 読み取り専用の `argv` 風配列 |
+| `const T *const *` | スロットも指す先も書き換えない読み取り専用のポインター配列 | 読み取り専用の `const char *` 配列を渡す API |
+
+> [!IMPORTANT]
+> `const T **` と `const T *const *` は別物です。  
+> 「読み取り専用のポインター配列」を表したいときに `const T **` と書くと、変換不能と危険なキャストの両方に突き当たります。
+
+#### 用途ごとの型の選び方
+
+| 用途 | 仮引数の型 | Doxygen の方向 (目安) |
+|---|---|---|
+| ハンドルや領域を生成して返す | `T **out` (const なし) | `[out]` |
+| 関数が `const T *` をスロットへ書き込む | `const T **` | `[out]` |
+| ポインター配列を読むだけ (指す先も読んだだけ) | `const T *const *` | `[in]` |
+| ポインター配列のスロットは固定、指す先は非 const 可 (argv 形) | `T *const *` | `[in]` |
+
+```c
+/* 望ましい: 読み取り専用のポインター配列 */
+void sample_print_names(const char *const *names, size_t count);
+
+/* 望ましい: argv 形 (スロット非書き換え) */
+int sample_parse_args(int argc, char *const *argv);
+
+/* 望ましい: 出力スロット。呼び出し元は const char * 変数のアドレスを渡す */
+int sample_get_name(const char **name_out);
+
+/* 望ましい: ハンドル出力 */
+int sample_context_open(const char *path, sample_context **context_out);
+```
+
+本リポジトリの既存例:
+
+- `char *const *argv` — `com_util_argparser_parse` など
+- `com_util_sym_loader_entry *const *` — `com_util_sym_loader_init` など
+- `const char **storage` — 文字列オプションの出力スロット (`argparser` の register 系)
+
+#### 禁止する書き方
+
+ビルドを通すために `T **` を `const T **` へキャストしてはなりません。
+
+```c
+/* 望ましくない: 読み取り専用配列なのに const T ** とし、呼び出し側でキャスト */
+void sample_print_names(const char **names, size_t count);
+char *items[] = {"a", "b"};
+sample_print_names((const char **)items, 2); /* 危険な方向のキャスト */
+```
+
+API 側の型を `const T *const *` または `T *const *` に修正するか、呼び出し側で適切な型の配列・一時変数を用意します。
+
+> [!WARNING]
+> `T **` → `const T **` のキャストは、前述の const 破り経路を自分で開く行為です。  
+> 「コンパイラを黙らせるためのキャスト」として使わないでください。
+
+> [!NOTE]
+> `T **` → `const T **` の禁止は C と C++ で共通です。  
+> 安全側の多重 const (`const T *const *` など) への暗黙変換は、C++ では通ることが多く、C では通らないことがあります。  
+> 公開 C API の型は C の規則を正とし、暗黙変換に頼らず用途に合った型を宣言します。  
+> 値渡し引数の top-level const (宣言と定義で付ける位置を分ける規則) とは層が異なります。本節はポインターが指す先の修飾を扱います。
+
+#### 既存コードへの適用
+
+- 新規関数では、用途に応じて上表の型を最初から選びます。
+- 既存関数の const 化では、二重ポインターに当たったら本節で型を決め直します。危険なキャストで通さないでください。
+- すでに正しい既存 API (`char *const *`、出力用の `const char **` など) を、本節を理由に一括で書き換えません。変更機会に合わせて誤用だけを直します。
+
 ### 値渡し引数 (リテラル) の const 付与判定
 
 値渡し引数は **impl 側 (定義) のみ** に `const` を付けます。ヘッダー宣言には付けません。
@@ -2719,16 +2804,61 @@ int example_handler(const int kind, const int a, const int b, int *result_out)
 > エクスポート / 呼び出し規約マクロを定義側に付けないのは、次の理由によります。
 >
 > - MSVC は先行する宣言から `__declspec(dllexport)` と `__stdcall` を継承する
+> - GCC/Clang は、定義が公開ヘッダーの先行宣言 (visibility 付き) と整合するとき、その可視性を定義へ適用する
 > - `.c` は対応する公開ヘッダーを include 済みである (例: `example_handler.c` は `<example/example_spec.h>` を include)。このため定義側にマクロを重ねても情報が重複するだけで、新たな意味を持たない
 > - 重複を排し、宣言を唯一の契約源とすることで保守性が上がる
+> - Windows と Linux で「宣言に付け、定義に付けない」を統一する
+
+### 共有ライブラリのシンボル可視性
+
+公開境界は [命名規則](#命名規則) のヘッダー配置と接頭辞に加え、**共有ライブラリの動的シンボル表** でも表します。
+
+| 項目 | Windows (MSVC) | Linux (GCC/Clang) |
+|---|---|---|
+| 既定の動的エクスポート | 明示 `dllexport` のみ | 既定は default (全部出やすい) |
+| 本リポジトリの対策 | `*_EXPORT` → `dllexport` / `dllimport` | 共有ビルドで `-fvisibility=hidden` + `*_EXPORT` → `visibility("default")` |
+| 印の置き場所 | 宣言のみ (`*_EXPORT`) | 宣言のみ (同上) |
+
+規則:
+
+1. 動的シンボル表に載せてよいのは、`prod/include/` の公開 API に `*_EXPORT` を付けたシンボルだけとする。
+2. `include_internal/` で宣言する関数・変数に `*_EXPORT` を付けない。同一ライブラリ内の外部リンケージは持ってよいが、default 可視にはしない。
+3. Linux のライブラリ ビルドは、makefw が `-fvisibility=hidden` を付与する (static の `.a` を含む。shared へ静的リンクしたときの漏れ防止)。公開 API は `*_EXPORT` により default 可視になる。
+4. 静的リンク (`PREFIX_STATIC`) では `*_EXPORT` は空に展開する (Windows / Linux 共通)。
+5. ビルドを通すためだけに内部シンボルへ default 可視や `dllexport` を付けない。
+6. export テーブルと実際の動的シンボルは、Windows / Linux とも **不足と想定外の完全一致** で検査する (`exportTest` / `expectExportNamesMatch`)。Linux のリンカー合成シンボル (`__bss_start` 等) のみ検査対象外とする。
+7. OSS (`lua` / `sqlite` / `cjson`) は各 app の既存ビルド方針を維持する。export 検査の厳格化は共通フレームワーク側の挙動であり、OSS の製品ソースやビルド手順の改変は行わない。
+
+> [!IMPORTANT]
+> `<lib>_internal_` という **名前** だけでは、Linux の `.so` からシンボルが消えない。  
+> 動的エクスポートを閉じるには、hidden 既定と公開印 (`*_EXPORT`) の組み合わせが必要です。
+
+> [!WARNING]
+> テストが共有ライブラリ (`LIBS += <lib>`) と、同じライブラリに含まれる `.c` の `TEST_SRCS` / `ADD_SRCS` を **同時に** リンクしてはなりません。  
+> 既定可視性ではシンボル介入 (interposition) で偶然 1 つの TLS に見えていたものが、hidden 化後は **TLS や静的状態が二重化** し、失敗します。  
+> 共有ライブラリをリンクするテストでは、当該 `.c` を `TEST_SRCS` / `ADD_SRCS` に入れず、公開 API 経由で検証します。  
+> `TEST_SRCS` をやめたあとに残ったシンボリック リンクは手動削除が必要です (makefw の TEST_SRCS 留意事項を参照)。
+
+> [!NOTE]
+> 実装の中心は `com_util/base/dll_exports.h` の `COM_UTIL_DLL_EXPORT` と、`framework/makefw` の `makelibsrc_c_cpp.mk` です。  
+> 各 app の `{lib}_export.h` はそれを薄く包みます。
 
 ### 検証
 
-配置ルールの最終確認は MSVC ビルド (`Start-VSCode-With-Env.cmd` 環境) で行います。
+配置ルール (定義側に EXPORT を付けないこと) の最終確認は MSVC ビルド (`Start-VSCode-With-Env.cmd` 環境) で行います。  
+Linux では `*_API` が空でも、`*_EXPORT` は共有ビルドで visibility を持つため、公開 API の漏れは動的シンボル表とリンクで検出できます。
+
+```bash
+# Linux: 共有ライブラリの動的シンボル (公開 API が載り、内部ヘルパーが載らないこと)
+nm -D --defined-only app/<lib>/prod/lib/lib<name>.so | head
+
+# exportTest (不足と想定外の完全一致)
+cd app/<lib>/test/.../exportTest && make test
+```
 
 > [!WARNING]
-> Linux (GCC) では `{APP名}_EXPORT` / `{APP名}_API` が空に展開されるため、定義側マクロの有無による不整合は生じず、検出もできません。  
-> Linux ビルドが通ったことは、本節の配置ルールに従っている根拠になりません。
+> 定義側に誤って `*_EXPORT` を付けても、Linux ではビルドが通ることがあります。  
+> 配置ルールの逸脱は差分レビューと MSVC ビルドで確認してください。
 
 ## API 設計における概念の分離
 
@@ -2907,3 +3037,5 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - [SEI CERT C PRE02-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre02-c/) - マクロ置換リスト全体を括弧で囲むこと
 - [SEI CERT C PRE10-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre10-c/) - 複数文のマクロを do-while で包むこと
 - MISRA C:2012 Rule 20.7 - 関数形式マクロの仮引数を括弧で囲むこと (本規範の括弧規則の参考)
+- [C++ FAQ: Const correctness](https://isocpp.org/wiki/faq/const-correctness) - `T **` を `const T **` へ変換できない理由と、`const T *const *` への誘導
+- [SEI CERT C EXP05-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/expressions-exp/exp05-c/) - const 修飾を捨てるキャストを行わないこと

@@ -4,7 +4,10 @@
 
 C 言語は Linux と Windows の両方で動作するコードを書けますが、OS やコンパイラによって異なる部分を吸収するための工夫が必要です。プリプロセッサ マクロ (`#ifdef`・`#if defined`) を使った条件コンパイルが主な手段で、OS の判別やコンパイラ固有の属性・宣言の差異を吸収します。
 
-対象ワークスペースは Linux (GCC) と Windows (MSVC) の両方をサポートするクロスプラットフォーム設計になっています。`app/example/prod/include/libexample.h` では、Windows の DLL エクスポート宣言 (`__declspec(dllexport)`) と Linux の可視性属性 (`__attribute__((visibility("default")))`) を条件コンパイルで切り替えています。同様のパターンは `app/*/prod/` 配下の他のヘッダー ファイルにも見られます。
+対象ワークスペースは Linux (GCC) と Windows (MSVC) の両方をサポートするクロスプラットフォーム設計になっています。  
+公開 API の印は各 app の `*_EXPORT` マクロに集約し、実体は `com_util/base/dll_exports.h` の `COM_UTIL_DLL_EXPORT` が担います。  
+Windows では `dllexport` / `dllimport`、Linux の共有ライブラリでは `__attribute__((visibility("default")))` に展開します。  
+Linux の共有ビルドでは makefw が `-fvisibility=hidden` を付け、公開 API 以外を動的シンボル表から外します。
 
 ビルド システム (makefile) 側でも OS やコンパイラの違いを吸収しており、`framework/makefw/` サブモジュールが Linux / Windows の差異をテンプレートとして提供しています。
 
@@ -30,26 +33,29 @@ C 言語は Linux と Windows の両方で動作するコードを書けます�
 
 ### 使用箇所 (具体的なファイル・コマンド)
 
-クロスプラットフォーム宣言のパターン (`app/example/prod/include/libexample.h` の例):
+エクスポート マクロのパターン (`dll_exports.h` を各 app が包む):
 
 ```c
-/* DLL エクスポート/インポートのクロスプラットフォーム定義 */
-#if defined(_WIN32) || defined(_WIN64)
-  #ifdef LIBEXAMPLE_EXPORTS
-    #define LIBEXAMPLE_API __declspec(dllexport)
-  #else
-    #define LIBEXAMPLE_API __declspec(dllimport)
-  #endif
-#else
-  #define LIBEXAMPLE_API __attribute__((visibility("default")))
+#ifndef SAMPLE_STATIC
+    #define SAMPLE_STATIC 0
 #endif
+#ifndef SAMPLE_EXPORTS
+    #define SAMPLE_EXPORTS 0
+#endif
+#include <com_util/base/dll_exports.h>
+#define SAMPLE_EXPORT COM_UTIL_DLL_EXPORT(SAMPLE)
+#define SAMPLE_API    COM_UTIL_DLL_API(SAMPLE)
+
+/* 公開ヘッダーの宣言に付ける (定義側には付けない) */
+SAMPLE_EXPORT int SAMPLE_API sample_open(void);
 ```
 
 関連ファイル:
 
-- `app/example/prod/include/libexample.h` - 動的ライブラリのエクスポート宣言
-- `app/example/prod/include/libexamplebase.h` - 静的ライブラリのヘッダー
-- `app/example/prod/include/libexample_const.h` - OS に依存しない定数定義
+- `app/com_util/prod/include/com_util/base/dll_exports.h` - エクスポート / 可視性の共通テンプレート
+- `app/com_util/prod/include/com_util/com_util_export.h` - com_util 向けの薄いラッパー
+- `framework/makefw/makefiles/makelibsrc_c_cpp.mk` - Linux 共有ビルドの `-fvisibility=hidden`
+- [コーディング規範](../../coding-guideline.md) の「共有ライブラリのシンボル可視性」
 
 makefile での OS 判別 (`framework/makefw/` テンプレートより):
 
