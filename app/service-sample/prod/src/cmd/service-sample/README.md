@@ -131,6 +131,10 @@ make
 |---|---|
 | `prod/cbin/service-sample` | 実行ファイル (Linux) |
 | `prod/cbin/service-sample.exe` | 実行ファイル (Windows) |
+| `prod/cbin/libcom_util.so` / `prod/cbin/libcom_util.dll` | com_util の実行時ライブラリ |
+| `prod/cbin/libcjson.so` / `prod/cbin/libcjson.dll` | com_util が利用する cJSON の実行時ライブラリ |
+
+Linux は `$ORIGIN` の RUNPATH、Windows は実行ファイルと同じディレクトリの DLL 探索により、これらのライブラリを解決します。
 
 ## 実行
 
