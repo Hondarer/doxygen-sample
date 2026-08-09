@@ -6,7 +6,7 @@ C / C++ コードでの整数型の選択、関数引数の異常入力対応、
 適用範囲は主に `app/` 配下の C / C++ コードです。
 
 本書は、ログ / トレース、テスト規約、ヘッダー設計など、コーディング規範を順次追加していくことを想定しています。  
-現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「動的メモリの確保と解放」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「関数引数の const 付与と Doxygen 方向タグ」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
+現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「整数演算の安全性」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「動的メモリの確保と解放」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「関数引数の const 付与と Doxygen 方向タグ」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
 
 本書は一般的な方針を定めるものです。  
 各 app のドキュメントに優先事項、特化事項がある場合は、それに従ってください。
@@ -934,7 +934,8 @@ static_assert(sizeof(sample_record) == 32, "サイズは変更前後で不変");
 
 > [!WARNING]
 > 符号付き型と符号なし型を直接比較すると、暗黙変換によって負値が大きな正値になります。  
-> 負値の検査より先に上限比較を行うと、負の入力が上限検査を通過します。
+> 負値の検査より先に上限比較を行うと、負の入力が上限検査を通過します。  
+> 比較一般の規則は [整数演算の安全性](#整数演算の安全性) を参照してください。
 
 ### 幅に意味がある値
 
@@ -1034,6 +1035,243 @@ bool is_enabled = flags;
 
 - 変数と構造体メンバー: `is_` / `has_` を前置きする (`is_open`、`has_pending`)
 - 出力引数: `_out` の直前を真偽を表す語にする (`equal_out`、`exists_out`、`has_match_out`)
+
+## 整数演算の安全性
+
+### 基本ルール
+
+本章は、整数型を選んだあとの **演算・比較・変換** の安全性を定めます。  
+型そのものの選び方は [整数型の選択](#整数型の選択) に従います。
+
+外部文字列の解析と、動的メモリ確保における要素数とサイズの乗算は、すでに別章と com_util の API が検査を担っています。  
+本章が対象とするのは、それらに当てはまらない **通常の内部演算と型変換** です。
+
+| 論点 | 内容 | 主な担保手段 |
+|---|---|---|
+| 符号混在比較 | `unsigned` と `int` の比較で負値が大きな正値へ変わる | `-Wsign-compare` (警告) と本節の規則 |
+| 暗黙の縮小変換 | 代入・引数渡し・戻り値で幅が狭まり値が失われる | `-Wconversion` / `-Wsign-conversion` (警告) |
+| 明示キャストの正当性 | キャストが警告を消す一方、範囲外の値を静かに壊す | 本節の規則とレビュー (警告では検出できない) |
+| 演算のオーバーフロー | 符号付きは未定義動作、符号なしは回り込み | 本節の事前検査 (警告ではほぼ検出できない) |
+
+> [!NOTE]
+> SEI CERT C は INT30-C (符号なしの回り込み防止)、INT31-C (変換でデータと符号を失わせないこと)、INT32-C (符号付き演算のオーバーフロー防止)、INT02-C (整数変換規則の理解) を定めています。  
+> MISRA C:2012 Rule 10.1 から 10.8 は Essential Type Model に基づき、演算と代入における型の混在を制限します。  
+> 本節はこれらと同じ問題意識に立ちつつ、本リポジトリの読み手とクロスプラットフォーム前提に合わせて規則を置きます。
+
+### 符号付きと符号なしの比較
+
+符号付き型と符号なし型を直接比較しません。  
+比較する場合は、負値を先に排除してから同じ符号性の型へそろえます。
+
+```c
+/* 望ましい。負値を排除してから符号なしへそろえて比較する */
+if (value < 0)
+{
+    return SAMPLE_ERR_INVALID_ARG;
+}
+if ((size_t)value > limit)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+
+/* 望ましくない。value が負のとき大きな正値として比較される */
+if (value > limit)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+```
+
+外部文字列から符号なしの目的型へ変換するときの順序は、[文字列入力から意味付き型への変換](#文字列入力から意味付き型への変換) に従います。
+
+> [!NOTE]
+> `-Wsign-compare` は `-Wextra` に含まれ、`app/makepart.mk` の `GCC_WARN_BASE` で有効です。  
+> 符号混在比較の多くはビルド時に検出できます。
+
+### 縮小変換と符号変換の明示キャスト
+
+幅が狭まる変換、または符号性が変わる変換を明示キャストするときは、次のいずれかを満たします。
+
+1. **直前に範囲検査を置く** (上限と下限。符号なしへ渡す前の負値検査を含む)
+2. **検査が不要である理由をコメントで残す**
+
+検査が不要とみなせる例は次のとおりです。
+
+- 直前の `if` で値が変換先の範囲に収まることが確定している
+- `strlen` の結果を、上限が定数の固定長バッファーへ渡すなど、変換先の上限が文脈から自明である
+- 同じ関数内ですでに検査済みの値を、別の型名へ付け替えるだけである
+
+```c
+/* 望ましい。範囲検査の直後にキャストする */
+if (value < 0 || value > (int64_t)UINT32_MAX)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+header->len = (uint32_t)value;
+
+/* 望ましい。検査が不要な理由をコメントに残す */
+/* path は PATH_MAX 未満であることが呼び出し規約で保証されている */
+name_len = (int)strlen(path);
+
+/* 望ましくない。範囲を確認しないキャスト */
+header->len = (uint32_t)value;
+```
+
+> [!IMPORTANT]
+> 明示キャストは `-Wconversion` / `-Wsign-conversion` の警告を消します。  
+> 範囲検査を伴わないキャストは、値を静かに壊したままビルドを通します。  
+> 検査を書かない場合は、理由コメントがないと「検査漏れ」と「意図的な省略」を区別できません。
+
+> [!NOTE]
+> 検査が自明なキャストに同じ検査を再度書くのは冗長です。  
+> 一方で「自明」の判断は読み手によって割れるため、検査を書かない場合は理由をコメントで残します。  
+> これは、一括置換で意図的に対象外とした箇所に理由コメントを残す方針と同じ形です。
+
+#### 既存コードへの適用
+
+- 新規コードは最初から本規則に従います
+- 既存の明示キャストは、変更対象ファイルに触れる機会に合わせて適用します。本規則を目的とした一括対応は求めません
+
+### size_t の減算
+
+`size_t` の減算は、減算の前に大小関係を検査します。
+
+```c
+/* 望ましい */
+if (total < used)
+{
+    return SAMPLE_ERR_INVALID_ARG;
+}
+remain = total - used;
+
+/* 望ましくない。total < used のとき巨大な正値へ回り込む */
+remain = total - used;
+```
+
+> [!WARNING]
+> `size_t` は符号なしです。  
+> `a - b` で `a < b` のとき結果は負にはならず、表現可能な最大値付近の正値になります。  
+> その値を長さや添字に使うと、バッファー外アクセスにつながります。
+
+### 符号付き整数のオーバーフロー
+
+符号付き整数のオーバーフローは未定義動作です。  
+加減乗算の結果が型の範囲を超えないことを、**演算の前** に上限と下限との関係で検査します。
+
+```c
+/* 望ましい。加算の事前検査 (int) */
+if (b > 0 && a > INT_MAX - b)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+if (b < 0 && a < INT_MIN - b)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+sum = a + b;
+
+/* 望ましい。非負どうしの乗算の事前検査 */
+if (b != 0 && a > limit / b)
+{
+    return SAMPLE_ERR_OUT_OF_RANGE;
+}
+product = a * b;
+```
+
+処理系組み込みのオーバーフロー検出 (`__builtin_add_overflow` など) は使用しません。  
+MSVC に同等の組み込みがなく、プラットフォームごとの条件分岐が増えるためです。  
+加減乗算の検査を共通 API へ切り出す必要が生じた時点で、com_util への追加を検討します。
+
+> [!WARNING]
+> 演算後の結果を見る事後検査は成立しません。  
+> `if (a + b < a)` は符号なしでは成立しますが、符号付きでは加算の時点で未定義動作が発生しており、最適化によって条件そのものが削除されます。  
+> 検査は必ず演算の前に行ってください。
+
+> [!NOTE]
+> 要素数と要素サイズの乗算は、本章の乗算検査ではなく [配列の確保](#配列の確保) に従います。  
+> `calloc(count, size)` または `com_util_calloc` を使い、自前で `count * size` を計算しません。
+
+### 符号なし整数の回り込み
+
+符号なし整数の回り込みは定義された動作です。  
+ただし、意図しない回り込みは不具合です。
+
+- 長さ、添字、残量など、回り込みが意味を持たない値では、演算の前に範囲を検査します
+- 意図して回り込ませる場合 (巡回カウンター、ハッシュなど) は、その意図をコメントで明示します
+
+```c
+/* 望ましい。意図的な回り込みであることをコメントする */
+/* 32 bit の巡回シーケンス番号。UINT32_MAX の次は 0 へ戻る */
+seq = seq + 1U;
+```
+
+### 整数昇格と狭い型同士の演算
+
+`uint16_t` や `uint8_t` どうしの演算は、整数昇格により `int` で計算されます。  
+結果を広い型へ代入しても、計算自体が `int` の範囲で桁あふれする場合があります。
+
+```c
+/* 望ましくない。a * b は int で計算され、int の範囲で桁あふれしうる */
+uint16_t a;
+uint16_t b;
+uint32_t product;
+
+product = a * b;
+
+/* 望ましい。演算の前に十分な幅へ広げる */
+product = (uint32_t)a * (uint32_t)b;
+```
+
+> [!NOTE]
+> 整数昇格後の型が符号付き `int` になるため、昇格後の乗算が `INT_MAX` を超えると未定義動作になります。  
+> 結果の代入先が `uint32_t` であっても、計算の途中で発生した未定義動作は消えません。
+
+### 既存規定への委譲
+
+| 対象 | 従う規定 |
+|---|---|
+| 外部文字列から整数への変換 | [文字列入力から意味付き型への変換](#文字列入力から意味付き型への変換)。com_util 利用時は `com_util_parse_*` |
+| 要素数を伴うメモリ確保の乗算 | [配列の確保](#配列の確保)。com_util 利用時は `com_util_calloc` / `com_util_realloc` 系 |
+
+com_util が関数側で検査を内包する範囲の詳細は、[`app/com_util/docs/coding-guideline.md`](../../com_util/docs/coding-guideline.md) の「整数演算の安全性」を参照してください。
+
+### 警告オプション
+
+Linux では `app/makepart.mk` と `framework/testfw/makepart.mk` の `GCC_WARN_BASE` で次を有効にしています。
+
+| フラグ | 検出する論点 |
+|---|---|
+| `-Wsign-compare` (`-Wextra` に含まれる) | 符号付きと符号なしの比較 |
+| `-Wconversion` | 値を変えうる暗黙の型変換 (縮小変換を含む) |
+| `-Wsign-conversion` | 符号付きと符号なしのあいだの暗黙変換 |
+
+Windows では `framework/makefw/makefiles/_flags.mk` の `CWARNS ?= /W4` により、C4244 / C4267 (縮小変換による値の欠落) と C4245 / C4389 (符号付きと符号なしの不一致) が報告されます。
+
+`-Werror` と `/WX` は設定しません。  
+CI は警告を成果物として収集し公開しますが、警告の有無でビルドを失敗させません。
+
+OSS 由来モジュール (`app/lua`、`app/sqlite`、`app/cjson`) は上流ソースを改変しない方針のため、各 `makepart.mk` で `-Wno-conversion` と `-Wno-sign-conversion` を例外的に抑制します。  
+既存の `-Wno-padded` などと同じ扱いです。
+
+> [!NOTE]
+> `-Wconversion` が報告しないことは、変換が安全であることを意味しません。  
+> MSVC の `/W4` を通すために明示キャストが入っている箇所では、Linux 側の警告も消えます。  
+> 明示キャストの正当性は [縮小変換と符号変換の明示キャスト](#縮小変換と符号変換の明示キャスト) で担保します。
+
+### 検証
+
+暗黙変換の残存は、有効化した警告フラグ付きのビルドで確認します。
+
+```bash
+# 構文検査の例 (モジュールのインクルード パスは対象に合わせて追加する)
+find <module-dir>/prod -name '*.c' -print0 | xargs -0 -n1 \
+  gcc -std=c17 -D_DEFAULT_SOURCE -fsyntax-only \
+  -Wall -Wextra -Wconversion -Wsign-conversion \
+  -I<module-dir>/prod/include -I<module-dir>/prod/include_internal
+```
+
+> [!IMPORTANT]
+> 明示キャストの直前に範囲検査があるか、理由コメントがあるかは、警告では判定できません。  
+> 変更差分のレビューで [縮小変換と符号変換の明示キャスト](#縮小変換と符号変換の明示キャスト) を確認してください。
 
 ## 関数引数の異常入力対応
 
@@ -1443,7 +1681,8 @@ entries = (sample_entry *)malloc(count * sizeof(*entries));
 > 確保方法を変更するときは、ゼロ初期化に依存している箇所がないことを確認してください。
 
 `realloc` には要素数とサイズを分けて渡す形が標準にないため、伸長時の乗算は呼び出し側に残ります。  
-[再確保 (realloc)](#再確保-realloc) の規則に加え、要素数の上限を呼び出し側で検査します。
+[再確保 (realloc)](#再確保-realloc) の規則に加え、要素数の上限を呼び出し側で検査します。  
+確保サイズ以外の一般の整数演算におけるオーバーフロー検査は、[整数演算の安全性](#整数演算の安全性) に従います。
 
 > [!NOTE]
 > MISRA C:2012 Dir 4.12 と Rule 21.3 は動的メモリの使用そのものを禁止しています (いずれも Required)。  
@@ -2509,4 +2748,11 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - [SEI CERT C MEM01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem01-c/) - `free` の直後にポインターへ新しい値を格納すること
 - [SEI CERT C MEM04-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem04-c/) - 長さ 0 の確保に注意すること
 - [SEI CERT C INT30-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/integers-int/int30-c/) - 符号なし整数の演算を回り込ませないこと
+- [SEI CERT C INT31-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/integers-int/int31-c/) - 整数変換でデータと符号を失わせないこと
+- [SEI CERT C INT32-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/integers-int/int32-c/) - 符号付き整数の演算をオーバーフローさせないこと
+- [SEI CERT C INT02-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int02-c/) - 整数変換規則を理解すること
+- MISRA C:2012 Rule 10.1 から 10.8 (Essential Type Model) - 演算と代入における型の混在を制限する規則群。本規範は全面採用せず参考とする
+- [GCC の警告オプション](https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html) - `-Wconversion` / `-Wsign-conversion` / `-Wsign-compare` の定義
+- [MSVC のコンパイラ警告 C4244](https://learn.microsoft.com/ja-jp/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4244) - 縮小変換による値の欠落
+- [MSVC のコンパイラ警告 C4245](https://learn.microsoft.com/ja-jp/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4245) - 符号付きと符号なしの不一致
 - MISRA C:2012 Dir 4.12 / Rule 21.3 - 動的メモリの使用と `<stdlib.h>` の確保・解放関数の使用を禁止する規則 (いずれも Required)。組み込み向けの前提であり本規範では採用しない

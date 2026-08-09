@@ -6,7 +6,9 @@ GCC_WARN_BASE = \
 	-Wpointer-arith -Wcast-qual -Wcast-align \
 	-Wswitch-enum -Wswitch-default \
 	-Wpacked -Wpadded \
-	-Wunknown-pragmas
+	-Wunknown-pragmas \
+	-Wconversion \
+	-Wsign-conversion
 GCC_WARN_C_ONLY = \
 	-Wmissing-prototypes \
 	-Wstrict-prototypes \
