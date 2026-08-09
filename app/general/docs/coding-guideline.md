@@ -520,7 +520,12 @@ typedef void (*sample_hook_callback_t)(sample_context *context, void *user_data)
 - OS / SDK / 外部 ABI が定義する型の alias
 - 外部 OSS 由来のコードが定義する型
 
-### マクロの命名
+### マクロ
+
+本節はマクロの **命名**、**用途の制限**、**本体の書き方** を定めます。  
+ソース式の括弧は [式の括弧](#式の括弧) を参照してください。マクロ本体の括弧とは層が異なります。
+
+#### 命名
 
 全大文字とアンダースコアで構成し、`<LIB>_` を前置きします。
 
@@ -542,6 +547,147 @@ typedef void (*sample_hook_callback_t)(sample_context *context, void *user_data)
 ```c
 #define sample_log_write(context, message) \
     sample_log_write_at((context), (message), __FILE__, __LINE__)
+```
+
+#### マクロにしてよい用途
+
+関数形式マクロとオブジェクト形式マクロは、次の用途に限り新設します。  
+ここに当てはまらない処理や定数は、通常の関数、`static inline` 関数、または (適切な場合の) `enum` / `static const` で表します。
+
+| 用途 | 説明 | 例 |
+|---|---|---|
+| 呼び出し位置の注入 | `__FILE__` / `__LINE__` / `__func__` を実体関数へ渡す | `sample_log_write` → `sample_log_write_at` |
+| 可変個引数の糖衣 | 引数個数のカウントや、実体 `_n` 関数への転送 | `sample_path_concat` |
+| 型を取る API | 型名トークンを引数に含むキャストや初期化 | `sample_resolve_as(fobj, type)` |
+| 構造体初期化子の定型 | 定型の中括弧初期化子を共有する | `SAMPLE_ENTRY_INIT(key, type)` |
+| コンパイル時整数定数 | `#if` 分岐、他マクロへの埋め込み、公開ヘッダーの整数定数 | 結果コード、ビット フラグ、パス上限 |
+| 処理系・ABI の抽象 | 呼び出し規約、export、インライン強制など | `SAMPLE_EXPORT`、`FORCE_INLINE` |
+
+> [!IMPORTANT]
+> 結果コードを `#define` と `int` で表す方針は [エラー処理と戻り値規約](#エラー処理と戻り値規約) が正です。  
+> 本節の「enum を優先する」一般論は、結果コード群には適用しません。
+
+> [!NOTE]
+> 業界では定数に `enum` / `static const` を、処理に `static inline` を優先する流れがあります (SEI CERT C PRE00-C など)。  
+> 本規範は用途ホワイト リストで「マクロにしてよい場合」を正とし、それ以外を関数や定数表現へ導きます。  
+> 公開ヘッダーの整数定数をすべて `static const` にすると、配列サイズや `#if` に使えず、翻訳単位ごとに実体が分かれるため、公開の整数定数は `#define` を正とします。  
+> `.c` 内の読み取り専用データには `static const` を使って構いません。
+
+次はマクロにせず、関数へ移します。
+
+- 複数の文からなる処理、ローカル変数が欲しい処理
+- 仮引数を本体で複数回評価する計算
+- 仮引数以外の識別子を捕捉するファイル内ヘルパー (例: マクロ本体が引数に無い `p->member` を参照する)
+
+#### 本体の書き方
+
+##### 引数と本体の括弧
+
+関数形式マクロで **式として使う** 各仮引数の出現は、括弧で囲みます。  
+式に展開するマクロの置換リスト全体も、括弧で囲みます。
+
+```c
+/* 望ましい: 引数と全体を括弧 */
+#define SAMPLE_ALIGN_UP(x, a) (((x) + ((a) - 1U)) & ~((a) - 1U))
+
+/* 望ましい: 位置注入。引数は括弧 */
+#define sample_log_write(context, message) \
+    sample_log_write_at((context), (message), __FILE__, __LINE__)
+
+/* 望ましくない: 引数に括弧がなく、呼び出し側の演算子と結合が変わる */
+#define SAMPLE_SQR(x) x * x
+```
+
+次は括弧を付けません (付けると意味が壊れる、または付けられない)。
+
+| 例外 | 理由 |
+|---|---|
+| `#` / `##` の被演算子 | トークン連結・文字列化の対象 |
+| 型名トークン | `(type)expr` の `type` など |
+| 文字列リテラル連結に使う書式引数 | `"[%s:%d] " fmt` の `fmt`。括弧を付けると連結できない |
+| 構造体初期化子マクロの一部トークン | 中括弧初期化子の構文上の断片 |
+
+```c
+/* 例外: 文字列リテラル連結に使う fmt は括弧不可 */
+#define sample_log_writef(context, fmt, ...) \
+    sample_log_writef_at((context), __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+```
+
+##### 複文マクロ
+
+複数の文からなるマクロは、`do { ... } while (0)` で包みます。  
+単一の文として使うマクロでも、複文へ拡張する見込みがある場合は同様に包んで構いません。
+
+```c
+/* 望ましい */
+#define SAMPLE_CLOSE_AND_NULL(p) \
+    do                           \
+    {                            \
+        sample_close((p));       \
+        (p) = NULL;              \
+    } while (0)
+
+/* 望ましくない: if / else と結合が壊れる */
+#define SAMPLE_CLOSE_AND_NULL(p) \
+    sample_close((p));           \
+    (p) = NULL
+```
+
+戻り値が必要な式マクロには `do { ... } while (0)` を使いません。  
+式のまま括弧で囲みます。
+
+複文が必要になった時点で、まず `static inline` 関数または通常の関数へ移せないかを検討します。  
+関数化できるならマクロにしないでください。
+
+> [!WARNING]
+> 複文を中括弧だけ、または連続する文だけで書くと、`if (cond) MACRO(x); else ...` の形でコンパイル エラーや意図しない制御になります。  
+> `do { ... } while (0)` は、末尾のセミコロンと制御構文の両方に整合させるための慣用句です。
+
+##### 仮引数の評価回数
+
+各仮引数は、マクロ本体で **高々 1 回** 評価します。  
+複数回の評価が必要なロジックは、`static inline` 関数または通常の関数へ移します。
+
+```c
+/* 望ましくない: x が 2 回評価される */
+#define SAMPLE_TWICE(x) ((x) + (x))
+
+/* 望ましい: 関数なら引数は 1 回だけ評価される */
+static inline int sample_twice_int(int x)
+{
+    return x + x;
+}
+```
+
+既存のマクロが仮引数を複数回評価している場合は、変更機会に合わせて関数へ移すか、Doxygen に「副作用のある実引数を渡してはなりません」と明記します。  
+新規マクロでは複数回評価を採用しません。
+
+##### 処理系拡張
+
+- GNU 文式 (`({ ... })`) は使用しません。MSVC で使えません。
+- 空の可変引数に対応するための `##__VA_ARGS__` (GNU / MSVC 拡張) は、可変引数 API の糖衣に限り用いて構いません。
+- コンマ演算子で複数の副作用を並べた文マクロは避け、`do { ... } while (0)` または関数へ移します。
+
+> [!NOTE]
+> ヘッダーに置く `static inline` の定義規則 (外部定義の要否、C と C++ の差) の詳細は、本節では扱いません。  
+> マクロより関数を優先する判断に必要な範囲だけを本節で述べます。
+
+#### 検証
+
+括弧の過不足や評価回数は、字句だけでは誤検知が多いため、機械的な必須チェックは定めません。  
+レビューでは次を確認します。
+
+- 新設マクロが [マクロにしてよい用途](#マクロにしてよい用途) のいずれかに当てはまるか
+- 式として使う仮引数に括弧があるか。式マクロの本体全体に括弧があるか。例外に該当する出現だけが括弧なしか
+- 複文マクロが `do { ... } while (0)` になっているか
+- 各仮引数の評価が高々 1 回か
+- GNU 文式を使っていないか
+
+```bash
+# 関数形式マクロの定義箇所の洗い出し (第一党の目視レビュー用。OSS は除外)
+grep -rnE '^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\(' \
+  app --include=*.h --include=*.c \
+  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
 ```
 
 ### ヘッダー ファイル名の _internal
@@ -760,7 +906,7 @@ uint8_t reserved[sample_record_reserved_size];
 > [!IMPORTANT]
 > ここでの「要素数を明示する」は、**`16` のような直値のリテラルを書く** ことを指します。  
 > 名前付きの定数を定義してそれを書くことではありません。  
-> [マクロの命名](#マクロの命名) がマクロ名にライブラリ接頭辞を求めていることとは、対象が異なります。
+> [マクロ](#マクロ) の命名規則がマクロ名にライブラリ接頭辞を求めていることとは、対象が異なります。
 
 > [!NOTE]
 > 直値のリテラルとするのは、予約領域のバイト数を構造体の宣言だけで確認できるようにするためです。  
@@ -2756,3 +2902,8 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - [MSVC のコンパイラ警告 C4244](https://learn.microsoft.com/ja-jp/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4244) - 縮小変換による値の欠落
 - [MSVC のコンパイラ警告 C4245](https://learn.microsoft.com/ja-jp/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4245) - 符号付きと符号なしの不一致
 - MISRA C:2012 Dir 4.12 / Rule 21.3 - 動的メモリの使用と `<stdlib.h>` の確保・解放関数の使用を禁止する規則 (いずれも Required)。組み込み向けの前提であり本規範では採用しない
+- [SEI CERT C PRE00-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre00-c/) - 関数形式マクロよりインライン関数や静的関数を優先すること
+- [SEI CERT C PRE01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre01-c/) - マクロ内の仮引数を括弧で囲むこと
+- [SEI CERT C PRE02-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre02-c/) - マクロ置換リスト全体を括弧で囲むこと
+- [SEI CERT C PRE10-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/preprocessor-pre/pre10-c/) - 複数文のマクロを do-while で包むこと
+- MISRA C:2012 Rule 20.7 - 関数形式マクロの仮引数を括弧で囲むこと (本規範の括弧規則の参考)
