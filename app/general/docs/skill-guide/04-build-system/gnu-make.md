@@ -68,5 +68,5 @@ Table: makefile ファイル構成一覧
 ### 関連ドキュメント
 
 - [ビルド設計](../../build-design.md) - 対象ワークスペースのビルド構成の詳細
-- [makepart.mk フックの設計](../../makepart-hooks-design.md) - `makepart.mk` カスタマイズ機構の詳細
+- [フック機能](../../../../../framework/makefw/docs/hooks.md) - `makelocal.mk` の pre/post フック
 - [GCC / MSVC ツールチェーン (スキル ガイド)](gcc-toolchain.md) - コンパイラとリンカーのオプション
