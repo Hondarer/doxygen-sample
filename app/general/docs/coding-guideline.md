@@ -6,7 +6,7 @@ C / C++ コードでの整数型の選択、関数引数の異常入力対応、
 適用範囲は主に `app/` 配下の C / C++ コードです。
 
 本書は、ログ / トレース、テスト規約、ヘッダー設計など、コーディング規範を順次追加していくことを想定しています。  
-現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「整数演算の安全性」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「動的メモリの確保と解放」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「関数引数の const 付与と Doxygen 方向タグ」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
+現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「整数演算の安全性」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「動的メモリの確保と解放」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「restrict、volatile、inline の利用」「関数引数の const 付与と Doxygen 方向タグ」「スレッド安全性の Doxygen 記載」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
 
 本書は一般的な方針を定めるものです。  
 各 app のドキュメントに優先事項、特化事項がある場合は、それに従ってください。
@@ -669,8 +669,8 @@ static inline int sample_twice_int(int x)
 - コンマ演算子で複数の副作用を並べた文マクロは避け、`do { ... } while (0)` または関数へ移します。
 
 > [!NOTE]
-> ヘッダーに置く `static inline` の定義規則 (外部定義の要否、C と C++ の差) の詳細は、本節では扱いません。  
-> マクロより関数を優先する判断に必要な範囲だけを本節で述べます。
+> ヘッダーに置く `static inline` の定義規則は、[inline 関数](#inline-関数) を参照してください。
+> 本節は、マクロより関数を優先する判断だけを扱います。
 
 #### 検証
 
@@ -2455,6 +2455,127 @@ grep -rnE '\?' app --include=*.c --include=*.h \
   | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|doxybook2_'
 ```
 
+## restrict、volatile、inline の利用
+
+`restrict`、`volatile`、`inline` は、コンパイラによる最適化やメモリ アクセスの評価に影響します。
+これらを移植性やスレッド同期の代替として使用しません。
+
+### restrict による非 alias 契約
+
+`restrict` は、修飾したポインターを通じて参照するオブジェクトへ、同じ実行中に別の経路からアクセスしないという契約を表します。
+この契約を呼び出し元まで確認でき、性能計測で改善を確認した場合だけ使用します。
+
+`restrict` を使用できる場所は `.c` ファイル内の `static` 関数の宣言と定義に限定します。
+`prod/include/` と `prod/include_internal/` のヘッダーでは使用しません。
+公開関数とライブラリ内共有関数では、定義側だけに付ける形も含めて使用しません。
+
+使用前に次の条件をすべて満たすことを確認します。
+
+1. 対象関数が性能上の問題になっていることを計測で確認する。
+2. 修飾するポインターごとに、呼び出し元を含む非 alias の根拠を示す。
+3. GCC と MSVC の両方で性能を計測し、改善を確認する。
+4. 使用箇所のコメントに非 alias の根拠と計測条件を記載する。
+
+```c
+/* 望ましくない: 公開ヘッダーが利用者へ非 alias 契約を要求する */
+SAMPLE_EXPORT int sample_sum(const int *restrict lhs, const int *restrict rhs, size_t count);
+```
+
+```c
+/* 望ましい: .c 内で根拠と効果を確認した処理に限定する */
+/* lhs と rhs は別々に確保された配列です。計測条件: {条件を記載します。} */
+static int sum_arrays(const int *restrict lhs, const int *restrict rhs, const size_t count)
+{
+    /* ... */
+}
+```
+
+> [!WARNING]
+> `restrict` は単なる最適化のヒントではありません。
+> 非 alias 契約に違反すると、C17 の規則上は動作が未定義になります。
+
+### volatile とスレッド同期
+
+`volatile` は、対象へのアクセスを抽象機械の規則に従って評価させます。
+操作の不可分性、スレッド間の可視性、メモリ順序は保証しないため、スレッド同期には使用しません。
+
+スレッド間で共有する状態は、mutex、rwlock、condition variable など、各 app が定める同期機構で保護します。
+標準 C の `_Atomic` と `<stdatomic.h>` は、MSVC の C11/C17 モードで利用できないため使用しません。
+ロックを使用しない共有状態が必要な場合は、GCC と Windows のメモリ順序を共通化する atomic API を別途設計します。
+
+`volatile` を使用できる用途は次のとおりです。
+
+| 用途 | 条件 |
+|---|---|
+| シグナル ハンドラーと通常処理の間のフラグ | `volatile sig_atomic_t` を使用する |
+| メモリ マップド I/O | 対象プラットフォームの仕様がアクセスを要求する |
+| コンパイラまたは OS API が要求する型 | 要求元と理由をコメントに記載する |
+| 最適化で除去させない意図的なメモリ アクセス | 目的と根拠をコメントに記載する |
+
+後二つの用途では、根拠となる仕様の URL を `see: {URL}` の形式でコメントに残します。
+
+```c
+/* 望ましい: 非同期シグナルから設定するフラグ */
+static volatile sig_atomic_t s_stop_requested;
+```
+
+```c
+/* 望ましくない: volatile だけでスレッド間の同期を試みる */
+static volatile int s_worker_stopped;
+```
+
+ロックで保護している状態へ `volatile` を重ねても、追加の同期効果はありません。
+既存の `volatile` は一括変更せず、変更時に用途を分類し、不要な修飾を個別に削除します。
+スレッド間で共有される `volatile` を変更する場合は、データ競合の有無を確認し、同期機構へ置き換えます。
+
+### inline 関数
+
+`inline` はインライン展開を保証しません。
+外部リンケージを持つ inline 定義は外部定義の配置規則を必要とするため、本リポジトリでは使用しません。
+
+`static inline` 関数は `prod/include_internal/` のヘッダーだけで定義します。
+複数の `.c` ファイルで共有する短い補助処理であり、通常関数にすると目的に対して呼び出しの負担が大きい場合に使用します。
+`prod/include/` の公開ヘッダーへ新しい `static inline` 関数を追加しません。
+`.c` ファイルでは `inline` を指定せず、コンパイラの最適化へ任せます。
+
+`inline` と `extern inline` を単独で使用しません。
+強制インライン化マクロを使用する場合も、内部ヘッダーの `static inline` と同じ適用範囲に限定し、`static FORCE_INLINE` の形にします。
+強制インライン化は、通常の最適化で要求性能を満たせず、GCC と MSVC の計測で改善を確認した場合だけ使用します。
+使用箇所には強制する理由、計測条件、コード サイズへの影響をコメントで記載します。
+
+```c
+/* 望ましい: prod/include_internal/ の短い補助関数 */
+static inline int sample_internal_is_valid(const int value)
+{
+    return value >= 0;
+}
+```
+
+```c
+/* 望ましくない: 外部定義の配置が必要になる */
+inline int sample_is_valid(const int value)
+{
+    return value >= 0;
+}
+```
+
+既存の公開ヘッダーにある `static inline` 関数は、この規則の追加だけを理由に変更しません。
+既存箇所の監査は別の変更で実施します。
+
+### 検証
+
+次の検索結果をレビューし、使用場所と理由が規則に合っていることを確認します。
+
+```bash
+rg -n '\b(restrict|_Restrict)\b|\bvolatile\b|\b(static[[:space:]]+)?inline\b|\bFORCE_INLINE\b' app \
+  --glob '*.{c,h}' \
+  --glob '!app/lua/**' --glob '!app/sqlite/**' --glob '!app/cjson/**' \
+  --glob '!**/obj/**' --glob '!**/packages/**'
+```
+
+`restrict` と強制インライン化には、レビュー資料として GCC と MSVC の計測結果を添付します。
+`volatile` は許容用途、同期機構、根拠コメントの有無を確認します。
+
 ## 関数引数の const 付与と Doxygen 方向タグ
 
 対象ワークスペースのすべての C コード (`app/` 配下) で、関数引数には次のルールで `const` を付与し、  
@@ -2768,6 +2889,93 @@ cd <module-dir> && make doxy 2>&1 | grep -i warning
 > `ON_CALL(...).WillByDefault(Invoke(delegate_real_*))` および `EXPECT_CALL(...)` の matcher は型推論で追従するため、通常は無修正で済みます。  
 > ただし `Matcher<T*>` のように明示的に型を指定している箇所があれば、あわせて修正が必要です。
 
+## スレッド安全性の Doxygen 記載
+
+公開 API のスレッド安全性は、利用者が必要な排他制御を判断できる内容で宣言します。
+Doxygen の `@par` は任意の表題を持つ段落を作るコマンドであり、それ自体はスレッド安全性の意味を定義しません。
+
+### 適用範囲
+
+`prod/include/` で宣言する新規または変更対象の公開関数には、`@par スレッド セーフ` を記載します。
+`prod/include_internal/` の関数は、共有状態、ハンドル、オブジェクトの寿命、コールバックなど、並行実行に関する契約がある場合に記載します。
+`static` 関数には記載しません。
+
+既存の公開関数は、宣言または実装を変更する際に本規則を適用します。
+既存 API 全体の記載を変更する監査は、機能変更とは別の変更で実施します。
+
+### 分類
+
+関数を次の三つに分類します。
+
+| 分類 | 記載する条件 |
+|---|---|
+| スレッド セーフ | 呼び出し側が追加の排他制御を行わずに、対象となる同時呼び出しを実行できる |
+| 条件付きスレッド セーフ | ハンドル、引数、呼び出し順など、明示した条件を満たす場合だけ同時呼び出しを実行できる |
+| スレッド セーフではない | 対象となる呼び出しを呼び出し側で直列化する必要がある |
+
+「対象となる同時呼び出し」は、同じ関数だけでなく、同じ状態へアクセスする別の API との同時呼び出しも含みます。
+分類を判断する際は、次の項目を確認します。
+
+- 同一ハンドルへの同時呼び出し
+- 異なるハンドルへの同時呼び出し
+- グローバル状態またはライブラリ内共有状態へのアクセス
+- 引数が指す領域とハンドルの寿命
+- コールバックからの再入
+- 呼び出し側に必要な mutex などの排他制御
+
+条件付きスレッド セーフでは、該当する条件と禁止する同時操作を本文に列挙します。
+「条件付きスレッド セーフです」だけでは利用者が排他制御を判断できないため、その一文だけで記載を終えません。
+
+再入可能性、非同期シグナル安全性、ロック フリー性は、スレッド安全性とは別の性質です。
+これらを保証する API だけが、`@par スレッド セーフ` とは別の段落で保証範囲を記載します。
+
+### 記載例
+
+スレッド セーフな関数は、次のように記載します。
+
+```c
+/**
+ * @par スレッド セーフ
+ * 本関数はスレッド セーフです。
+ */
+```
+
+条件付きスレッド セーフな関数は、条件と必要な排他制御を記載します。
+
+```c
+/**
+ * @par スレッド セーフ
+ * 異なるハンドルに対する呼び出しは、同時に実行できます。
+ * 同一ハンドルに対する呼び出しは、呼び出し側で直列化してください。
+ */
+```
+
+スレッド セーフではない関数は、直列化する範囲を記載します。
+
+```c
+/**
+ * @par スレッド セーフ
+ * 本関数はスレッド セーフではありません。
+ * 本関数と同じ共有状態へアクセスする API の呼び出しを、呼び出し側で直列化してください。
+ */
+```
+
+「スレッド セーフではない」という分類だけを理由に、動作が未定義であるとは記載しません。
+データ競合やオブジェクトの寿命違反によって動作が未定義になる場合は、未定義になる具体的な条件を記載します。
+
+### 検証
+
+公開関数の Doxygen と `@par スレッド セーフ` を抽出し、宣言ごとの分類と条件をレビューします。
+
+```bash
+rg -n '@par[[:space:]]+スレッド[[:space:]]+セーフ|^[A-Z][A-Z0-9_]*(?:_EXPORT|_API).*\(' app \
+  --glob '**/prod/include/**/*.h' \
+  --glob '!app/lua/**' --glob '!app/sqlite/**' --glob '!app/cjson/**'
+```
+
+条件付きスレッド セーフな関数では、同一または異なるハンドル、共有状態、寿命、再入、呼び出し側の排他制御のうち、実装に関係する条件が本文にあることを確認します。
+Doxygen を生成する変更では、対象 app の `make doxy` を実行し、警告がないことを確認します。
+
 ## 宣言と定義の関係
 
 公開 API の関数では、修飾子とマクロを **宣言 (ヘッダー)** と **定義 (impl の `.c`)** のどちらに置くかを次のとおり統一します。  
@@ -3039,3 +3247,11 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - MISRA C:2012 Rule 20.7 - 関数形式マクロの仮引数を括弧で囲むこと (本規範の括弧規則の参考)
 - [C++ FAQ: Const correctness](https://isocpp.org/wiki/faq/const-correctness) - `T **` を `const T **` へ変換できない理由と、`const T *const *` への誘導
 - [SEI CERT C EXP05-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/expressions-exp/exp05-c/) - const 修飾を捨てるキャストを行わないこと
+- [ISO/IEC 9899:201x Committee Draft N1570](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf) - `restrict`、`volatile`、inline 関数、データ競合に関する C11 の公開委員会草案
+- [SEI CERT C EXP43-C](https://wiki.sei.cmu.edu/confluence/spaces/c/pages/87151927/EXP43-C.+Avoid+undefined+behavior+when+using+restrict-qualified+pointers) - `restrict` の非 alias 契約へ違反して未定義動作を起こさないこと
+- [SEI CERT C POS40-C](https://wiki.sei.cmu.edu/confluence/display/c/POS40-C.%2BDo%2Bnot%2Buse%2Bvolatile%2Bas%2Ba%2Bsynchronization%2Bprimitive) - `volatile` を同期プリミティブとして使用しないこと
+- [Microsoft C キーワード](https://learn.microsoft.com/ja-jp/cpp/c-language/c-keywords?view=msvc-170) - MSVC の C11/C17 モードにおける `restrict`、`inline`、`_Atomic` のサポート状況
+- [Microsoft `__restrict`](https://learn.microsoft.com/ja-jp/cpp/cpp/extension-restrict?view=msvc-170) - MSVC 拡張と標準 C の `restrict` の相違
+- [GCC Inline](https://gcc.gnu.org/onlinedocs/gcc-9.4.0/gcc/Inline.html) - ISO C と GNU C における inline 関数の定義規則
+- [Doxygen Special Commands Reference](https://www.doxygen.nl/manual/commands.html#cmdpar) - `@par` が任意の表題を持つ段落を作ること
+- [POSIX.1-2024 Definitions](https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html) - thread-safe function の定義
