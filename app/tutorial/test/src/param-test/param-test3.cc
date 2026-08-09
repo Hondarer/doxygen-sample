@@ -3,21 +3,20 @@
 
 class ParamTest3
 {
-public:
+  public:
     MOCK_METHOD(int, myFunction, (int, int));
 
     ParamTest3()
     {
         ON_CALL(*this, myFunction(_, _))
-            .WillByDefault(Invoke([](int a, int b)
-                                  { return a * b; })); // デフォルトのアクション
+            .WillByDefault(Invoke([](int a, int b) { return a * b; })); // デフォルトのアクション
     }
 };
 
 // see https://kkayataka.hatenablog.com/entry/2020/07/26/115813
 #if defined(COMPILER_GCC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpadded"
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wpadded"
 #endif /* COMPILER_GCC */
 struct ParamTest3TestParam
 {
@@ -26,19 +25,13 @@ struct ParamTest3TestParam
     int b;
     int expected;
 
-    ParamTest3TestParam(
-        const string &_desc,
-        const int _a,
-        const int _b,
-        const int _expected) : desc(_desc),
-                               a(_a),
-                               b(_b),
-                               expected(_expected)
+    ParamTest3TestParam(const string &_desc, const int _a, const int _b, const int _expected)
+        : desc(_desc), a(_a), b(_b), expected(_expected)
     {
     }
 };
 #if defined(COMPILER_GCC)
-#pragma GCC diagnostic pop
+    #pragma GCC diagnostic pop
 #endif /* COMPILER_GCC */
 
 ostream &operator<<(ostream &, const ParamTest3TestParam &);
@@ -58,7 +51,8 @@ TEST_P(ParamTest3Test, MultiplyTest)
     const ParamTest3TestParam p = GetParam(); // [状態] - パラメーターから a, b, 期待する戻り値を取り出す。
 
     // Pre-Assert
-    EXPECT_CALL(mockObj, myFunction(p.a, p.b)).Times(1); // [Pre-Assert手順] - myFunction(a, b) が 1 回呼び出されること。
+    EXPECT_CALL(mockObj, myFunction(p.a, p.b))
+        .Times(1); // [Pre-Assert手順] - myFunction(a, b) が 1 回呼び出されること。
 
     // Act
     int result = mockObj.myFunction(p.a, p.b); // [手順] - myFunction(a, b) を呼び出す。
@@ -69,7 +63,5 @@ TEST_P(ParamTest3Test, MultiplyTest)
 
 // テスト名をデータ定義できるようにする例
 INSTANTIATE_TEST_SUITE_P(, ParamTest3Test,
-                         Values(
-                             ParamTest3TestParam("2_3_6", 2, 3, 6),
-                             ParamTest3TestParam("4_5_20", 4, 5, 20)),
+                         Values(ParamTest3TestParam("2_3_6", 2, 3, 6), ParamTest3TestParam("4_5_20", 4, 5, 20)),
                          PrintToStringParamName());

@@ -16,8 +16,7 @@
 // calcbase (静的リンク専用ライブラリ、DLL/SO を生成しない) は対象外とする。
 // app/calc/prod/include/calcbase/calcbase_spec.h の関数は export マクロを一切伴わない
 // extern 宣言であり、これは意図した設計 (see: framework/testfw/docs/about-shared-lib-static-linking.md)。
-#define CALC_EXPORT_TABLE(EXPORT_ENTRY) \
-    EXPORT_ENTRY(calcHandler, int(CALC_API *)(int kind, int a, int b, int *result))
+#define CALC_EXPORT_TABLE(EXPORT_ENTRY) EXPORT_ENTRY(calcHandler, int(CALC_API *)(int kind, int a, int b, int *result))
 
 // テーブルからシグネチャの static_assert と期待シンボル名一覧を生成する。
 // 定型マクロ (TESTFW_EXPORT_STATIC_ASSERT_ENTRY/TESTFW_EXPORT_NAME_ENTRY) は
@@ -48,13 +47,15 @@ class exportTest : public Test
 TEST_F(exportTest, symbol_names_match)
 {
     // Arrange
-    std::set<std::string> expected(std::begin(kExpectedExportNames), std::end(kExpectedExportNames)); // [状態] - CALC_EXPORT_TABLE から期待シンボル名一覧を構築する。
+    std::set<std::string> expected(
+        std::begin(kExpectedExportNames),
+        std::end(kExpectedExportNames)); // [状態] - CALC_EXPORT_TABLE から期待シンボル名一覧を構築する。
 #if defined(PLATFORM_WINDOWS)
     // _ident_manifest_libcalc_dll は gen_ident_manifest.py が自動生成するビルド識別データであり、
     // 関数ではないためシグネチャ検証の対象外としつつ、名前一致の期待値には含める。
     expected.insert(testing::identManifestSymbolName(
         "libcalc" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する (Windows のみ実際にエクスポートされる) 。
-#endif /* PLATFORM_WINDOWS */
+#endif                                               /* PLATFORM_WINDOWS */
 
     // Pre-Assert
 
@@ -63,8 +64,9 @@ TEST_F(exportTest, symbol_names_match)
         testing::getActualExportNames(dll_path); // [手順] - dumpbin/nm で libcalc の実際のエクスポート一覧を取得する。
 
     // Assert
-    testing::expectExportNamesMatch(expected, actual,
-                                     kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致) 。
+    testing::expectExportNamesMatch(
+        expected, actual,
+        kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致) 。
 }
 
 // 公開ヘッダー (calc/ サブディレクトリのみ) の変数宣言が dllexport マクロ (CALC_EXPORT) を
@@ -73,15 +75,18 @@ TEST_F(exportTest, public_header_variables_declare_export_macro)
 {
     // Arrange
     // calcbase/ は静的リンク専用のため走査対象から明示的に除外する (calc/ サブディレクトリのみを見る) 。
-    include_dir = workspace_root + "/app/calc/prod/include/calc"; // [状態] - 公開ヘッダーのディレクトリを "/app/calc/prod/include/calc" に設定する。
+    include_dir =
+        workspace_root +
+        "/app/calc/prod/include/calc"; // [状態] - 公開ヘッダーのディレクトリを "/app/calc/prod/include/calc" に設定する。
 
     // Pre-Assert
 
     // Act
     std::vector<std::string> undecorated = testing::findUndecoratedExternVariables(
-        include_dir, "CALC_EXPORT"); // [手順] - prod/include/calc 配下を走査し、CALC_EXPORT を伴わない extern 変数宣言を集める。
+        include_dir,
+        "CALC_EXPORT"); // [手順] - prod/include/calc 配下を走査し、CALC_EXPORT を伴わない extern 変数宣言を集める。
 
     // Assert
-    EXPECT_TRUE(undecorated.empty())
-        << "CALC_EXPORT を伴わない変数宣言: " << testing::joinNames(undecorated); // [確認] - 該当する宣言が 1 件もないこと。
+    EXPECT_TRUE(undecorated.empty()) << "CALC_EXPORT を伴わない変数宣言: "
+                                     << testing::joinNames(undecorated); // [確認] - 該当する宣言が 1 件もないこと。
 }

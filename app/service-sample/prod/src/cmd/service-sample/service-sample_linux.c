@@ -337,23 +337,23 @@ int svc_os_install(const svc_definition *def)
 
     /* ユニット ファイルの内容を生成する */
     written = snprintf(unit_content, sizeof(unit_content),
-                                "[Unit]\n"
-                                "Description=%s\n"
-                                "After=network.target\n"
-                                "\n"
-                                "[Service]\n"
-                                "Type=notify\n"
-                                "ExecStart=%s run\n"
-                                "ExecReload=/bin/kill -HUP $MAINPID\n"
-                                "Restart=on-failure\n"
-                                "RestartSec=5\n"
-                                "WatchdogSec=30\n"
-                                "OOMScoreAdjust=-1000\n"
-                                "%s"
-                                "\n"
-                                "[Install]\n"
-                                "WantedBy=multi-user.target\n",
-                                def->description, exec_path, managed_oom_preference_line);
+                       "[Unit]\n"
+                       "Description=%s\n"
+                       "After=network.target\n"
+                       "\n"
+                       "[Service]\n"
+                       "Type=notify\n"
+                       "ExecStart=%s run\n"
+                       "ExecReload=/bin/kill -HUP $MAINPID\n"
+                       "Restart=on-failure\n"
+                       "RestartSec=5\n"
+                       "WatchdogSec=30\n"
+                       "OOMScoreAdjust=-1000\n"
+                       "%s"
+                       "\n"
+                       "[Install]\n"
+                       "WantedBy=multi-user.target\n",
+                       def->description, exec_path, managed_oom_preference_line);
     if (written < 0 || (size_t)written >= sizeof(unit_content))
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,

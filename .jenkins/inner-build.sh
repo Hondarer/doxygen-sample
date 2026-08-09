@@ -27,6 +27,11 @@ make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 
 # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
 # BEGIN app-env-sync
+# ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。
+# 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を
+# 付与して行うため、LD_LIBRARY_PATH は不要である。
+# make より後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを検証し続ける。
+
 # テスト実行時に必要な共有ライブラリ検索パスを設定 (.github/workflows/ci.yml に準拠)
 export LD_LIBRARY_PATH="/workspace/app/calc/prod/lib:/workspace/app/calc.net/prod/lib:/workspace/app/cjson/prod/lib:/workspace/app/com_util/prod/lib:/workspace/app/empty-lib/prod/lib:/workspace/app/lua/prod/lib:/workspace/app/override-sample/prod/lib:/workspace/app/porter/prod/lib:/workspace/app/sqlite/prod/lib:/workspace/app/subfolder-sample/prod/lib:${LD_LIBRARY_PATH:-}"
 

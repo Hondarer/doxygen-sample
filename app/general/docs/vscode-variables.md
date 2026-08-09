@@ -141,6 +141,17 @@ error while loading shared libraries: libxxxx.so: cannot open shared object file
 
 app の一覧は `framework/makefw/bin/resolve_app_deps.sh --app-order` から取得するため、app を追加・削除しただけで導出結果が追従します。
 
+### 実行時パスの適用範囲
+
+ここで生成する `PATH` と `LD_LIBRARY_PATH` は、ビルド済みの実行体を「実行」するために必要な設定であり、ビルド自体はこれらに依存しません。
+共有ライブラリが `DT_NEEDED` として要求する間接依存のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行うため、リンクの成否は `LD_LIBRARY_PATH` に左右されません。
+
+この区別があるため、CI では `make` の後にパス設定を置き、`make test` の直前で有効化します。
+パス設定をビルドより前へ移すと、ビルドが `LD_LIBRARY_PATH` に依存する欠陥が CI で検出できなくなります。
+
+開発者の対話環境では `.vscode/.env.linux` や統合ターミナルの設定によって `LD_LIBRARY_PATH` がシェル全体へ適用されるため、この種の依存はローカルでは表面化しません。
+ローカルで成功するビルドが CI で失敗する場合は、まずこの非対称性を疑ってください。
+
 ### 生成対象と生成区間
 
 | 対象 | ファイル | 生成される箇所 |

@@ -11,7 +11,6 @@ int retval_func1_1(void)
     return 0;
 }
 
-
 /**
  *  @brief          戻り値にレパートリーがある記載のサンプル 2_1。
  *

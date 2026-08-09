@@ -492,6 +492,11 @@ sync_jenkins_inner_build() {
     local body="$TMP_DIR/inner-build.body"
 
     {
+        printf '# ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。\n'
+        printf '# 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を\n'
+        printf '# 付与して行うため、LD_LIBRARY_PATH は不要である。\n'
+        printf '# make より後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを検証し続ける。\n'
+        printf '\n'
         printf '# テスト実行時に必要な共有ライブラリ検索パスを設定 (.github/workflows/ci.yml に準拠)\n'
         printf 'export LD_LIBRARY_PATH="%s"\n' "$JENKINS_LDPATH"
         printf '\n'

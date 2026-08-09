@@ -2,14 +2,13 @@
 
 class ParamTest1
 {
-public:
+  public:
     MOCK_METHOD(int, myFunction, (int, int));
 
     ParamTest1()
     {
         ON_CALL(*this, myFunction(_, _))
-            .WillByDefault(Invoke([](int a, int b)
-                                  { return a * b; })); // デフォルトのアクション
+            .WillByDefault(Invoke([](int a, int b) { return a * b; })); // デフォルトのアクション
     }
 };
 
@@ -40,17 +39,8 @@ TEST_P(ParamTest1Test, MultiplyTest)
 //       INSTANTIATE_TEST_SUITE_P の行には
 //       prefix (省略可能)、test_suite_name を同一行に記載し、
 //       最後に "," を付与する。
-INSTANTIATE_TEST_SUITE_P(, ParamTest1Test,
-                         Values(
-                             make_tuple(1, 3, 3),
-                             make_tuple(4, 1, 4)));
+INSTANTIATE_TEST_SUITE_P(, ParamTest1Test, Values(make_tuple(1, 3, 3), make_tuple(4, 1, 4)));
 
-INSTANTIATE_TEST_SUITE_P(MultiplicationTests1, ParamTest1Test,
-                         Values(
-                             make_tuple(2, 3, 6),
-                             make_tuple(4, 5, 20)));
+INSTANTIATE_TEST_SUITE_P(MultiplicationTests1, ParamTest1Test, Values(make_tuple(2, 3, 6), make_tuple(4, 5, 20)));
 
-INSTANTIATE_TEST_SUITE_P(MultiplicationTests2, ParamTest1Test,
-                         Values(
-                             make_tuple(3, 2, 6),
-                             make_tuple(5, 4, 20)));
+INSTANTIATE_TEST_SUITE_P(MultiplicationTests2, ParamTest1Test, Values(make_tuple(3, 2, 6), make_tuple(5, 4, 20)));

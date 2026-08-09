@@ -32,11 +32,13 @@ TEST_F(addTest, normal)
 
     // Pre-Assert
     EXPECT_CALL(mock_calcbase, add(1, 2, _))
-        .WillOnce([](int, int, int *result) {
-            *result = 3;
-            return CALC_SUCCESS;
-        }); // [Pre-Assert確認] - add(1, 2, &result) が 1 回呼び出されること。
-            // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
+        .WillOnce(
+            [](int, int, int *result)
+            {
+                *result = 3;
+                return CALC_SUCCESS;
+            }); // [Pre-Assert確認] - add(1, 2, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
     EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("3\n")))
         .WillOnce(DoDefault()); // [Pre-Assert確認] - printf() が 1 回呼び出され、内容が "3\n" であること。
 

@@ -129,7 +129,11 @@ make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 
 #### テスト環境のパス設定
 
-`.github/workflows/ci.yml` の `Set PATH and library path for tests` ステップに準拠しています。
+`.github/workflows/ci.yml` の `Set PATH and library path for running tests` ステップに準拠しています。
+
+設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しません。
+共有ライブラリの間接依存 (`DT_NEEDED`) のリンク時解決は `framework/makefw` が `-Wl,-rpath-link` を付与して行うため、`make` の実行に `LD_LIBRARY_PATH` は不要です。
+`make` より後に置くことで、ビルドが `LD_LIBRARY_PATH` に依存していないことを検証し続けます。
 
 <!-- bin/sync-app-env.sh が生成する区間。手で編集しないこと。 -->
 <!-- BEGIN app-env-sync -->
@@ -286,7 +290,7 @@ source/app/**/test/**/*.warn
 | `build-and-test-linux` (コンテナー起動) | `build.sh` |
 | workflow-wide `env`: `MAKEFW_HOME`, `DOCSFW_HOME`, `DOXYFW_HOME`, `TESTFW_HOME` | Jenkins では `MAKEFW_HOME` を明示設定し、`inner-build.sh` は `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` を `/workspace` 基準で export |
 | `Check NBSP` | `inner-build.sh` の `python3 /workspace/bin/check-nbsp.py --force` |
-| `Set PATH and library path for tests` | `inner-build.sh` の `LD_LIBRARY_PATH`, `PATH` 設定 |
+| `Set PATH and library path for running tests` | `inner-build.sh` の `LD_LIBRARY_PATH`, `PATH` 設定 |
 | `upload-artifact: linux-*-test-results` | `linux-${OS_NAME}-test-results.zip` |
 | `upload-artifact: linux-*-logs` | `linux-${OS_NAME}-logs.zip` (`*-test.log` を除く) |
 | `upload-artifact: linux-*-warns` | `linux-${OS_NAME}-warns.zip` |

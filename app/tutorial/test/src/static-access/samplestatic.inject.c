@@ -3,7 +3,7 @@
 // この static メンバーへのアクセサーによって
 // テスト プログラムからテスト対象ソースの static メンバーにアクセスできます
 #ifndef _IN_TEST_SRC
-#include "samplestatic.c"
+    #include "samplestatic.c"
 #endif /* _IN_TEST_SRC */
 
 #include "samplestatic.inject.h"

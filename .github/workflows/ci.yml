@@ -64,7 +64,13 @@ jobs:
           set -o pipefail
           make 2>&1 | tee logs/linux-${{ matrix.os-name }}-build.log
 
-      - name: Set PATH and library path for tests
+      # ここで設定するのはテストの「実行」に必要な値のみで、ビルドはこれらに依存しない。
+      # 共有ライブラリの間接依存 (DT_NEEDED) のリンク時解決は makefw が -Wl,-rpath-link を
+      # 付与して行うため、LD_LIBRARY_PATH は不要である。
+      # Build ステップより後に置くことで、ビルドが LD_LIBRARY_PATH に依存していないことを
+      # CI で検証し続ける。開発者の対話環境 (.vscode/.env.linux) は同じ値をシェル全体に
+      # 設定するため、ここを前倒しすると同種の欠陥がローカルと同様に CI でも隠れる。
+      - name: Set PATH and library path for running tests
         run: |
           # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
           # BEGIN app-env-sync (linux)
@@ -241,7 +247,9 @@ jobs:
           make 2>&1 | tee logs/windows-build.log
         shell: bash
 
-      - name: Set PATH for tests
+      # Linux 側と同じく、テストの「実行」に必要な値のみを設定する。
+      # MSVC はインポート ライブラリで解決するためビルドは PATH に依存しない。
+      - name: Set PATH for running tests
         run: |
           # bin/sync-app-env.sh が生成する区間。手で編集しないこと。
           # BEGIN app-env-sync (windows)

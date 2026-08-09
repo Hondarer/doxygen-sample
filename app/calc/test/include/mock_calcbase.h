@@ -6,15 +6,15 @@
 #include <calcbase.h>
 
 #if defined(COMPILER_MSVC)
-#pragma comment(linker, "/INCLUDE:_mock_impl_add")
-#pragma comment(linker, "/INCLUDE:_mock_impl_subtract")
-#pragma comment(linker, "/INCLUDE:_mock_impl_multiply")
-#pragma comment(linker, "/INCLUDE:_mock_impl_divide")
+    #pragma comment(linker, "/INCLUDE:_mock_impl_add")
+    #pragma comment(linker, "/INCLUDE:_mock_impl_subtract")
+    #pragma comment(linker, "/INCLUDE:_mock_impl_multiply")
+    #pragma comment(linker, "/INCLUDE:_mock_impl_divide")
 #endif /* COMPILER_MSVC */
 
 class Mock_calcbase
 {
-public:
+  public:
     MOCK_METHOD(int, add, (int, int, int *));
     MOCK_METHOD(int, subtract, (int, int, int *));
     MOCK_METHOD(int, multiply, (int, int, int *));
