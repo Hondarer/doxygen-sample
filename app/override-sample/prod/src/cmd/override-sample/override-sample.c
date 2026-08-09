@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == COM_UTIL_OK)
         {
             if (com_util_path_concat(configpath, sizeof(configpath), &error, tmpdir, PLATFORM_PATH_SEP,
-                                     "libbase_extdef.txt") != COM_UTIL_OK)
+                                     "libbase_extdef.json") != COM_UTIL_OK)
             {
                 fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
                 return EXIT_FAILURE;
@@ -86,7 +86,9 @@ int main(int argc, char *argv[])
 
     printf("configpath: %s\n", configpath);
     printf("Processing will be extended if defines.\n");
-    printf(" e.g.  echo \"sample_func liboverride override_func\" > \"%s\"\n", configpath);
+    printf(" e.g.  printf '{\"sample_func\":{\"lib\":\"liboverride\",\"func\":\"override_func\"}}\\n'"
+           " > \"%s\"\n",
+           configpath);
 #if defined(PLATFORM_LINUX)
     printf("       rm \"%s\"\n\n", configpath);
 #elif defined(PLATFORM_WINDOWS)

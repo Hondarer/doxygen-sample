@@ -33,7 +33,7 @@ class override_sampleTest : public Test
         lib_path = workspace_root + "/app/override-sample/prod/lib"
                  + ":" + workspace_root + "/app/com_util/prod/lib";
         mock_lib_path = workspace_root + "/framework/testfw/lib/" TOSTRING(TARGET_ARCH) "/libmock_syslog.so";
-        config_path = "/tmp/libbase_extdef.txt";
+        config_path = "/tmp/libbase_extdef.json";
 #elif defined(PLATFORM_WINDOWS)
         binary_path = workspace_root + "\\app\\override-sample\\prod\\cbin\\override-sample.exe";
         lib_path = workspace_root + "\\app\\override-sample\\prod\\lib"
@@ -46,7 +46,7 @@ class override_sampleTest : public Test
             {
                 WideCharToMultiByte(CP_UTF8, 0, tmpw, -1, tmpu8, (int)sizeof(tmpu8), NULL, NULL);
             }
-            config_path = string(tmpu8) + "libbase_extdef.txt";
+            config_path = string(tmpu8) + "libbase_extdef.json";
         }
 #endif /* PLATFORM_ */
         resetTraceLevel();
@@ -147,7 +147,7 @@ TEST_F(override_sampleTest, check_stdout_with_config)
 {
     // Arrange
     createConfigFile(
-        "sample_func liboverride override_func\n"); // [手順] - 定義ファイルを作成してオーバーライドを設定する。
+        "{\"sample_func\":{\"lib\":\"liboverride\",\"func\":\"override_func\"}}\n"); // [手順] - 定義ファイルを作成してオーバーライドを設定する。
     ProcessOptions opts = makeOpts();
 
     // Pre-Assert

@@ -6,7 +6,7 @@ C / C++ コードでの整数型の選択、関数引数の異常入力対応、
 適用範囲は主に `app/` 配下の C / C++ コードです。
 
 本書は、ログ / トレース、テスト規約、ヘッダー設計など、コーディング規範を順次追加していくことを想定しています。  
-現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「関数引数の const 付与と Doxygen 方向タグ」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
+現版では「命名規則」「構造体のパディングと予約フィールド」「整数型の選択」「関数引数の異常入力対応」「異常状態の検出とプロセス終了」「動的メモリの確保と解放」「エラー処理と戻り値規約」「変数宣言位置と命令文の関係」「式の括弧」「制御構造の制限」「関数引数の const 付与と Doxygen 方向タグ」「宣言と定義の関係」「API 設計における概念の分離」「Doxygen コメントのプレースホルダー表記」「Doxygen コメントの @p などコマンド引数と日本語句読点の間隔」「Doxygen コード例内のコメント形式」を記載します。
 
 本書は一般的な方針を定めるものです。  
 各 app のドキュメントに優先事項、特化事項がある場合は、それに従ってください。
@@ -37,7 +37,7 @@ C17 より前の標準にしかない書き方へ戻すこともしません。
 | 記法 | 用途 |
 |---|---|
 | 平文の段落・表・コード例 | 規範本文。従うべき規則、判定手順、望ましい / 望ましくない例 |
-| `> [!NOTE]` | 背景、判断の根拠、世間の慣行との関係。規範として従う対象ではない |
+| `> [!NOTE]` | 背景、判断の根拠、業界一般の慣行との関係。規範として従う対象ではない |
 | `> [!IMPORTANT]` | 見落とすと規範違反になる要点、規則どうしの適用条件の違い |
 | `> [!WARNING]` | 誤った書き方が引き起こす具体的な障害 (ビルド エラー、リーク、情報漏えい、ABI 不整合) |
 
@@ -640,7 +640,7 @@ grep -rnE '^[[:space:]]*extern[[:space:]]' app/*/prod/include --include=*.h \
 > 明示的なパディング メンバーがあれば、メンバーを追加・変更したときにレイアウトへ与える影響が定義上で見えます。
 
 > [!NOTE]
-> `-Wpadded` は世間では特殊用途の警告とされ、通常は有効化されません。  
+> `-Wpadded` は業界一般では特殊用途の警告とされ、通常は有効化されません。  
 > 本規範が全構造体を対象とするのは、**どの構造体もいずれ永続化されうる** という観点に立つためです。  
 > 内部構造体として作られたものが、後からログ出力、設定ファイル、共有メモリ、プロセス間通信へ流用されることは珍しくありません。  
 > その時点でレイアウトが暗黙パディング任せになっていると、移行の前提を確認する作業が発生します。  
@@ -1300,7 +1300,7 @@ int sample_config_load(const char *path)
 > `abort()` は `SIGABRT` を発生させ、クラッシュ ダンプを採取できます。
 
 > [!NOTE]
-> 「継続が危険な状態で `abort()` する」のは世間でも採られている形です。  
+> 「継続が危険な状態で `abort()` する」のは業界一般でも採られている形です。  
 > glibc の `__stack_chk_fail` (スタック保護の検出)、`__fortify_fail` (バッファー オーバーフローの検出)、`malloc` のヒープ破壊検出は、いずれも `abort()` します。  
 > いずれも「検出した時点で、続行するとより大きな被害が出る」種類の条件です。
 
@@ -1328,6 +1328,264 @@ grep -rnE '(^|[^A-Za-z0-9_])abort[[:space:]]*\(' app --include=*.c \
 - 継続が危険な状態に限られており、回復可能な失敗に使っていないこと
 - 直前に原因を特定できる情報を記録していること
 - プロセスを終了させうる関数の Doxygen に、その旨が書かれていること
+
+## 動的メモリの確保と解放
+
+### 確保失敗の検査
+
+確保関数 (`malloc`、`calloc`、`realloc`) の戻り値は、呼び出した直後に NULL を検査します。
+
+確保に失敗した場合は、[異常状態の検出とプロセス終了](#異常状態の検出とプロセス終了) の方針に従い、結果コードで返します。  
+メモリ確保の失敗は回復可能な失敗であり、`abort()` を呼びません。
+
+```c
+/* 望ましい */
+buffer = (uint8_t *)calloc(count, sizeof(*buffer));
+if (buffer == NULL)
+{
+    return SAMPLE_ERR_OUT_OF_MEMORY;
+}
+```
+
+### 確保サイズの書き方
+
+確保サイズは `sizeof(*p)` の形で書きます。`p` は確保結果の代入先です。  
+型名を直接書く形 (`sizeof(sample_entry)`) は使用しません。
+
+代入先が構造体メンバーの場合も同じ規則を適用し、`sizeof(*obj->member)` と書きます。
+
+| 代入先 | 書き方 |
+|---|---|
+| ローカル変数 | `handle = (sample_tracer *)malloc(sizeof(*handle));` |
+| 宣言と初期化 | `size_t *order = (size_t *)calloc(count, sizeof(*order));` |
+| 構造体メンバー | `win->packets = (sample_packet *)calloc(count, sizeof(*win->packets));` |
+
+代入先にメンバー名や変数名が存在しない場合に限り、型名を書けます。  
+バイト列そのものを扱うバッファーのように、確保サイズが要素型から導かれない場合が該当します。
+
+```c
+/* 対象外。sizeof の被演算子が型ではなく文字列リテラルである */
+handle->lock_path = (char *)malloc(path_len + sizeof(SAMPLE_LOCK_SUFFIX));
+```
+
+> [!NOTE]
+> `sizeof(*p)` を使うと、宣言の型を変更したときに確保サイズが自動的に追従します。  
+> 型名を書く形では、宣言だけを変更して確保行を追従し忘れると、必要より小さい領域を確保したままビルドが通ります。
+
+> [!IMPORTANT]
+> 「宣言と初期化」の形では、`sizeof` の被演算子がまだ初期化されていない変数を指します。  
+> `sizeof` は被演算子を評価しない (可変長配列を除く) ため、正当な書き方です。  
+> 本規範は可変長配列を使用しないため、この例外に該当する箇所はありません。
+
+### 戻り値のキャスト
+
+確保関数の戻り値は、代入先の型へキャストします。
+
+```c
+/* 望ましい */
+specs = (sample_spec *)calloc(count, sizeof(*specs));
+
+/* 望ましくない。型の食い違いが検出されない */
+specs = calloc(count, sizeof(*specs));
+```
+
+> [!NOTE]
+> 確保関数は `void *` を返し、`void *` からオブジェクト ポインターへの変換は無診断です。  
+> キャストを書くと、キャスト後の型と代入先の型の不一致が制約違反となり、`-Wincompatible-pointer-types` で検出されます。  
+> 宣言の型を変更して確保行を追従し忘れた場合が、これで捕まります。
+
+> [!NOTE]
+> 「確保関数の戻り値をキャストしてはならない」という業界一般の指針は、C89 で暗黙の `int` 戻り値が許容されていた時代に、キャストが `<stdlib.h>` の取り込み漏れを覆い隠したことを根拠にしています。  
+> 本規範が前提とする C17 では暗黙の宣言が制約違反であり、キャストの有無にかかわらず診断されます。根拠が失効しているため、本規範はキャストを求める側を採ります。
+
+> [!IMPORTANT]
+> キャストと `sizeof(*p)` は、別の欠陥を捕まえる補完関係にあります。  
+> 片方だけでは、もう片方の欠陥が検出されないまま残ります。
+>
+> | 欠陥 | キャスト | `sizeof(*p)` |
+> |---|---|---|
+> | 確保する型が宣言と食い違う | 検出する | 検出しない |
+> | `sizeof` の被演算子が別の型を指す | 検出しない | 原理的に発生しない |
+
+### 配列の確保
+
+要素数を伴う確保には `calloc(count, size)` を使用します。  
+`malloc(count * size)` の形は使用しません。
+
+```c
+/* 望ましい */
+entries = (sample_entry *)calloc(count, sizeof(*entries));
+
+/* 望ましくない */
+entries = (sample_entry *)malloc(count * sizeof(*entries));
+```
+
+> [!WARNING]
+> `malloc(count * size)` は、乗算が `size_t` を回り込むと **失敗せずに成功します**。  
+> 要求バイト数が 0 に化けたうえで確保が成功するため、以後の書き込みがすべてヒープ破壊になります。  
+> `calloc` は要素数とサイズを別引数で受け取るため、この回り込みを検出して NULL を返します。
+>
+> GCC 8.5.0 / glibc での実測です。
+>
+> ```c
+> size_t huge = SIZE_MAX / 4U + 1U;
+>
+> /* 回り込みを検出して NULL を返す */
+> void *a = calloc(huge, 8U);
+>
+> /* 有効な非 NULL を返す。0 バイトの確保に成功する */
+> void *b = malloc(huge * 8U);
+> ```
+
+> [!IMPORTANT]
+> `calloc` はゼロ初期化を行います。  
+> 確保方法を `calloc` から `malloc` へ戻す変更は、初期化の前提を無言で変えます。  
+> 確保方法を変更するときは、ゼロ初期化に依存している箇所がないことを確認してください。
+
+`realloc` には要素数とサイズを分けて渡す形が標準にないため、伸長時の乗算は呼び出し側に残ります。  
+[再確保 (realloc)](#再確保-realloc) の規則に加え、要素数の上限を呼び出し側で検査します。
+
+> [!NOTE]
+> MISRA C:2012 Dir 4.12 と Rule 21.3 は動的メモリの使用そのものを禁止しています (いずれも Required)。  
+> これは組み込み向けの前提に立つ規則であり、本リポジトリには適用しません。
+
+### 長さ 0 の確保
+
+長さ 0 の確保は行いません。要素数が 0 になりうる経路では、確保を呼び出す前に分岐します。
+
+```c
+/* 望ましい */
+if (count == 0U)
+{
+    *entries_out = NULL;
+    *count_out = 0U;
+    return SAMPLE_OK;
+}
+entries = (sample_entry *)calloc(count, sizeof(*entries));
+```
+
+> [!WARNING]
+> `malloc(0)` と `calloc(0, size)` の戻り値は処理系定義です。  
+> glibc は非 NULL の一意なポインターを返しますが、NULL を返す実装もあります。  
+> NULL を確保失敗と判定する規約と組み合わさると、**処理系を移しただけで成功が失敗に変わります**。
+
+### 再確保 (realloc)
+
+`realloc` の戻り値は、元のポインターとは別の変数で受けます。  
+NULL を検査したうえで、成功した場合にのみ元のポインターへ代入します。
+
+```c
+/* 望ましい */
+sample_entry *new_entries;
+
+new_entries = (sample_entry *)realloc(entries, new_count * sizeof(*new_entries));
+if (new_entries == NULL)
+{
+    return SAMPLE_ERR_OUT_OF_MEMORY;
+}
+entries = new_entries;
+```
+
+> [!WARNING]
+> 戻り値を元のポインターへ直接代入すると、失敗時に **元の領域が参照不能になります**。  
+> `realloc` は失敗しても元の領域を解放しないため、ポインターを NULL で上書きした時点で解放する手段が失われます。
+>
+> ```c
+> /* 望ましくない */
+> entries = realloc(entries, new_count * sizeof(*entries));
+> ```
+
+### 解放と NULL 代入
+
+解放した後もスコープに残るポインターには、`free` の直後に NULL を代入します。  
+構造体メンバーと外部リンケージ変数が対象です。
+
+```c
+/* 望ましい */
+free(ctx->entries);
+ctx->entries = NULL;
+```
+
+関数から抜ける直前のローカル変数には、NULL を代入しません。  
+以後参照されないため、代入が読み手に「後続で使う」という誤った期待を与えます。
+
+```c
+/* 望ましくない。直後に関数を抜けるローカル変数 */
+out_free_buffer:
+    free(buffer);
+    buffer = NULL;
+    return ret;
+```
+
+> [!NOTE]
+> 解放済みポインターを残すと、二重解放と解放後参照の入口になります。  
+> 一方で、以後参照されないローカル変数への代入は、静的解析でも無駄な代入として報告されます。  
+> 対象を「解放後もスコープに残るポインター」に限るのは、この両方を避けるためです。
+
+`free(NULL)` は無害であり、解放の前に NULL を検査する必要はありません。
+
+```c
+/* 望ましくない。冗長な検査 */
+if (ctx->entries != NULL)
+{
+    free(ctx->entries);
+}
+```
+
+### 所有権の表明
+
+確保した領域を返す API は、解放の責任がどちらにあるかを Doxygen の **本文** に記載します。  
+`@return` には戻り値の意味だけを書き、解放責任は本文で述べます。
+
+```c
+/**
+ *  @brief          設定名を複製して返します。
+ *
+ *  返却した領域は @ref sample_free で解放してください。
+ *
+ *  @param[in]      config  設定。NULL を渡してはなりません。
+ *  @return         複製した文字列へのポインター。失敗時は NULL を返します。
+ */
+char *sample_config_dup_name(const sample_config *config);
+```
+
+確保した領域を返す API には、対になる解放関数を用意します。  
+標準の `free` を呼ばせる形にはしません。
+
+> [!NOTE]
+> 対になる解放関数を用意するのは、確保と解放を同じライブラリ内で完結させるためです。  
+> 共有ライブラリとして配布する場合、利用者側と確保側で C ランタイムが異なると、`free` に渡したポインターが解放側のヒープに属さない状態になりえます。
+
+破棄関数は、実装側の防御として NULL を受け入れてかまいません。  
+ただし呼び出し元は、破棄関数へ NULL を渡さないようにします。
+
+> [!IMPORTANT]
+> 破棄関数が NULL を受け入れることは、呼び出し元が NULL ガードを省いてよいという意味ではありません。  
+> 呼び出し元のコードだけを読んだときに、そのポインターが有効であることが読み取れる形を保ちます。
+
+### 検証
+
+```bash
+# malloc による配列確保 (乗算を伴う確保。0 件であること)
+grep -rnE '(malloc|realloc)[[:space:]]*\([^;]*[^*/]\*[^;]*sizeof' app --include=*.c \
+  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|/test/'
+
+# realloc の戻り値を元のポインターへ直接代入 (0 件であること)
+# 後方参照を使うため PCRE (-P) を指定する。左側の語境界がないと new_ptr = realloc(ptr, ...) を誤検出する
+grep -rnP '(?<![A-Za-z0-9_])([A-Za-z_][A-Za-z0-9_]*(?:(?:->|\.)[A-Za-z_][A-Za-z0-9_]*)*)\s*=\s*\(?[^;=]*realloc\s*\(\s*\1\s*[,)]' \
+  app --include=*.c | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+
+# 確保関数の戻り値をキャストしていない箇所
+grep -rnE '=[[:space:]]*(malloc|calloc|realloc)[[:space:]]*\(' app --include=*.c \
+  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+
+# 確保サイズに型名を書いている箇所
+grep -rnE '(malloc|calloc|realloc)[[:space:]]*\([^;]*sizeof[[:space:]]*\([[:space:]]*[A-Za-z_]' \
+  app --include=*.c | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|/test/'
+```
+
+最後の 1 つは、`sizeof` の被演算子が型ではない場合 (文字列リテラルのマクロなど) も抽出します。  
+抽出結果は、代入先にメンバー名や変数名が存在するかを目視で確認してください。
 
 ## エラー処理と戻り値規約
 
@@ -1611,11 +1869,11 @@ total = a + b + c;
 ```
 
 > [!NOTE]
-> 本節は、世間の C の規約より丁寧に括弧を求めるものです。  
+> 本節は、業界一般の C の規約より丁寧に括弧を求めるものです。  
 > GCC / Clang の `-Wparentheses` が警告するのは、ビット演算子と比較の混在、および `&&` と `\|\|` の混在に限られます。  
 > 比較演算子と算術演算子の組み合わせは、優先順位の上では算術演算子が先に評価されるため結合そのものは意図どおりになり、コンパイラも警告しません。  
 > それでも括弧を求めるのは、**読み手が「この式は優先順位を確認しなくてよい」と判断できる状態を優先する** ためです。  
-> 判断軸は「世間の慣行」ではなく「本リポジトリの読み手」であり、[三項演算子の禁止](#三項演算子の禁止) と同じ考え方に立ちます。
+> 判断軸は「業界一般の慣行」ではなく「本リポジトリの読み手」であり、[三項演算子の禁止](#三項演算子の禁止) と同じ考え方に立ちます。
 
 > [!NOTE]
 > 括弧の要否を式ごとに判断させないのは、判断の余地を残すと「この式は自明だから不要」という線引きが書き手ごとに揺れ、レビューでの指摘も一貫しなくなるためです。  
@@ -1735,7 +1993,7 @@ err1:
 
 > [!NOTE]
 > 本規範は、以前は `goto` を全面禁止していました。  
-> 資源解放に限った前方ジャンプは、世間の C において確立した手法であり、禁止によって生じるネストの深化と解放漏れのほうが害が大きいと判断し、条件付きの許容へ改めています。
+> 資源解放に限った前方ジャンプは、業界一般の C において確立した手法であり、禁止によって生じるネストの深化と解放漏れのほうが害が大きいと判断し、条件付きの許容へ改めています。
 >
 > - Linux kernel coding style は、複数の箇所から抜ける関数で共通の後始末が要る場合に `goto` が有用であるとし、後始末が不要なら直接 return せよとしています。利点として無条件文の追いやすさ、ネストの削減、経路を追加したときの更新漏れの防止を挙げています。ラベル名を `out_free_buffer` とし `err1` / `err2` を避ける指針も、ここに拠ります
 > - SEI CERT C MEM12-C は、複数の資源を確保する関数が途中で return するとリークするため、goto チェーンの使用を検討せよとしています (Severity: Low、Likelihood: Probable、Priority: P2 L3)
@@ -1798,8 +2056,8 @@ const char *label = s_level_labels[level];
 ```
 
 > [!NOTE]
-> 三項演算子は、世間の C では一般に禁止されない構文です。  
-> 本規範が禁止するのは、習熟度に幅のある読み手を前提として可読性を確保するためであり、判断軸は「世間の慣行」ではなく「本リポジトリの読み手」です。  
+> 三項演算子は、業界一般の C では禁止されない構文です。  
+> 本規範が禁止するのは、習熟度に幅のある読み手を前提として可読性を確保するためであり、判断軸は「業界一般の慣行」ではなく「本リポジトリの読み手」です。  
 > 同じ理由から、入れ子の三項演算子や、三項演算子を引数に埋め込む書き方は特に避ける対象となります。  
 > `goto` を条件付きで許容する判断とは、拠って立つ軸が異なります。
 
@@ -2239,9 +2497,16 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - MISRA C:2012 Dir 4.6 (`typedefs that indicate size and signedness should be used in place of the basic numerical types`) - 幅に依存する値へ実装定義幅の基本型を使わないこと
 - [SEI CERT C INT00-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int00-c/) - 処理系のデータ モデルを理解し、仮定を静的表明で裏付けること
 - [SEI CERT C INT01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int01-c/) - オブジェクトのサイズを表す値に `size_t` を使うこと
-- [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) - ローカル変数を短く保つ方針、および共通の後始末がある関数における goto の使用とラベル命名
+- [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) - ローカル変数を短く保つ方針、共通の後始末がある関数における goto の使用とラベル命名、および 14 章のメモリ確保の指針 (`sizeof(*p)` の推奨)
 - [BoringSSL API Conventions](https://boringssl.googlesource.com/boringssl/+/HEAD/API-CONVENTIONS.md) - `int ret = 0;` と `goto err` による結果コードの組み立て例
 - [C++ Core Guidelines ES.20](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es20-always-initialize-an-object) - 常時初期化を勧める側の一般則 (本規範の `ret` 未初期化は結果コード作業変数に限る例外)
 - [SEI CERT C MEM12-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem12-c/) - 資源の確保と解放を伴う関数でエラー時に goto チェーンを使うこと
 - MISRA C:2012 Rule 15.1 / 15.2 / 15.3 - goto の使用を戒める 15.1 は Advisory、前方ジャンプを求める 15.2 とラベル スコープを定める 15.3 が Required
 - [Edsger W. Dijkstra, `Go To Statement Considered Harmful`](https://www.cs.utexas.edu/~EWD/transcriptions/EWD02xx/EWD215.html) - 非構造的なジャンプに対する批判
+- [SEI CERT C MEM31-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/memory-management-mem/mem31-c/) - 不要になった領域を解放すること
+- [SEI CERT C MEM35-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/memory-management-mem/mem35-c/) - オブジェクトに十分なメモリを確保すること (確保サイズの乗算オーバーフローを含む)
+- [SEI CERT C MEM36-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/memory-management-mem/mem36-c/) - `realloc` でオブジェクトのアラインメントを変更しないこと
+- [SEI CERT C MEM01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem01-c/) - `free` の直後にポインターへ新しい値を格納すること
+- [SEI CERT C MEM04-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem04-c/) - 長さ 0 の確保に注意すること
+- [SEI CERT C INT30-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/rules/integers-int/int30-c/) - 符号なし整数の演算を回り込ませないこと
+- MISRA C:2012 Dir 4.12 / Rule 21.3 - 動的メモリの使用と `<stdlib.h>` の確保・解放関数の使用を禁止する規則 (いずれも Required)。組み込み向けの前提であり本規範では採用しない

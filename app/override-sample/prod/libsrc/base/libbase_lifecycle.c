@@ -28,14 +28,14 @@
 void onLoad(void)
 {
     char basename[COM_UTIL_SYM_LOADER_NAME_MAX] = {0};
-    char leafname[COM_UTIL_SYM_LOADER_NAME_MAX + sizeof("_extdef.txt")] = {0};
+    char leafname[COM_UTIL_SYM_LOADER_NAME_MAX + sizeof("_extdef.json")] = {0};
     com_util_error error;
 
     DLLMAIN_COM_UTIL_INFO_MSG("base: onLoad called");
 
     if (com_util_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == COM_UTIL_OK)
     {
-        if (com_util_path_concat(leafname, sizeof(leafname), &error, basename, "_extdef.txt") != COM_UTIL_OK)
+        if (com_util_path_concat(leafname, sizeof(leafname), &error, basename, "_extdef.json") != COM_UTIL_OK)
         {
             sym_loader_configpath[0] = '\0';
             DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");

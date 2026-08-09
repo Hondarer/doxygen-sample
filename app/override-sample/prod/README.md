@@ -11,7 +11,7 @@ sym_loader 機構 (関数の動的呼び出しキャッシュ) は `app/com_util
 | 設定ファイルの状態 | 動作 |
 |---|---|
 | 存在しない (または定義なし) | `libbase` 自身が処理を行う (`a + b`) |
-| `sample_func liboverride override_func` を定義 | `dlopen` / `LoadLibrary` で `liboverride` を実行時にロードし、`override_func` に処理を委譲する (`a * b`) |
+| `sample_func` に `liboverride` / `override_func` を定義 | `dlopen` / `LoadLibrary` で `liboverride` を実行時にロードし、`override_func` に処理を委譲する (`a * b`) |
 
 オーバーライドの切り替えは `libbase` がロードされるタイミング (constructor / `DllMain`) で行われます。メイン プログラムを変更せずに、設定ファイルを置くだけでライブラリの実装を差し替えられることを示します。
 
@@ -39,7 +39,7 @@ app/override-sample/prod/
 |   +-- override-sample/
 |       +-- override-sample.c  # メインプログラム
 +-- sample-config/
-|   +-- libbase_extdef.txt     # 設定ファイルのサンプル
+|   +-- libbase_extdef.json    # 設定ファイルのサンプル
 +-- lib/                       # ビルド済みライブラリ (libbase.so / liboverride.so / libbase.dll / liboverride.dll)
 +-- bin/                       # ビルド済み実行ファイル (override-sample / override-sample.exe)
 ```
@@ -90,27 +90,38 @@ int WINAPI override_func(const int a, const int b, int *result);
 
 | プラットフォーム | 設定ファイル パス |
 |---|---|
-| Linux | `/tmp/libbase_extdef.txt` |
-| Windows | `%TEMP%\libbase_extdef.txt` |
+| Linux | `/tmp/libbase_extdef.json` |
+| Windows | `%TEMP%\libbase_extdef.json` |
 
-ファイルが存在しない場合はデフォルト動作になります。ファイルのフォーマットは以下のとおりです。
+ファイルが存在しない場合はデフォルト動作になります。ファイルのフォーマットは以下のとおりです。  
+`//` 行コメントと C 形式のブロック コメントを利用できます。
 
-```text
-# コメント行 (# 以降はコメント)
-func_key  lib_name  func_name
+```json
+// コメント例
+{
+  "func_key": {
+    "lib": "lib_name",
+    "func": "func_name"
+  }
+}
 ```
 
-| lib_name / func_name の値 | 動作 |
+| `lib` / `func` の値 | 動作 |
 |---|---|
 | ともに `default` | 明示的デフォルト。設定ファイルなしと同様にデフォルト処理を行う |
 | ライブラリ名 / 関数名 | 指定したライブラリを動的ロードし、関数に処理を委譲する |
 
-`sample-config/libbase_extdef.txt` に設定ファイルのサンプルがあります。初期状態では `default default` (明示的デフォルト) が設定されており、オーバーライドする行はコメント アウトされています。
+`sample-config/libbase_extdef.json` に設定ファイルのサンプルがあります。初期状態では明示的デフォルト (`"lib": "default"`, `"func": "default"`) が設定されており、オーバーライドする定義はコメント アウトされています。
 
-`sample_func` をオーバーライドする場合は以下の行を記述します。
+`sample_func` をオーバーライドする場合は以下のように記述します。
 
-```text
-sample_func  liboverride  override_func
+```json
+{
+  "sample_func": {
+    "lib": "liboverride",
+    "func": "override_func"
+  }
+}
 ```
 
 ### 呼び出しフロー
@@ -177,20 +188,10 @@ result: 3
 
 #### オーバーライド動作 (設定ファイルあり)
 
-`sample-config/libbase_extdef.txt` を `/tmp` にコピーし、オーバーライド行のコメントを外して配置します。
+`sample-config/libbase_extdef.json` をコピーして編集するか、次のように直接書き込みます。
 
 ```bash
-cp app/override-sample/prod/sample-config/libbase_extdef.txt /tmp/libbase_extdef.txt
-# エディターで /tmp/libbase_extdef.txt を編集し、以下の行のコメントを外す
-# sample_func  liboverride  override_func
-cd app/override-sample/prod/cbin
-LD_LIBRARY_PATH=../lib ./override-sample
-```
-
-または直接書き込む場合は以下のとおりです。
-
-```bash
-echo "sample_func liboverride override_func" > /tmp/libbase_extdef.txt
+printf '%s\n' '{"sample_func":{"lib":"liboverride","func":"override_func"}}' > /tmp/libbase_extdef.json
 cd app/override-sample/prod/cbin
 LD_LIBRARY_PATH=../lib ./override-sample
 ```
@@ -215,21 +216,10 @@ override-sample.exe
 
 #### オーバーライド動作 (設定ファイルあり)
 
-`sample-config\libbase_extdef.txt` を `%TEMP%` にコピーし、オーバーライド行のコメントを外して配置します。
+`sample-config\libbase_extdef.json` をコピーして編集するか、次のように直接書き込みます。
 
 ```cmd
-copy prod\override-sample\sample-config\libbase_extdef.txt %TEMP%\libbase_extdef.txt
-rem エディタで %TEMP%\libbase_extdef.txt を編集し、以下の行のコメントを外す
-rem sample_func  liboverride  override_func
-cd prod\override-sample\bin
-set PATH=%PATH%;..\lib
-override-sample.exe
-```
-
-または直接書き込む場合は以下のとおりです。
-
-```cmd
-echo sample_func liboverride override_func > %TEMP%\libbase_extdef.txt
+echo {"sample_func":{"lib":"liboverride","func":"override_func"}} > %TEMP%\libbase_extdef.json
 cd prod\override-sample\bin
 set PATH=%PATH%;..\lib
 override-sample.exe
