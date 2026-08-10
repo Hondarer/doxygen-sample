@@ -98,6 +98,9 @@ Markdown の本文段落では、1 文の途中に表示幅調整目的の改行
 
 Markdown 文書を作成または変更した場合は、`framework/docsfw/bin/text_style_jp.py` を使って日本語スタイル チェックを実施し、指摘された項目をすべて対処した上で文書を確定すること。
 
+`text_style_jp.py` は、本文段落の一文一行を Markdown の表示にも反映するため、文末へ強制改行用の半角空白 2 個を付与する場合がある。  
+この空白は意図的な Markdown 構文であるため、`git diff --check` が `trailing whitespace` として報告しても削除しないこと。
+
 ```bash
 # 変更箇所の確認 (ルール名と差分を表示)
 python framework/docsfw/bin/text_style_jp.py <対象ファイル> --dry-run
