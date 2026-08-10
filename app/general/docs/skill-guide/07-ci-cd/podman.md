@@ -27,7 +27,7 @@ Podman はデーモンレス・rootless で動作するオープンソースの�
 
 ## Oracle Linux 開発コンテナーの指定
 
-対象ワークスペースの CI が公開する Oracle Linux 開発コンテナーを指定します。
+対象ワークスペースの CI が公開する Oracle Linux 開発コンテナーを指定します。  
 以下のイメージ名は、展開先で使用するレジストリ、所有者、イメージ名へ置き換えてください。
 
 ### GitHub Container Registry (ghcr.io)

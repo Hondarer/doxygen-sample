@@ -161,7 +161,7 @@ static int get_systemd_major_version(void)
 /**
  *  @brief          root 権限を保証します。
  *  @param[in]      command         昇格再実行するサブコマンド。
- *  @param[in]      operation_name  操作名 (エラーメッセージ用)。
+ *  @param[in]      operation_name  操作名 (エラー メッセージ用)。
  *  @param[out]     handled         別プロセスで処理済みの場合は 0 以外を格納します。
  *  @return         継続可能な場合は 0、失敗時または別プロセスの終了コードを返します。
  */

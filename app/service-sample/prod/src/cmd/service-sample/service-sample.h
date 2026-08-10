@@ -77,7 +77,7 @@ extern "C"
     typedef int (*svc_on_start_fn)(void *user_data);
 
     /**
-     *  @brief          サービス メインループ コールバックの型。
+     *  @brief          サービス メイン ループ コールバックの型。
      *
      *  on_start() が成功した後に呼ばれます。\n
      *  停止要求が来るまで戻らないように実装してください。\n
@@ -199,7 +199,7 @@ extern "C"
         const char *display_name; /**< 表示名。Windows SCM のサービス一覧に表示される。 */
         const char *description;  /**< 説明文。Windows SCM / systemd unit の Description に設定される。 */
         svc_on_start_fn on_start; /**< 初期化コールバック。NULL 可。失敗 (0 以外) を返すと起動を中断します。 */
-        svc_on_run_fn on_run;     /**< メインループ コールバック。NULL 不可。失敗 (0 以外) で失敗終了します。 */
+        svc_on_run_fn on_run;     /**< メイン ループ コールバック。NULL 不可。失敗 (0 以外) で失敗終了します。 */
         svc_on_stop_fn on_stop;   /**< 停止処理コールバック。NULL 可。失敗 (0 以外) で失敗終了します。 */
         void *user_data;          /**< 各コールバックに渡す任意ポインター。 */
         svc_on_event_fn on_event; /**< OS イベント コールバック。NULL 可 (NULL の場合は電源・セッション・
@@ -218,7 +218,7 @@ extern "C"
      *  @return         停止要求が届いた場合は 1、タイムアウトの場合は 0 を返します。
      *
      *  on_run() の周期処理ループでこの関数を使うことで、
-     *  停止要求を受け取ったときにメインループを正常に抜けられます。
+     *  停止要求を受け取ったときにメイン ループを正常に抜けられます。
      *
      *  @par            使用例
         @code{.c}

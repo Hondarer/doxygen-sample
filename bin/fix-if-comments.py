@@ -19,7 +19,7 @@ Linux/Windows 二択分岐を標準化する。
   - 単純な #elif defined(MACRO) だけで構成される #if defined() チェーンは、
     共通接頭辞があれば #endif にコメントする
   - 複合条件を含む #elif チェーンの #else / #endif にはコメントしない
-  - #if EXPR（複雑な式）のブロックは変更しない
+  - #if EXPR (複雑な式) のブロックは変更しない
 
 【使い方】
   python framework/makefw/bin/fix-if-comments.py [--dry-run] <path>...

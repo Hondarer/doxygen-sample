@@ -15,7 +15,7 @@ when_to_use: |
 
 # コーディング規範チェック
 
-このスキルは `docs/general/coding-guideline.md` の薄いラッパーです。
+このスキルは `docs/general/coding-guideline.md` の薄いラッパーです。  
 判定基準・grep 例・コード例は原典に集約されているため、本書では参照先のみを示します。
 
 ## 原典

@@ -1,5 +1,5 @@
 /**
- *  @defgroup       MERGE_SAMPLE マージサンプル
+ *  @defgroup       MERGE_SAMPLE マージ サンプル
  *  @{
  */
 

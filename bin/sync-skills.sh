@@ -79,8 +79,8 @@ collect_skill_dirs() {
     collect_non_submodule_app_skill_dirs
 }
 
-# 先頭フロントマターへ `key: "value"` を挿入する。
-# 既存の同名キーは置換し、フロントマターが無ければ新規生成する。
+# 先頭フロント マターへ `key: "value"` を挿入する。
+# 既存の同名キーは置換し、フロント マターが無ければ新規生成する。
 inject_frontmatter_key() {
     md_file="$1"
     fm_key="$2"
@@ -176,7 +176,7 @@ if [ "$IS_WINDOWS" -eq 1 ]; then
 fi
 
 # .vscode/mcp.json (VS Code 形式) を .github/mcp.json (Copilot CLI 形式) へ変換してコピーする。
-# VS Code 形式のトップレベルキー "servers" を "mcpServers" へ読み替え、
+# VS Code 形式のトップレベル キー "servers" を "mcpServers" へ読み替え、
 # 環境変数参照 "${env:NAME}" を "${NAME}" へ変換し、
 # type 未指定のエントリには "type": "local" を付与する。
 # see: https://techcommunity.microsoft.com/blog/educatordeveloperblog/action-required-migrate-your-copilot-cli-mcp-config-away-from-vscodemcp-json/4531562

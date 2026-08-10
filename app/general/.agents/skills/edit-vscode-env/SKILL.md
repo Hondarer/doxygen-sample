@@ -32,7 +32,7 @@ VS Code の環境変数設定は envFile 方式で一元管理しています。
 
 ## 新しいモジュールを追加・削除したとき
 
-`.vscode` の `PATH` / `LD_LIBRARY_PATH` は手で編集しません。
+`.vscode` の `PATH` / `LD_LIBRARY_PATH` は手で編集しません。  
 `app/<name>/**/makepart.mk` の `OUTPUT_DIR` を正本として、`bin/sync-app-env.sh` が生成します。
 
 ```bash
@@ -57,7 +57,7 @@ OUTPUT_DIR := $(MYAPP_DIR)/prod/cbin
 OUTPUT_DIR := $(MYAPP_DIR)/prod/lib
 ```
 
-生成対象は `.vscode` の 4 ファイルだけです。
+生成対象は `.vscode` の 4 ファイルだけです。  
 `.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は `bin/load-app-env.sh` を介して `.env.linux` / `.env.windows` を読むため、app の増減で編集は発生しません。
 
 ルートの `make` の完了後には `bash bin/sync-app-env.sh --check` が自動で走り、差異があれば `app/app_env.warn` が生成されます。
@@ -76,7 +76,7 @@ LD_LIBRARY_PATH=値1:値2:${env:LD_LIBRARY_PATH}
 - Linux は `:` 区切り、パス区切りは `/`
 - Windows は `;` 区切り、パス区切りは `\`
 
-CI と Jenkins は `bin/load-app-env.sh` でこのファイルを読み、`${workspaceFolder}` と `${env:NAME}` を解決して適用します。
+CI と Jenkins は `bin/load-app-env.sh` でこのファイルを読み、`${workspaceFolder}` と `${env:NAME}` を解決して適用します。  
 プレースホルダーの記法を変える場合は、同スクリプトもあわせて確認します。
 
 ## launch.json / tasks.json の envFile 参照
@@ -105,11 +105,11 @@ CI と Jenkins は `bin/load-app-env.sh` でこのファイルを読み、`${wor
 
 ## 判断基準
 
-`lib` や `cbin` を出力するかどうかは `makepart.mk` の `OUTPUT_DIR` で表現します。
-`LIB_TYPE` (static / shared / both) による絞り込みは行いません。
+`lib` や `cbin` を出力するかどうかは `makepart.mk` の `OUTPUT_DIR` で表現します。  
+`LIB_TYPE` (static / shared / both) による絞り込みは行いません。  
 静的ライブラリだけを出力する app のディレクトリが探索パスに載っても実害がないため、判定を `OUTPUT_DIR` の 1 つに統一しています。
 
-「存在するが実行時には不要」といった個別の除外は設けていません。
+「存在するが実行時には不要」といった個別の除外は設けていません。  
 除外が必要になった場合は、`bin/sync-app-env.sh` の導出規則そのものを見直します。
 
 ## 確認項目

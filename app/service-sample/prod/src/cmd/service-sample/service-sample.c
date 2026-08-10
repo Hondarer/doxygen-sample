@@ -212,7 +212,7 @@ void svc_dispatch_reload(const svc_definition *def)
  *
  *  SIGINT / SIGTERM (Linux) または SetConsoleCtrlHandler (Windows) の
  *  いずれかが補足されると shutdown.h 経由でこの callback が呼ばれます。
- *  svc_request_stop() を呼んで on_run のメインループを停止させます。
+ *  svc_request_stop() を呼んで on_run のメイン ループを停止させます。
  */
 static void svc_shutdown_request_callback(const com_util_shutdown_event *event, void *context)
 {

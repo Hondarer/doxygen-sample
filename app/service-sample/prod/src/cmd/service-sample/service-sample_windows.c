@@ -183,7 +183,7 @@ static void write_dispatcher_error(const DWORD err)
 /**
  *  @brief          管理者権限を保証します。
  *  @param[in]      command         昇格再実行するサブコマンド。
- *  @param[in]      operation_name  操作名 (エラーメッセージ用)。
+ *  @param[in]      operation_name  操作名 (エラー メッセージ用)。
  *  @param[out]     handled         別プロセスで処理済みの場合は 0 以外を格納します。
  *  @return         継続可能な場合は 0、失敗時または別プロセスの終了コードを返します。
  */
@@ -331,7 +331,7 @@ static DWORD WINAPI service_ctrl_handler(DWORD ctrl, DWORD ev_type, LPVOID ev_da
     if (ctrl == SERVICE_CONTROL_STOP || ctrl == SERVICE_CONTROL_SHUTDOWN)
     {
         set_service_status(SERVICE_STOP_PENDING, 0, 1, 5000);
-        /* 停止要求を on_run のメインループに伝える */
+        /* 停止要求を on_run のメイン ループに伝える */
         svc_request_stop();
     }
     else if (ctrl == SERVICE_CONTROL_PRESHUTDOWN)

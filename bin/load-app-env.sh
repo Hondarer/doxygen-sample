@@ -81,7 +81,7 @@ case "$FORMAT" in
 esac
 
 # パス区切りは env ファイルの種別から決める。
-# Windows 側は ; 区切りかつ区切り文字を含むパスを扱わないため、単純分割で足りる。
+# Windows 側は `;` 区切りかつ区切り文字を含むパスを扱わないため、単純分割で足りる。
 case "$(basename -- "$ENV_FILE")" in
     *windows*)
         PATH_SEP=';'

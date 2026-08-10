@@ -564,7 +564,7 @@ int svc_linux_events_start(const svc_definition *def)
     }
     if (g_ctx.thread != NULL)
     {
-        /* 既に起動済み */
+        /* すでに起動済み */
         return 0;
     }
 

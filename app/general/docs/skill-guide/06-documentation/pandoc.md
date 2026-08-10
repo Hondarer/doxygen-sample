@@ -22,7 +22,7 @@ Pandoc は「ドキュメント変換のスイス アーミーナイフ」と呼
 ### 公式ドキュメント
 
 - [Pandoc 公式サイト](https://pandoc.org/) - Pandoc のホーム ページ (英語)
-- [Pandoc ユーザーガイド](https://pandoc.org/MANUAL.html) - 完全なコマンド ライン リファレンス (英語)
+- [Pandoc ユーザー ガイド](https://pandoc.org/MANUAL.html) - 完全なコマンド ライン リファレンス (英語)
     - [オプション一覧](https://pandoc.org/MANUAL.html#options) - 全オプションの説明
     - [テンプレート](https://pandoc.org/MANUAL.html#templates) - カスタム テンプレートの書き方
     - [Lua フィルター](https://pandoc.org/MANUAL.html#lua-filters) - 変換処理のカスタマイズ

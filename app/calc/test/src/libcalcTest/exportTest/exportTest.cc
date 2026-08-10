@@ -54,7 +54,7 @@ TEST_F(exportTest, symbol_names_match)
     // _ident_manifest_libcalc_dll は gen_ident_manifest.py が自動生成するビルド識別データであり、
     // 関数ではないためシグネチャ検証の対象外としつつ、名前一致の期待値には含める。
     expected.insert(testing::identManifestSymbolName(
-        "libcalc" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する (Windows のみ実際にエクスポートされる) 。
+        "libcalc" TESTFW_SHARED_LIBRARY_EXTENSION)); // [状態] - IDENT manifest シンボル名を期待値へ追加する (Windows のみ実際にエクスポートされる)。
 #endif                                               /* PLATFORM_WINDOWS */
 
     // Pre-Assert
@@ -66,7 +66,7 @@ TEST_F(exportTest, symbol_names_match)
     // Assert
     testing::expectExportNamesMatch(
         expected, actual,
-        kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致) 。
+        kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致)。
 }
 
 // 公開ヘッダー (calc/ サブディレクトリのみ) の変数宣言が dllexport マクロ (CALC_EXPORT) を
@@ -74,7 +74,7 @@ TEST_F(exportTest, symbol_names_match)
 TEST_F(exportTest, public_header_variables_declare_export_macro)
 {
     // Arrange
-    // calcbase/ は静的リンク専用のため走査対象から明示的に除外する (calc/ サブディレクトリのみを見る) 。
+    // calcbase/ は静的リンク専用のため走査対象から明示的に除外する (calc/ サブディレクトリのみを見る)。
     include_dir =
         workspace_root +
         "/app/calc/prod/include/calc"; // [状態] - 公開ヘッダーのディレクトリを "/app/calc/prod/include/calc" に設定する。

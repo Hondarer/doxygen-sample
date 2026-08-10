@@ -74,7 +74,7 @@ jobs:
         run: make test
 ```
 
-対象ワークスペースの実ワークフローでは、全ジョブ共通の `env` で `MAKEFW_HOME`、`DOCSFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME` を設定します。
+対象ワークスペースの実ワークフローでは、全ジョブ共通の `env` で `MAKEFW_HOME`、`DOCSFW_HOME`、`DOXYFW_HOME`、`TESTFW_HOME` を設定します。  
 `MAKEFW_HOME` は `make` 系ターゲットで必須で、未設定だと `MAKEFW_HOME is required. Export MAKEFW_HOME before running make` で停止します。`make docs` は `DOCSFW_HOME`、`make doxy` は `DOXYFW_HOME`、`make` / `make test` は `TESTFW_HOME` を参照します。  
 具体的なジョブ、トリガー、成果物は、展開先の CI/CD 仕様書に記録します。
 

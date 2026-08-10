@@ -38,7 +38,7 @@ static int on_start(void *user_data)
 }
 
 /**
- *  @brief          サービス メインループの雛形。
+ *  @brief          サービス メイン ループの雛形。
  *  @param[in]      user_data 未使用。
  *  @return         成功時は 0、失敗時は 0 以外を返します。この雛形では失敗する処理がないため 0 固定で返します。
  *

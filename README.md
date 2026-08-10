@@ -4,7 +4,7 @@
 
 ## 概要
 
-C および C++ の開発、ビルド、自動テスト、ドキュメント生成を Linux と Windows で共通化します。
+C および C++ の開発、ビルド、自動テスト、ドキュメント生成を Linux と Windows で共通化します。  
 各機能は `framework/` 配下のフレームワークとして分離し、利用する app はワークスペースごとに選択できます。
 
 ## 特徴
@@ -17,7 +17,7 @@ C および C++ の開発、ビルド、自動テスト、ドキュメント生�
 
 ## Windows 環境における注意事項
 
-Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動してください。
+Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動してください。  
 このスクリプトは MinGW の PATH と Visual Studio Build Tools の環境変数を設定します。
 
 ```powershell
@@ -26,7 +26,7 @@ Windows では、`Start-VSCode-With-Env.cmd` を使用して VS Code を起動�
 
 ## サブモジュール
 
-このフレームワークは、ビルド、テスト、API ドキュメント生成、Markdown 発行を独立したサブモジュールとして管理します。
+このフレームワークは、ビルド、テスト、API ドキュメント生成、Markdown 発行を独立したサブモジュールとして管理します。  
 Clone 後にサブモジュールを初期化してください。
 
 ```bash
@@ -42,10 +42,10 @@ git submodule update --init --recursive
 
 ## app の構成
 
-`app/general` には、本フレームワークを利用するワークスペースに共通する規範、設計、運用手順を配置しています。
+`app/general` には、本フレームワークを利用するワークスペースに共通する規範、設計、運用手順を配置しています。  
 フレームワークを別のワークスペースへ展開するときも、`app/general` は標準配布に含めます。
 
-それ以外の各 app は、必要な機能とサンプルに応じて選択できます。
+それ以外の各 app は、必要な機能とサンプルに応じて選択できます。  
 各 app の依存関係は `appdeps.mk`、ビルド対象と成果物は `makepart.mk` を正本とします。
 
 ### framework の依存関係

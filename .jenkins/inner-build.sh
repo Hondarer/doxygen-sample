@@ -1,11 +1,11 @@
 #!/bin/bash
 # .jenkins/inner-build.sh
 #
-# コンテナ内でユーザー権限で実行されるビルドスクリプト。
+# コンテナー内でユーザー権限で実行されるビルド スクリプト。
 # build.sh から su 経由で呼び出される。直接実行しないこと。
 #
 # 前提として以下の環境変数が設定されていること:
-#   OS_NAME    ビルドログのファイル名に使用する OS 識別子 (例: ol8, ol10)
+#   OS_NAME    ビルド ログのファイル名に使用する OS 識別子 (例: ol8, ol10)
 #   BUILD_DOCS ドキュメント生成の有無 1=あり / 0=なし
 
 set -euo pipefail
@@ -26,10 +26,10 @@ eval "$(bash /workspace/bin/load-app-env.sh \
 
 python3 /workspace/bin/check-nbsp.py --force
 
-# ビルドログを保存しながら make を実行
+# ビルド ログを保存しながら make を実行
 make 2>&1 | tee "logs/linux-${OS_NAME}-build.log"
 
-# テストログを保存しながら make test を実行
+# テスト ログを保存しながら make test を実行
 make test 2>&1 | tee "logs/linux-${OS_NAME}-test.log"
 
 # アーティファクトの出力先 (.github/workflows/ci.yml と同じ pages/ を使用)
@@ -47,7 +47,7 @@ if [ -s "$test_results_list" ]; then
 fi
 rm -f "$test_results_list"
 
-# ビルドログのアーカイブ (テストログは test-results 側へ含める)
+# ビルド ログのアーカイブ (テスト ログは test-results 側へ含める)
 build_logs_list=$(mktemp)
 find /workspace/logs -type f ! -name '*-test.log' 2>/dev/null | sed 's#^/workspace/##' | sort > "$build_logs_list"
 if [ -s "$build_logs_list" ]; then
@@ -104,7 +104,7 @@ if [ "${BUILD_DOCS}" = "1" ]; then
     done
 fi
 
-# pages/index.html の生成 (GitHub Actions と同じ構造, HTML Publisher Plugin のエントリーページ)
+# pages/index.html の生成 (GitHub Actions と同じ構造, HTML Publisher Plugin のエントリ ページ)
 {
     cat <<'INDEX_TOP'
 <!DOCTYPE html>
@@ -130,7 +130,7 @@ INDEX_TOP
 
     if [ "${BUILD_DOCS}" = "1" ]; then
 
-        # Doxygen サブフォルダを自動探索してリンク生成
+        # Doxygen サブフォルダーを自動探索してリンク生成
         if [ -d "/workspace/pages/doxygen" ] && \
            find /workspace/pages/doxygen -maxdepth 1 -mindepth 1 -type d | grep -q .; then
             echo '  <h2>Doxygen ドキュメント</h2>'
