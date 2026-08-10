@@ -246,7 +246,7 @@ extern "C"
      *
      *  SIGTERM / SIGINT (Linux console)、SetConsoleCtrlHandler (Windows console)、
      *  ServiceCtrlHandler (Windows SCM) の 3 経路すべてが最終的にこの関数を呼びます。\n
-     *  複数回呼んでも安全 (冪等) です。
+     *  複数回呼んでも安全 (べき等) です。
      */
     void svc_request_stop(void);
 
