@@ -1240,7 +1240,6 @@ LIBS += mock_examplebase  # OK
     - `framework/testfw/docs/how-to-test.md`
     - `framework/testfw/docs/about-test-phase.md`
     - `framework/testfw/docs/how-to-expect.md`
-    - `framework/testfw/docs/how-to-extern.md`
 
 ---
 
