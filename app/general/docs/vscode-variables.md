@@ -138,7 +138,8 @@ see: [CI と Jenkins での読み込み](#ci-と-jenkins-での読み込み)
 `LIB_TYPE` (static / shared / both) による絞り込みは行いません。  
 静的ライブラリだけを出力する app のディレクトリが探索パスに載っても実害がないため、判定を `OUTPUT_DIR` の 1 つに統一しています。
 
-`.vscode/pub_markdown.config.yaml` の `mergeSubfolderDocs` は、`app/<name>/docs` の有無から導出します。
+`.vscode/pub_markdown.config.yaml` の `mergeSubfolderDocs` は、`app/<name>/docs` の有無から導出します。  
+このファイルは任意同期対象であり、`--include-pub-markdown` を指定した場合だけ警告または更新の対象になります。
 
 app の一覧は `framework/makefw/bin/resolve_app_deps.sh --app-order` から取得するため、app を追加・削除しただけで導出結果が追従します。
 
@@ -183,12 +184,14 @@ app を追加・削除しても `bin/load-app-env.sh` と CI 設定は app 名�
 | Markdown 発行 | `.vscode/pub_markdown.config.yaml` | `mergeSubfolderDocs` の行 |
 
 いずれもキー単位の行置換であり、その行以外は保持されます。  
+通常の `--check` と `--write` は環境設定の 3 ファイルを対象とし、`.vscode/pub_markdown.config.yaml` は差異を `INFO:` で通知するだけです。  
 `.github/workflows/ci.yml` と `.jenkins` 配下は生成対象ではありません。
 
 ### 同期の流れ
 
 ルートの `make` (および `make with-cov`) の完了後に `bash bin/sync-app-env.sh --check` が自動で走ります。  
-差異がある場合は `app/app_env.warn` が生成され、CI の warn artifact 収集にもそのまま乗ります。
+環境設定に差異がある場合は `app/app_env.warn` が生成され、CI の warn artifact 収集にもそのまま乗ります。  
+`.vscode/pub_markdown.config.yaml` だけに差異がある場合は `INFO:` を表示し、`app/app_env.warn` は生成しません。
 
 警告が出たら、ワークスペース ルートで次を実行して各ファイルを更新します。
 
@@ -201,15 +204,20 @@ make sync-app-env
 ```bash
 bash bin/sync-app-env.sh --write
 bash bin/sync-app-env.sh --check
+bash bin/sync-app-env.sh --write --include-pub-markdown
+bash bin/sync-app-env.sh --check --include-pub-markdown
 ```
 
 `--check` は差異があるときに終了コード 3 を返します。  
-これは warning を表す終了コードであり、ビルドは失敗しません。
+これは warning を表す終了コードであり、ビルドは失敗しません。  
+`pub_markdown.config.yaml` の差異を終了コードと警告ファイルへ反映する場合は、`--include-pub-markdown` を指定します。  
+`--write` も同じフラグを指定した場合だけ、このファイルを更新します。
 
 ### app を追加・削除したときにすること
 
-`.vscode` と CI を手で編集する必要はありません。  
-`make sync-app-env` を実行し、生成された差分をコミットします。
+環境設定と CI を手で編集する必要はありません。  
+`make sync-app-env` を実行し、生成された環境設定の差分を確認します。  
+`pub_markdown.config.yaml` も更新する場合は、`bash bin/sync-app-env.sh --write --include-pub-markdown` を実行します。
 
 `.gitmodules` への submodule 登録と `README.md` のサブモジュール一覧は自動生成の対象外のため、従来どおり手で更新します。
 
@@ -218,6 +226,7 @@ bash bin/sync-app-env.sh --check
 ```bash
 make sync-app-env
 bash bin/sync-app-env.sh --check
+bash bin/sync-app-env.sh --check --include-pub-markdown
 ```
 
 ## framework home 系の環境変数を変更する場合
@@ -240,7 +249,8 @@ bash bin/sync-app-env.sh --check
 
 ## 再チェック用チェックリスト
 
-- `make sync-app-env` を実行し、生成された差分を確認した
+- `make sync-app-env` を実行し、生成された環境設定の差分を確認した
+- `.vscode/pub_markdown.config.yaml` を同期する場合は、`--include-pub-markdown` を指定した
 - 生成結果に想定外の app の増減がないことを確認した (増減がある場合は `makepart.mk` の `OUTPUT_DIR` を疑う)
 - `bash bin/sync-app-env.sh --check` が終了コード 0 で完了することを確認した
 - framework home 系の環境変数を変更した場合は、上表のファイルを手で更新した
@@ -293,7 +303,9 @@ LD_LIBRARY_PATH=$PWD/app/example/prod/lib:$PWD/app/example.net/prod/lib:$PWD/app
 - `.vscode/.env.windows`
 - `.vscode/settings.json`
 
-これらはいずれも `bin/sync-app-env.sh` の生成物です。  
+これらはいずれも `bin/sync-app-env.sh` の通常の同期対象です。  
 内容に疑問がある場合は、`app/<name>/**/makepart.mk` の `OUTPUT_DIR` に立ち戻って確認してください。
+
+`.vscode/pub_markdown.config.yaml` は任意同期対象であり、`--include-pub-markdown` を指定した場合だけ更新されます。
 
 `.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は生成物ではなく、`bin/load-app-env.sh` で上記のファイルを読む固定の実装です。

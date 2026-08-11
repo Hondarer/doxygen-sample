@@ -33,8 +33,8 @@ find_workspace_root() {
 usage() {
     cat <<'EOF'
 Usage:
-  sync-app-env.sh --check
-  sync-app-env.sh --write
+  sync-app-env.sh --check [--include-pub-markdown]
+  sync-app-env.sh --write [--include-pub-markdown]
 EOF
 }
 
@@ -65,15 +65,33 @@ FIXED_MERGE_DOCS=(
     'testfw=${TESTFW_HOME}/docs'
 )
 
-MODE="${1:-}"
-case "$MODE" in
-    --check|--write)
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+MODE=""
+INCLUDE_PUB_MARKDOWN=0
+
+while (( $# > 0 )); do
+    case "$1" in
+        --check|--write)
+            if [[ -n "$MODE" ]]; then
+                usage >&2
+                exit 2
+            fi
+            MODE="$1"
+            ;;
+        --include-pub-markdown)
+            INCLUDE_PUB_MARKDOWN=1
+            ;;
+        *)
+            usage >&2
+            exit 2
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$MODE" ]]; then
+    usage >&2
+    exit 2
+fi
 
 #
 # app/<name> 配下の makepart.mk を評価して OUTPUT_DIR を収集する
@@ -300,25 +318,32 @@ MERGE_SUBFOLDER_DOCS=$(join_by ' ' "${MERGE_DOCS_ENTRIES[@]}")
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# 差分を判定し、--write のときだけ書き戻す
+# 差分を必須対象と任意対象に分け、--write の対象だけを書き戻す
 apply_file() {
     local target="$1"
     local generated="$2"
+    local category="${3:-required}"
 
     if cmp -s "$target" "$generated"; then
         return 0
     fi
 
-    CHANGED_FILES+=("${target#"$WORKSPACE_DIR"/}")
+    if [[ "$category" == "optional" ]]; then
+        OPTIONAL_CHANGED_FILES+=("${target#"$WORKSPACE_DIR"/}")
+    else
+        REQUIRED_CHANGED_FILES+=("${target#"$WORKSPACE_DIR"/}")
+    fi
 
-    if [[ "$MODE" == "--write" ]]; then
+    if [[ "$MODE" == "--write" ]] && \
+        { [[ "$category" == "required" ]] || (( INCLUDE_PUB_MARKDOWN )); }; then
         cat "$generated" > "$target"
     fi
 
     return 0
 }
 
-CHANGED_FILES=()
+REQUIRED_CHANGED_FILES=()
+OPTIONAL_CHANGED_FILES=()
 
 #
 # .vscode/.env.linux
@@ -403,7 +428,7 @@ sync_pub_markdown_config() {
         { print }
     ' "$target" > "$generated"
 
-    apply_file "$target" "$generated"
+    apply_file "$target" "$generated" optional
 }
 
 sync_env_linux
@@ -417,26 +442,55 @@ sync_pub_markdown_config
 
 rm -f "$WARN_FILE"
 
-if (( ${#CHANGED_FILES[@]} == 0 )); then
+if (( ${#OPTIONAL_CHANGED_FILES[@]} > 0 )) && (( ! INCLUDE_PUB_MARKDOWN )); then
     if [[ "$MODE" == "--check" ]]; then
-        printf 'INFO: app env settings are in sync.\n'
+        printf 'INFO: optional sync difference detected: %s (use --include-pub-markdown to include it in the warning).\n' \
+            "${OPTIONAL_CHANGED_FILES[0]}"
+    else
+        printf 'INFO: optional sync target was not updated: %s (use --include-pub-markdown to update it).\n' \
+            "${OPTIONAL_CHANGED_FILES[0]}"
+    fi
+fi
+
+if [[ "$MODE" == "--write" ]]; then
+    UPDATED_FILES=("${REQUIRED_CHANGED_FILES[@]}")
+    if (( INCLUDE_PUB_MARKDOWN )); then
+        UPDATED_FILES+=("${OPTIONAL_CHANGED_FILES[@]}")
+    fi
+    if (( ${#UPDATED_FILES[@]} > 0 )); then
+        printf 'INFO: updated app env settings:\n'
+        printf '  %s\n' "${UPDATED_FILES[@]}"
     fi
     exit 0
 fi
 
-if [[ "$MODE" == "--write" ]]; then
-    printf 'INFO: updated app env settings:\n'
-    printf '  %s\n' "${CHANGED_FILES[@]}"
+WARNING_FILES=("${REQUIRED_CHANGED_FILES[@]}")
+if (( INCLUDE_PUB_MARKDOWN )); then
+    WARNING_FILES+=("${OPTIONAL_CHANGED_FILES[@]}")
+fi
+
+if (( ${#WARNING_FILES[@]} == 0 )); then
+    printf 'INFO: app env settings are in sync.\n'
     exit 0
 fi
 
 {
     printf 'app env settings are out of sync with sync sources.\n'
-    printf '  SOURCE : app/*/**/makepart.mk (OUTPUT_DIR), app/*/docs\n'
+    printf '  SOURCE :\n'
+    if (( ${#REQUIRED_CHANGED_FILES[@]} > 0 )); then
+        printf '    app/*/**/makepart.mk (OUTPUT_DIR)\n'
+    fi
+    if (( INCLUDE_PUB_MARKDOWN )) && (( ${#OPTIONAL_CHANGED_FILES[@]} > 0 )); then
+        printf '    app/*/docs\n'
+    fi
     printf '  TARGET :\n'
-    printf '    %s\n' "${CHANGED_FILES[@]}"
+    printf '    %s\n' "${WARNING_FILES[@]}"
     printf 'Run from workspace root:\n'
-    printf '  bash bin/sync-app-env.sh --write\n'
+    printf '  bash bin/sync-app-env.sh --write'
+    if (( INCLUDE_PUB_MARKDOWN )) && (( ${#OPTIONAL_CHANGED_FILES[@]} > 0 )); then
+        printf ' --include-pub-markdown'
+    fi
+    printf '\n'
 } > "$WARN_FILE"
 
 cat "$WARN_FILE" >&2

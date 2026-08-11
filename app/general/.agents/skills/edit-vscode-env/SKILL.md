@@ -57,10 +57,19 @@ OUTPUT_DIR := $(MYAPP_DIR)/prod/cbin
 OUTPUT_DIR := $(MYAPP_DIR)/prod/lib
 ```
 
-生成対象は `.vscode` の 4 ファイルだけです。  
+通常の生成対象は `.vscode/.env.linux`、`.vscode/.env.windows`、`.vscode/settings.json` の 3 ファイルです。  
+`.vscode/pub_markdown.config.yaml` の `mergeSubfolderDocs` も `app/<name>/docs` から導出できますが、`--include-pub-markdown` を指定した場合だけ警告または更新の対象になります。  
 `.github/workflows/ci.yml` と `.jenkins/inner-build.sh` は `bin/load-app-env.sh` を介して `.env.linux` / `.env.windows` を読むため、app の増減で編集は発生しません。
 
-ルートの `make` の完了後には `bash bin/sync-app-env.sh --check` が自動で走り、差異があれば `app/app_env.warn` が生成されます。
+ルートの `make` の完了後には `bash bin/sync-app-env.sh --check` が自動で走り、環境設定に差異があれば `app/app_env.warn` が生成されます。  
+`pub_markdown.config.yaml` だけに差異がある場合は `INFO:` を表示し、警告にはしません。
+
+Markdown 設定も含めて検査または更新する場合は、次のように実行します。
+
+```bash
+bash bin/sync-app-env.sh --check --include-pub-markdown
+bash bin/sync-app-env.sh --write --include-pub-markdown
+```
 
 ## env ファイルの形式
 
@@ -118,6 +127,7 @@ CI と Jenkins は `bin/load-app-env.sh` でこのファイルを読み、`${wor
 - `make sync-app-env` を実行したか
 - 生成された差分に、想定外の app の増減がないか
 - `bash bin/sync-app-env.sh --check` が終了コード 0 で完了するか
+- Markdown 設定も同期する場合は、`--include-pub-markdown` を指定したか
 
 ## 参照ドキュメント
 
