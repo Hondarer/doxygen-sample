@@ -57,7 +57,7 @@ Jenkins の Execute shell 先頭で `export` してから `build.sh` を呼び�
 | 変数 | デフォルト値 | 説明 |
 |---|---|---|
 | `IMAGE` | `ghcr.io/hondarer/oracle-linux-container/oracle-linux-8-dev:latest` | 使用するコンテナー イメージ |
-| `OS_NAME` | `ol8` | ビルド ログ・アーティファクトのファイル名に使用する OS 識別子 |
+| `OS_NAME` | `ol8` | ビルド ログ・アーティファクトのファイル名に使用する OS 識別子 (`ol8`、`ol9`、`ol10`) |
 | `BUILD_DOCS` | `1` | ドキュメント生成の有無。`1`=あり、`0`=なし |
 
 `HOST_USER`, `HOST_UID`, `HOST_GID` は `id` コマンドで動的取得するため、設定不要です。
@@ -204,6 +204,22 @@ export REPO_URL="https://github.com/Hondarer/c-modernization-kit.git"
 export IMAGE="ghcr.io/hondarer/oracle-linux-container/oracle-linux-8-dev:latest"
 export OS_NAME="ol8"
 export BUILD_DOCS="1"
+
+rm -rf source
+git clone --recurse-submodules "$REPO_URL" source
+
+bash source/.jenkins/build.sh
+```
+
+### Oracle Linux 9 でのビルド
+
+`IMAGE` と `OS_NAME` を変更します。
+
+```bash
+export REPO_URL="https://github.com/Hondarer/c-modernization-kit.git"
+export IMAGE="ghcr.io/hondarer/oracle-linux-container/oracle-linux-9-dev:latest"
+export OS_NAME="ol9"
+export BUILD_DOCS="0"
 
 rm -rf source
 git clone --recurse-submodules "$REPO_URL" source

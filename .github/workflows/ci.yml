@@ -26,6 +26,8 @@ jobs:
         include:
           - os-name: ol8
             image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-8-dev:latest
+          - os-name: ol9
+            image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-9-dev:latest
           - os-name: ol10
             image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-10-dev:latest
     container:
@@ -427,6 +429,7 @@ jobs:
           script: |
             const trackedArtifacts = [
               'linux-ol8-warns',
+              'linux-ol9-warns',
               'linux-ol10-warns',
               'windows-warns',
               'docs-warns',
@@ -482,6 +485,12 @@ jobs:
           name: linux-ol8-test-results
           path: test-results/linux-ol8
 
+      - name: Download Linux OL9 test results
+        uses: actions/download-artifact@v8
+        with:
+          name: linux-ol9-test-results
+          path: test-results/linux-ol9
+
       - name: Download Linux OL10 test results
         uses: actions/download-artifact@v8
         with:
@@ -505,6 +514,12 @@ jobs:
         with:
           name: linux-ol8-logs
           path: logs/linux-ol8
+
+      - name: Download Linux OL9 logs
+        uses: actions/download-artifact@v8
+        with:
+          name: linux-ol9-logs
+          path: logs/linux-ol9
 
       - name: Download Linux OL10 logs
         uses: actions/download-artifact@v8
@@ -535,6 +550,7 @@ jobs:
             const artifactNames = new Set(artifacts.map((artifact) => artifact.name));
             core.info(`Artifacts in run: ${Array.from(artifactNames).sort().join(', ')}`);
             core.setOutput('linux_ol8', String(artifactNames.has('linux-ol8-warns')));
+            core.setOutput('linux_ol9', String(artifactNames.has('linux-ol9-warns')));
             core.setOutput('linux_ol10', String(artifactNames.has('linux-ol10-warns')));
             core.setOutput('windows', String(artifactNames.has('windows-warns')));
 
@@ -544,6 +560,13 @@ jobs:
         with:
           name: linux-ol8-warns
           path: warns/linux-ol8
+
+      - name: Download Linux OL9 build warnings
+        if: steps.warning_artifacts.outputs.linux_ol9 == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: linux-ol9-warns
+          path: warns/linux-ol9
 
       - name: Download Linux OL10 build warnings
         if: steps.warning_artifacts.outputs.linux_ol10 == 'true'
@@ -569,6 +592,11 @@ jobs:
             echo "Created linux-ol8-test-results.zip"
           fi
 
+          if [ -d "test-results/linux-ol9" ]; then
+            zip -r pages/artifacts/linux-ol9-test-results.zip test-results/linux-ol9
+            echo "Created linux-ol9-test-results.zip"
+          fi
+
           if [ -d "test-results/linux-ol10" ]; then
             zip -r pages/artifacts/linux-ol10-test-results.zip test-results/linux-ol10
             echo "Created linux-ol10-test-results.zip"
@@ -584,6 +612,11 @@ jobs:
             echo "Created linux-ol8-logs.zip"
           fi
 
+          if [ -d "logs/linux-ol9" ]; then
+            zip -r pages/artifacts/linux-ol9-logs.zip logs/linux-ol9
+            echo "Created linux-ol9-logs.zip"
+          fi
+
           if [ -d "logs/linux-ol10" ]; then
             zip -r pages/artifacts/linux-ol10-logs.zip logs/linux-ol10
             echo "Created linux-ol10-logs.zip"
@@ -595,7 +628,7 @@ jobs:
           fi
 
           # ビルド警告を ZIP 化して pages/artifacts/ に配置し、元ディレクトリを削除
-          for os in linux-ol8 linux-ol10 windows; do
+          for os in linux-ol8 linux-ol9 linux-ol10 windows; do
             if [ -d "warns/${os}" ]; then
               zip -r "pages/artifacts/${os}-warns.zip" "warns/${os}"
               rm -rf "warns/${os}"

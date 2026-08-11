@@ -361,7 +361,7 @@ GitHub Actions では `HOST_UID=1001`、`HOST_GID=127` の固定値を使って�
 #   export IMAGE="example/oracle-linux-dev:latest"
 export IMAGE="ghcr.io/example/oracle-linux-dev:latest"
 export REPO_URL="https://github.com/example/project.git"
-export OS_NAME="ol8"    # ol8 または ol10
+export OS_NAME="ol8"    # ol8、ol9、ol10 のいずれか
 export BUILD_DOCS="1"   # 1: ドキュメント生成あり / 0: なし
 
 # ワークスペースを毎回作り直す
@@ -373,7 +373,12 @@ bash source/.jenkins/build.sh
 ```
 
 ドキュメント生成を実施しない場合は、`BUILD_DOCS="0"` に変更してください。  
-Oracle Linux 10 イメージでビルドする場合は `IMAGE` と `OS_NAME` を変更してください。
+Oracle Linux 9 または Oracle Linux 10 イメージでビルドする場合は、`IMAGE` と `OS_NAME` を対応する値へ変更してください。
+
+```bash
+export IMAGE="ghcr.io/hondarer/oracle-linux-container/oracle-linux-9-dev:latest"
+export OS_NAME="ol9"
+```
 
 `source/.jenkins/build.sh` から呼び出される `inner-build.sh` は、コンテナー内で `DOCSFW_HOME=/workspace/framework/docsfw`、`DOXYFW_HOME=/workspace/framework/doxyfw`、`TESTFW_HOME=/workspace/framework/testfw` を既定値として設定します。  
 また、ルート `makefile` は `MAKEFW_HOME` が未設定だと `MAKEFW_HOME is required. Export MAKEFW_HOME before running make` で停止するため、Jenkins 側でも `MAKEFW_HOME=/workspace/framework/makefw` を必ず有効化してください。  
@@ -400,13 +405,13 @@ Oracle Linux 10 イメージでビルドする場合は `IMAGE` と `OS_NAME` �
 - `make test` が成功する
 - `MAKEFW_HOME` が `/workspace/framework/makefw` を指しており、`make` 実行前に有効になっている
 - `BUILD_DOCS="1"` の場合に `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` が `/workspace/framework/docsfw` / `/workspace/framework/doxyfw` / `/workspace/framework/testfw` を指している
-- `source/pages/artifacts/linux-ol8-test-results.zip` 等にテスト結果と `make test` ログが含まれる
-- ビルド・テスト警告がある場合は `source/pages/artifacts/linux-ol8-warns.zip` が生成される
+- `source/pages/artifacts/linux-ol8-test-results.zip`、`linux-ol9-test-results.zip`、`linux-ol10-test-results.zip` などにテスト結果と `make test` ログが含まれる
+- ビルド・テスト警告がある場合は `source/pages/artifacts/linux-ol8-warns.zip`、`linux-ol9-warns.zip`、`linux-ol10-warns.zip` のいずれかが生成される
 - warning ZIP がある場合は、Console Output に `WARNING ARTIFACTS DETECTED` バナーが表示される
 - `source/pages/index.html` が生成される
 - `BUILD_DOCS="1"` の場合は `source/pages/artifacts/docs-html-doxygen.zip` 等も生成される
 - `BUILD_DOCS="1"` かつ `docs.warn` または `app/**/doxy.warn` がある場合は `source/pages/artifacts/docs-warns.zip` が生成される
-- warn ZIP (`linux-ol8-warns.zip`, `docs-warns.zip` など) がある場合は、`index.html` で通常アーティファクトとは別に「ビルド・ドキュメント警告詳細」として表示される
+- warn ZIP (`linux-ol8-warns.zip`、`linux-ol9-warns.zip`、`linux-ol10-warns.zip`、`docs-warns.zip` など) がある場合は、`index.html` で通常アーティファクトとは別に「ビルド・ドキュメント警告詳細」として表示される
 
 必要に応じて Console Output を確認し、環境変数や依存パッケージ不足を調整してください。
 
@@ -467,7 +472,7 @@ Jenkins の **HTML Publisher Plugin** を使うと、ジョブのワークスペ
 
 設定を保存し、ジョブを実行します。ビルド完了後、ジョブのトップ ページに **Docs** リンクが表示されます。
 
-ビルド スクリプトにより `source/pages/index.html` が自動生成されるため、アクセス時に Doxygen API ドキュメント (モジュール別)・言語別ドキュメント・通常アーティファクトへのリンクが表示されます。warn ZIP がある場合は、別セクション「ビルド・ドキュメント警告詳細」に分けて表示されます。ここにはビルド・テスト警告の `linux-ol8-warns.zip` などに加えて、`docs.warn` と Doxygen 警告を束ねた `docs-warns.zip` も表示されます。
+ビルド スクリプトにより `source/pages/index.html` が自動生成されるため、アクセス時に Doxygen API ドキュメント (モジュール別)、言語別ドキュメント、通常アーティファクトへのリンクが表示されます。warn ZIP がある場合は、別セクション「ビルド・ドキュメント警告詳細」に分けて表示されます。ここにはビルド・テスト警告の `linux-ol8-warns.zip`、`linux-ol9-warns.zip`、`linux-ol10-warns.zip` などに加えて、`docs.warn` と Doxygen 警告を束ねた `docs-warns.zip` も表示されます。
 
 同じ warning ZIP は Console Output にも通知されますが、ビルド結果は SUCCESS のまま維持されます。
 

@@ -16,13 +16,13 @@ main ブランチへの変更時に、Linux/Windows 両環境での自動ビル�
 
 このワークフローには以下の 5 つのジョブが含まれています:
 
-1. `build-and-test-linux` - Linux 環境でのビルドとテスト (Oracle Linux 8 / Oracle Linux 10 のマトリクス実行)
+1. `build-and-test-linux` - Linux 環境でのビルドとテスト (Oracle Linux 8 / Oracle Linux 9 / Oracle Linux 10 のマトリクス実行)
 2. `build-and-test-windows` - Windows 環境でのビルドとテスト
 3. `publish-docs` - ドキュメント生成
 4. `warnings-summary` - warning artifact の有無を集約し、annotation と Step Summary で通知
 5. `deploy-pages` - テスト結果とドキュメントの統合と GitHub Pages へのデプロイ
 
-Linux ビルド (OL8/OL10)、Windows ビルド、ドキュメント生成のジョブが並列実行されます。これらの完了後に `warnings-summary` が warning artifact を集約し、main ブランチへの push では `deploy-pages` がテスト結果とドキュメントを統合して GitHub Pages にデプロイします。
+Linux ビルド (OL8/OL9/OL10)、Windows ビルド、ドキュメント生成のジョブが並列実行されます。これらの完了後に `warnings-summary` が warning artifact を集約し、main ブランチへの push では `deploy-pages` がテスト結果とドキュメントを統合して GitHub Pages にデプロイします。
 
 ### トリガー条件
 
@@ -63,6 +63,8 @@ strategy:
     include:
       - os-name: ol8
         image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-8-dev:latest
+      - os-name: ol9
+        image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-9-dev:latest
       - os-name: ol10
         image: ghcr.io/hondarer/oracle-linux-container/oracle-linux-10-dev:latest
 container:
@@ -72,7 +74,18 @@ container:
 | OS 名 | コンテナー イメージ | 説明 |
 |--------|-----------------|------|
 | ol8 | `ghcr.io/hondarer/oracle-linux-container/oracle-linux-8-dev:latest` | Oracle Linux 8 開発コンテナー |
+| ol9 | `ghcr.io/hondarer/oracle-linux-container/oracle-linux-9-dev:latest` | Oracle Linux 9 開発コンテナー |
 | ol10 | `ghcr.io/hondarer/oracle-linux-container/oracle-linux-10-dev:latest` | Oracle Linux 10 開発コンテナー |
+
+CI の表示名とビルド成果物の内部識別子は目的が異なるため、命名を分けています。
+
+| 用途 | 命名 |
+|------|------|
+| コンテナー、matrix、artifact | `ol8` / `ol9` / `ol10` |
+| `TARGET_ARCH` の OS 部分 | `el8` / `el9` / `el10` |
+| Linux ライブラリ配置 | `linux_el8_x64` / `linux_el9_x64` / `linux_el10_x64` |
+
+`el` 系の内部識別子は、makefw が RHEL 系 OS から生成する値であり、CI の表示名である `ol` 系の識別子とは置き換えません。
 
 これらのコンテナーには以下の開発ツールが含まれています:
 
@@ -115,12 +128,14 @@ skinparam defaultFontName "Courier"
 
 rectangle "並列実行" {
   card "build-and-test-linux\n(OL8)" as linux_ol8
+  card "build-and-test-linux\n(OL9)" as linux_ol9
   card "build-and-test-linux\n(OL10)" as linux_ol10
   card "build-and-test-windows" as windows
   card "publish-docs" as docs
 }
 
 artifact "linux-ol8-test-results" as linux_ol8_artifact
+artifact "linux-ol9-test-results" as linux_ol9_artifact
 artifact "linux-ol10-test-results" as linux_ol10_artifact
 artifact "windows-test-results" as windows_artifact
 artifact "documentation" as docs_artifact
@@ -130,15 +145,18 @@ card "deploy-pages\n(needs: すべて完了後)" as deploy
 cloud "GitHub Pages" as pages
 
 linux_ol8 -down-> linux_ol8_artifact
+linux_ol9 -down-> linux_ol9_artifact
 linux_ol10 -down-> linux_ol10_artifact
 windows -down-> windows_artifact
 docs -down-> docs_artifact
 
 linux_ol8_artifact -down-> deploy
+linux_ol9_artifact -down-> deploy
 linux_ol10_artifact -down-> deploy
 windows_artifact -down-> deploy
 docs_artifact -down-> deploy
 linux_ol8_artifact -down-> warns
+linux_ol9_artifact -down-> warns
 linux_ol10_artifact -down-> warns
 windows_artifact -down-> warns
 docs_artifact -down-> warns
@@ -263,13 +281,13 @@ end note
 **処理フロー**:
 
 1. workflow run にアップロードされた artifact 一覧を取得する
-2. `linux-ol8-warns` / `linux-ol10-warns` / `windows-warns` / `docs-warns` の有無を確認する
+2. `linux-ol8-warns` / `linux-ol9-warns` / `linux-ol10-warns` / `windows-warns` / `docs-warns` の有無を確認する
 3. warning artifact があれば warning annotation を出し、Step Summary に対象 artifact 名を列挙する
 4. warning artifact が無ければ Step Summary に「warning なし」を出す
 
 ### deploy-pages ジョブ
 
-このジョブは、上記のジョブ (`build-and-test-linux` (OL8/OL10)、`build-and-test-windows`、`publish-docs`) が並列実行され、すべて完了した後に実行されます。
+このジョブは、上記のジョブ (`build-and-test-linux` (OL8/OL9/OL10)、`build-and-test-windows`、`publish-docs`) が並列実行され、すべて完了した後に実行されます。
 
 **実行条件**:
 
@@ -280,22 +298,26 @@ end note
 
 1. **アーティファクトのダウンロード**
     - Linux OL8 テスト結果アーティファクト (`linux-ol8-test-results`) をダウンロード
+    - Linux OL9 テスト結果アーティファクト (`linux-ol9-test-results`) をダウンロード
     - Linux OL10 テスト結果アーティファクト (`linux-ol10-test-results`) をダウンロード
     - Windows テスト結果アーティファクト (`windows-test-results`) をダウンロード
     - ドキュメント アーティファクト (`documentation`) をダウンロード
     - Linux OL8 ログ アーティファクト (`linux-ol8-logs`) をダウンロード
+    - Linux OL9 ログ アーティファクト (`linux-ol9-logs`) をダウンロード
     - Linux OL10 ログ アーティファクト (`linux-ol10-logs`) をダウンロード
     - Windows ログ アーティファクト (`windows-logs`) をダウンロード
-    - ビルド警告アーティファクト (`linux-ol8-warns` / `linux-ol10-warns` / `windows-warns`) は、存在する場合のみダウンロード
+    - ビルド警告アーティファクト (`linux-ol8-warns` / `linux-ol9-warns` / `linux-ol10-warns` / `windows-warns`) は、存在する場合のみダウンロード
 
 2. **アーティファクトの整理と統合**
     - Linux OL8 テスト結果と `make test` ログを `linux-ol8-test-results.zip` にアーカイブ
+    - Linux OL9 テスト結果と `make test` ログを `linux-ol9-test-results.zip` にアーカイブ
     - Linux OL10 テスト結果と `make test` ログを `linux-ol10-test-results.zip` にアーカイブ
     - Windows テスト結果と `make test` ログを `windows-test-results.zip` にアーカイブ
     - Linux OL8 ビルド ログを `linux-ol8-logs.zip` にアーカイブ
+    - Linux OL9 ビルド ログを `linux-ol9-logs.zip` にアーカイブ
     - Linux OL10 ビルド ログを `linux-ol10-logs.zip` にアーカイブ
     - Windows ビルド ログを `windows-logs.zip` にアーカイブ
-    - ビルド警告は、存在する OS のみ `linux-ol8-warns.zip` / `linux-ol10-warns.zip` / `windows-warns.zip` にアーカイブ
+    - ビルド警告は、存在する OS のみ `linux-ol8-warns.zip` / `linux-ol9-warns.zip` / `linux-ol10-warns.zip` / `windows-warns.zip` にアーカイブ
     - アーカイブを `pages/artifacts/` に配置
     - `pages/` 配下のドキュメントと統合
 
@@ -313,7 +335,7 @@ GitHub Actions のアーティファクト ストレージを中継ストレー�
 skinparam monochrome true
 skinparam shadowing false
 
-card "各ジョブ\n(Linux OL8/OL10/Windows/docs)" as jobs
+card "各ジョブ\n(Linux OL8/OL9/OL10/Windows/docs)" as jobs
 storage "アーティファクトストレージ\n(中継)" as storage
 card "deploy-pages" as deploy
 cloud "GitHub Pages" as pages
@@ -371,12 +393,15 @@ https://<username>.github.io/<repository>/
 |   +-- docs-docx-ja-details.zip      # DOCX ドキュメントアーカイブ ja-details (固定 URL)
 |   +-- docs-docx-en-details.zip      # DOCX ドキュメントアーカイブ en-details (固定 URL)
 |   +-- linux-ol8-test-results.zip    # Linux OL8 テスト結果 + make test ログ (固定 URL)
+|   +-- linux-ol9-test-results.zip    # Linux OL9 テスト結果 + make test ログ (固定 URL)
 |   +-- linux-ol10-test-results.zip   # Linux OL10 テスト結果 + make test ログ (固定 URL)
 |   +-- windows-test-results.zip      # Windows テスト結果 + make test ログ (固定 URL)
 |   +-- linux-ol8-logs.zip            # Linux OL8 ビルドログ (固定 URL)
+|   +-- linux-ol9-logs.zip            # Linux OL9 ビルドログ (固定 URL)
 |   +-- linux-ol10-logs.zip           # Linux OL10 ビルドログ (固定 URL)
 |   +-- windows-logs.zip              # Windows ビルドログ (固定 URL)
 |   +-- linux-ol8-warns.zip           # Linux OL8 ビルド警告詳細 (警告がある場合のみ)
+|   +-- linux-ol9-warns.zip           # Linux OL9 ビルド警告詳細 (警告がある場合のみ)
 |   +-- linux-ol10-warns.zip          # Linux OL10 ビルド警告詳細 (警告がある場合のみ)
 |   +-- windows-warns.zip             # Windows ビルド警告詳細 (警告がある場合のみ)
 |   +-- docs-warns.zip                # ドキュメント警告詳細 (警告がある場合のみ)
@@ -413,7 +438,7 @@ CI 実行時に生成されるファイルをアーティファクトとして�
 
 #### Linux テスト結果
 
-マトリクス戦略により、OL8/OL10 それぞれのアーティファクトが生成されます。
+マトリクス戦略により、OL8/OL9/OL10 それぞれのアーティファクトが生成されます。
 
 ```yaml
 - name: Upload test results artifacts

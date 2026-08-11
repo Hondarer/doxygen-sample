@@ -15,6 +15,7 @@ when_to_use: |
 以下のファイルをチェックし、ファイルが存在する場合、警告ありのため、内容を確認し対処する。
 
 - https://hondarer.github.io/c-modernization-kit/artifacts/docs-warns.zip
+- https://hondarer.github.io/c-modernization-kit/artifacts/linux-ol9-warns.zip
 - https://hondarer.github.io/c-modernization-kit/artifacts/linux-ol10-warns.zip
 - https://hondarer.github.io/c-modernization-kit/artifacts/linux-ol8-warns.zip
 - https://hondarer.github.io/c-modernization-kit/artifacts/windows-warns.zip
