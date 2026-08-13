@@ -46,7 +46,7 @@ Windows の define を付けないとヘッダーが `dllimport` になり、モ
 
 - include guard は置きません。`MOCK_<LIB>_RET` / `MOCK_<LIB>_VOID` 未定義なら `#error` します。
 - 可変長引数関数は表に入れず、専用 `.cc` で `va_list` 版の `MOCK_METHOD` にします。
-- 公開関数の追加漏れは `exportTest` で検出します。接頭辞フィルターを使い、関数でない公開変数だけを除外します。
+- 公開関数の追加漏れは `exportTest` で検出します。接頭辞フィルターを使い、関数でない公開変数と、公開ヘッダーに無いエクスポートを除外します。
 
 ## 単体隔離の限界
 
