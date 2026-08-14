@@ -66,7 +66,7 @@ extern "C"
      *
      *  @par            スレッド セーフ
      *  本関数はスレッド セーフです。\n
-     *  共有状態を持ちません。
+     *  内部に共有状態を持ちません。
      */
     CALC_EXPORT extern int CALC_API calc_handler(int kind, int a, int b, int *result);
 
