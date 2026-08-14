@@ -18,7 +18,7 @@ makefile の `ifdef` / `else ifdef` 整形は対象に含めません。
 - `#else` コメントは「そのブロックで真になる条件」を書く
 - `#endif` コメントは対応するマクロ名だけを書く
 - Linux/Windows 二択分岐は `#else` ではなく `#elif defined(PLATFORM_WINDOWS)` に寄せる
-- 複雑な条件式は安全側で変更しない
+- 複雑な条件式は安全側で変更しません。
 
 ## 採用ルール
 

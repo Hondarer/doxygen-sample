@@ -58,7 +58,7 @@ sym_loader 機構・DllMain ヘルパー・ライブラリ パス取得ユーテ
 int WINAPI sample_func(const int a, const int b, int *result);
 ```
 
-- 設定ファイルで `override_func` が定義されているとき: `liboverride.so` / `liboverride.dll` を動的にロードし、`override_func` に処理を委譲する
+- 設定ファイルで `override_func` が定義されているとき: `liboverride.so` / `liboverride.dll` を動的にロードし、`override_func` に処理を委譲します。
 - それ以外のとき: `*result = a + b` を計算して返す
 
 #### console_output
@@ -108,8 +108,8 @@ int WINAPI override_func(const int a, const int b, int *result);
 
 | `lib` / `func` の値 | 動作 |
 |---|---|
-| ともに `default` | 明示的デフォルト。設定ファイルなしと同様にデフォルト処理を行う |
-| ライブラリ名 / 関数名 | 指定したライブラリを動的ロードし、関数に処理を委譲する |
+| ともに `default` | 明示的デフォルト。設定ファイルなしと同様にデフォルト処理を行います。 |
+| ライブラリ名 / 関数名 | 指定したライブラリを動的ロードし、関数に処理を委譲します。 |
 
 `sample-config/libbase_extdef.json` に設定ファイルのサンプルがあります。初期状態では明示的デフォルト (`"lib": "default"`, `"func": "default"`) が設定されており、オーバーライドする定義はコメント アウトされています。
 

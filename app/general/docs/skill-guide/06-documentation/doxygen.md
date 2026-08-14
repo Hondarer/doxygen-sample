@@ -13,11 +13,11 @@ Doxygen コメントの書き方を習得することで、コードの変更に
 ## 習得目標
 
 - [ ] `/** ... */` 形式の Doxygen コメントを書ける
-- [ ] `@brief`・`@param`・`@return`・`@note` などの主要なコマンドを使用できる
-- [ ] `Doxyfile` の基本的な設定項目を理解できる
-- [ ] `doxygen Doxyfile` コマンドでドキュメントを生成できる
-- [ ] XML 出力から Doxybook2 を経由して Markdown を生成する流れを理解できる
-- [ ] `app/example/prod/` の既存コメントを読んで Doxygen スタイルを把握できる
+- [ ] `@brief`・`@param`・`@return`・`@note` などの主要なコマンドを使用できます。
+- [ ] `Doxyfile` の基本的な設定項目を理解できます。
+- [ ] `doxygen Doxyfile` コマンドでドキュメントを生成できます。
+- [ ] XML 出力から Doxybook2 を経由して Markdown を生成する流れを理解できます。
+- [ ] `app/example/prod/` の既存コメントを読んで Doxygen スタイルを把握できます。
 
 ## 学習マテリアル
 
@@ -77,6 +77,6 @@ Table: Doxygen 設定ファイル一覧
 
 ### 関連ドキュメント
 
-- [framework/doxyfw/CLAUDE.md](../../framework/doxyfw/CLAUDE.md) - doxyfw フレームワークの詳細ドキュメント
+- [doxyfw README](../../../../../framework/doxyfw/README.md) - doxyfw フレームワークの入口
 - [Markdown (スキル ガイド)](markdown.md) - 生成後の Markdown の基礎知識
 - [Pandoc (スキル ガイド)](pandoc.md) - Markdown から HTML/docx への変換

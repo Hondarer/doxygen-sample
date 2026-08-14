@@ -8,6 +8,8 @@ c-modernization-kit を利用したソース ドキュメントのサンプル�
 
 <!-- docsfw の仕上がりパスに対する相対リンク。この Markdown からの相対パスではないことに注意 -->
 
+生成前またはリンク先を参照できない場合は、[Doxygen の生成入口](../prod/README.md) と [doxyfw の生成手順](../../../framework/doxyfw/docs/makefile-usage.md) を参照してください。
+
 - [doxygen](../../../doxygen/doxygen-sample_public/index.html)
 
 ### 単一ファイル版

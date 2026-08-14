@@ -10,12 +10,12 @@ Visual Studio Code (VS Code) は Microsoft が提供する無料・オープン�
 
 ## 習得目標
 
-- [ ] VS Code をインストールし、C/C++ 拡張機能を導入できる
-- [ ] `c_cpp_properties.json` でインクルード パスを設定してインテリセンスを有効にできる
-- [ ] `tasks.json` で `make` コマンドをタスクとして登録できる
-- [ ] `launch.json` でデバッガーを設定し、ブレークポイントでデバッグできる
-- [ ] VS Code の統合ターミナルから Git コマンドを実行できる
-- [ ] VS Code 内の変数 (`${workspaceFolder}` など) の意味を理解できる
+- [ ] VS Code をインストールし、C/C++ 拡張機能を導入できます。
+- [ ] `c_cpp_properties.json` でインクルード パスを設定してインテリセンスを有効にできます。
+- [ ] `tasks.json` で `make` コマンドをタスクとして登録できます。
+- [ ] `launch.json` でデバッガーを設定し、ブレークポイントでデバッグできます。
+- [ ] VS Code の統合ターミナルから Git コマンドを実行できます。
+- [ ] VS Code 内の変数 (`${workspaceFolder}` など) の意味を理解できます。
 
 ## 学習マテリアル
 

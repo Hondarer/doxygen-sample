@@ -11,11 +11,11 @@ Windows サービスは Service Control Manager (SCM) から起動され、サ�
 | タイミング | SCM の制御または状態 | 説明 |
 |---|---|---|
 | 起動開始 | `ServiceMain` | SCM からサービス プロセスが起動され、`StartServiceCtrlDispatcher` 経由で呼ばれる。 |
-| 起動中 | `SERVICE_START_PENDING` | 初期化中であることを SCM に通知する。 |
-| 起動完了 | `SERVICE_RUNNING` | サービスが要求を受け付けられる状態になったことを SCM に通知する。 |
+| 起動中 | `SERVICE_START_PENDING` | 初期化中であることを SCM に通知します。 |
+| 起動完了 | `SERVICE_RUNNING` | サービスが要求を受け付けられる状態になったことを SCM に通知します。 |
 | 停止要求 | `SERVICE_CONTROL_STOP` | `sc stop`、サービス管理画面、削除前の停止などで送られる。 |
-| 停止中 | `SERVICE_STOP_PENDING` | 停止処理中であることを SCM に通知する。 |
-| 停止完了 | `SERVICE_STOPPED` | サービスが終了したことを SCM に通知する。 |
+| 停止中 | `SERVICE_STOP_PENDING` | 停止処理中であることを SCM に通知します。 |
+| 停止完了 | `SERVICE_STOPPED` | サービスが終了したことを SCM に通知します。 |
 | OS シャットダウン | `SERVICE_CONTROL_SHUTDOWN` | OS のシャットダウン時に、受け付けを宣言したサービスへ送られる。 |
 | OS シャットダウン前 | `SERVICE_CONTROL_PRESHUTDOWN` | 通常のシャットダウン通知より前に送られる。受け付けの宣言が必要。 |
 | 状態照会 | `SERVICE_CONTROL_INTERROGATE` | SCM が現在状態の再通知を求める。 |
@@ -37,16 +37,16 @@ systemd では、Windows SCM のような制御コード列挙ではなく、uni
 
 | タイミング | unit 設定または通知 | 説明 |
 |---|---|---|
-| 起動条件 | `ExecCondition=` | 起動可否を判定する。失敗時は `ExecStart=` を実行しない。 |
-| 起動前処理 | `ExecStartPre=` | 本体起動前に実行する。 |
-| 起動処理 | `ExecStart=` | サービス本体を起動する。 |
+| 起動条件 | `ExecCondition=` | 起動可否を判定します。失敗時は `ExecStart=` を実行しません。 |
+| 起動前処理 | `ExecStartPre=` | 本体起動前に実行します。 |
+| 起動処理 | `ExecStart=` | サービス本体を起動します。 |
 | 起動完了判定 | `Type=` | `simple`、`exec`、`forking`、`notify` などで完了判定が変わる。 |
-| 起動後処理 | `ExecStartPost=` | 起動完了後に実行する。 |
-| リロード | `ExecReload=` | `systemctl reload` で実行する。 |
-| 停止処理 | `ExecStop=` | `systemctl stop` で実行する。未指定の場合は通常 `SIGTERM` が送られる。 |
-| 停止後処理 | `ExecStopPost=` | 正常停止、失敗停止の後に実行する。 |
-| 自動再起動 | `Restart=` | 失敗時などの再起動条件を指定する。 |
-| watchdog | `WatchdogSec=` | `sd_notify("WATCHDOG=1")` と組み合わせて死活監視する。 |
+| 起動後処理 | `ExecStartPost=` | 起動完了後に実行します。 |
+| リロード | `ExecReload=` | `systemctl reload` で実行します。 |
+| 停止処理 | `ExecStop=` | `systemctl stop` で実行します。未指定の場合は通常 `SIGTERM` が送られる。 |
+| 停止後処理 | `ExecStopPost=` | 正常停止、失敗停止の後に実行します。 |
+| 自動再起動 | `Restart=` | 失敗時などの再起動条件を指定します。 |
+| watchdog | `WatchdogSec=` | `sd_notify("WATCHDOG=1")` と組み合わせて死活監視します。 |
 
 Table: systemd サービスの一般的なイベント
 
@@ -72,14 +72,14 @@ Table: systemd の `Type=` による起動完了タイミング
 
 | 種別 | 扱える内容 |
 |---|---|
-| 起動 | `ExecStart=` でプロセスを起動する。 |
-| 起動完了通知 | `NOTIFY_SOCKET` へ `AF_UNIX/SOCK_DGRAM` で直接送信し、`READY=1` を通知する。 |
-| 停止 | `SIGTERM`、`SIGINT` など補足可能なシグナルを処理する。 |
-| 停止開始通知 | `NOTIFY_SOCKET` へ直接送信し、`STOPPING=1` を通知する。 |
+| 起動 | `ExecStart=` でプロセスを起動します。 |
+| 起動完了通知 | `NOTIFY_SOCKET` へ `AF_UNIX/SOCK_DGRAM` で直接送信し、`READY=1` を通知します。 |
+| 停止 | `SIGTERM`、`SIGINT` など補足可能なシグナルを処理します。 |
+| 停止開始通知 | `NOTIFY_SOCKET` へ直接送信し、`STOPPING=1` を通知します。 |
 | 終了結果 | プロセスの終了コードで成功または失敗を systemd に伝える。 |
 | 再起動 | `Restart=`、`RestartSec=` で systemd 側に再起動を任せる。 |
-| 起動前後の処理 | `ExecStartPre=`、`ExecStartPost=` を unit ファイルに定義する。 |
-| 停止前後の処理 | `ExecStop=`、`ExecStopPost=` を unit ファイルに定義する。 |
+| 起動前後の処理 | `ExecStartPre=`、`ExecStartPost=` を unit ファイルに定義します。 |
+| 停止前後の処理 | `ExecStop=`、`ExecStopPost=` を unit ファイルに定義します。 |
 | リロード | `ExecReload=` と任意のシグナル処理を組み合わせる。 |
 
 Table: `systemd-devel` なしで扱える systemd イベント
@@ -88,11 +88,11 @@ Table: `systemd-devel` なしで扱える systemd イベント
 
 | 通知 | `systemd-devel` なしの扱い |
 |---|---|
-| `RELOADING=1` | reload 開始を systemd に明示通知できない。 |
-| `WATCHDOG=1` | systemd watchdog へ定期応答できない。 |
-| `STATUS=` | `systemctl status` に任意の進行状況メッセージを通知できない。 |
-| `EXTEND_TIMEOUT_USEC=` | 起動、停止、reload のタイムアウト延長を要求できない。 |
-| `MAINPID=` | サービス側から main PID を明示通知できない。 |
+| `RELOADING=1` | reload 開始を systemd に明示通知できません。 |
+| `WATCHDOG=1` | systemd watchdog へ定期応答できません。 |
+| `STATUS=` | `systemctl status` に任意の進行状況メッセージを通知できません。 |
+| `EXTEND_TIMEOUT_USEC=` | 起動、停止、reload のタイムアウト延長を要求できません。 |
+| `MAINPID=` | サービス側から main PID を明示通知できません。 |
 
 Table: `systemd-devel` なしでは扱えない `sd_notify()` 通知
 
@@ -107,11 +107,11 @@ Table: `systemd-devel` なしでは扱えない `sd_notify()` 通知
 
 | 概念 | タイミング | Windows (SCM) | Linux (systemd) |
 |---|---|---|---|
-| 起動完了 | `on_start` 成功直後 | `SERVICE_RUNNING` を SCM に通知する | `READY=1` を送信する |
-| 停止開始 | `on_run` 復帰直後 | `SERVICE_STOP_PENDING` を SCM に通知する | `STOPPING=1` を送信する |
-| 再読込開始 | `on_reload` 呼び出し直前 | 何もしない (SCM に等価通知なし) | `RELOADING=1` を送信する |
-| 再読込完了 | `on_reload` 復帰直後 | 何もしない (SCM に等価通知なし) | `READY=1` を再送信する |
-| 状態テキスト | `svc_set_status_text()` 呼び出し時 | トレース出力のみ (SCM に等価機能なし) | `STATUS=` を送信する |
+| 起動完了 | `on_start` 成功直後 | `SERVICE_RUNNING` を SCM に通知します。 | `READY=1` を送信します。 |
+| 停止開始 | `on_run` 復帰直後 | `SERVICE_STOP_PENDING` を SCM に通知します。 | `STOPPING=1` を送信します。 |
+| 再読込開始 | `on_reload` 呼び出し直前 | 何もしない (SCM に等価通知なし) | `RELOADING=1` を送信します。 |
+| 再読込完了 | `on_reload` 復帰直後 | 何もしない (SCM に等価通知なし) | `READY=1` を再送信します。 |
+| 状態テキスト | `svc_set_status_text()` 呼び出し時 | トレース出力のみ (SCM に等価機能なし) | `STATUS=` を送信します。 |
 
 Table: `service-sample` の通知抽象
 
@@ -166,13 +166,13 @@ Table: `service-sample` の OS イベント抽象
 | 起動開始 | 対応 | `ServiceMain` で `SERVICE_START_PENDING` を通知し、`on_start` を呼ぶ。 |
 | 起動完了 | 対応 | `on_start` 成功後に `SERVICE_RUNNING` を通知し、`on_run` を呼ぶ。 |
 | 停止要求 | 対応 | `SERVICE_CONTROL_STOP` で `SERVICE_STOP_PENDING` を通知し、`svc_request_stop()` を呼ぶ。 |
-| OS シャットダウン | 対応 | `SERVICE_CONTROL_SHUTDOWN` を停止要求と同じ扱いにする。 |
-| OS シャットダウン前 | 対応 | `SERVICE_CONTROL_PRESHUTDOWN` で `SVC_EVENT_PRESHUTDOWN` を配送した後、停止要求と同じ扱いにする。猶予は install 時に 30 秒で登録する。 |
-| 電源状態変更 | 対応 | `SERVICE_CONTROL_POWEREVENT` のサスペンド・復帰を `SVC_EVENT_POWER_SUSPEND` / `SVC_EVENT_POWER_RESUME` として配送する。 |
-| セッション変更 | 対応 | `SERVICE_CONTROL_SESSIONCHANGE` のログオン・ログオフを `SVC_EVENT_SESSION_LOGON` / `SVC_EVENT_SESSION_LOGOFF` として配送する。 |
+| OS シャットダウン | 対応 | `SERVICE_CONTROL_SHUTDOWN` を停止要求と同じ扱いにします。 |
+| OS シャットダウン前 | 対応 | `SERVICE_CONTROL_PRESHUTDOWN` で `SVC_EVENT_PRESHUTDOWN` を配送した後、停止要求と同じ扱いにします。猶予は install 時に 30 秒で登録します。 |
+| 電源状態変更 | 対応 | `SERVICE_CONTROL_POWEREVENT` のサスペンド・復帰を `SVC_EVENT_POWER_SUSPEND` / `SVC_EVENT_POWER_RESUME` として配送します。 |
+| セッション変更 | 対応 | `SERVICE_CONTROL_SESSIONCHANGE` のログオン・ログオフを `SVC_EVENT_SESSION_LOGON` / `SVC_EVENT_SESSION_LOGOFF` として配送します。 |
 | 設定再読込 | 対応 | `SERVICE_CONTROL_PARAMCHANGE` で `on_reload` を呼ぶ。 |
-| 状態照会 | 対応 | `SERVICE_CONTROL_INTERROGATE` で現在の `SERVICE_STATUS` を再通知する。 |
-| 停止完了 | 対応 | `on_run` が戻った後に `on_stop` を呼び、`SERVICE_STOPPED` を通知する。コールバックが失敗を返した場合は `ERROR_SERVICE_SPECIFIC_ERROR` と失敗の戻り値を併せて報告する。 |
+| 状態照会 | 対応 | `SERVICE_CONTROL_INTERROGATE` で現在の `SERVICE_STATUS` を再通知します。 |
+| 停止完了 | 対応 | `on_run` が戻った後に `on_stop` を呼び、`SERVICE_STOPPED` を通知します。コールバックが失敗を返した場合は `ERROR_SERVICE_SPECIFIC_ERROR` と失敗の戻り値を併せて報告します。 |
 
 Table: `service-sample` の Windows 対応範囲
 
@@ -211,19 +211,19 @@ WatchdogSec=30
 
 | タイミング | 対応状況 | 実装上の動作 |
 |---|---|---|
-| 起動処理 | 対応 | systemd が `ExecStart=... run` でプロセスを起動する。 |
+| 起動処理 | 対応 | systemd が `ExecStart=... run` でプロセスを起動します。 |
 | 起動完了判定 | 対応 | `Type=notify` のため、`on_start` 成功後に `READY=1` を送信し、systemd が起動完了とみなす。 |
-| 停止開始通知 | 対応 | `on_run` 復帰後、`on_stop` 呼び出し前に `STOPPING=1` を送信する。 |
+| 停止開始通知 | 対応 | `on_run` 復帰後、`on_stop` 呼び出し前に `STOPPING=1` を送信します。 |
 | 停止要求 | 対応 | `systemctl stop` などで送られる `SIGTERM` を `shutdown.h` が補足し、`svc_request_stop()` を呼ぶ。 |
-| コンソール停止 | 対応 | `console` 実行時の `SIGINT` も同じ停止要求として扱う。 |
+| コンソール停止 | 対応 | `console` 実行時の `SIGINT` も同じ停止要求として扱います。 |
 | 停止完了 | 対応 | `on_stop` が戻り、プロセス終了で systemd へ停止完了を伝える。コールバックが失敗を返した場合は、その値がプロセス終了コードになり失敗として伝わる。 |
 | 異常終了時の再起動 | 対応 | `Restart=on-failure` により、失敗終了時は 5 秒後に再起動される。 |
-| 設定再読込 | 対応 | `ExecReload=` 経由の `SIGHUP` をイベント監視スレッドが受け、`RELOADING=1` 送信、`on_reload` 呼び出し、`READY=1` 再送信の順で処理する。 |
-| watchdog | 対応 | `WatchdogSec=30` に対し、イベント監視スレッドの `sd_event_set_watchdog()` が `WATCHDOG_USEC` から算出した間隔で `WATCHDOG=1` を自動応答する。 |
-| サスペンド・復帰 | 対応 | systemd-logind の `PrepareForSleep` を購読し、`SVC_EVENT_POWER_SUSPEND` / `SVC_EVENT_POWER_RESUME` として配送する。 |
-| シャットダウン前 | 対応 | systemd-logind の `PrepareForShutdown(true)` を `SVC_EVENT_PRESHUTDOWN` として配送する。 |
-| セッション変更 | 対応 | systemd-logind の `SessionNew` / `SessionRemoved` を `SVC_EVENT_SESSION_LOGON` / `SVC_EVENT_SESSION_LOGOFF` として配送する。 |
-| 状態テキスト | 対応 | `svc_set_status_text()` で `STATUS=` を送信する。 |
+| 設定再読込 | 対応 | `ExecReload=` 経由の `SIGHUP` をイベント監視スレッドが受け、`RELOADING=1` 送信、`on_reload` 呼び出し、`READY=1` 再送信の順で処理します。 |
+| watchdog | 対応 | `WatchdogSec=30` に対し、イベント監視スレッドの `sd_event_set_watchdog()` が `WATCHDOG_USEC` から算出した間隔で `WATCHDOG=1` を自動応答します。 |
+| サスペンド・復帰 | 対応 | systemd-logind の `PrepareForSleep` を購読し、`SVC_EVENT_POWER_SUSPEND` / `SVC_EVENT_POWER_RESUME` として配送します。 |
+| シャットダウン前 | 対応 | systemd-logind の `PrepareForShutdown(true)` を `SVC_EVENT_PRESHUTDOWN` として配送します。 |
+| セッション変更 | 対応 | systemd-logind の `SessionNew` / `SessionRemoved` を `SVC_EVENT_SESSION_LOGON` / `SVC_EVENT_SESSION_LOGOFF` として配送します。 |
+| 状態テキスト | 対応 | `svc_set_status_text()` で `STATUS=` を送信します。 |
 
 Table: `service-sample` の Linux 対応範囲
 
@@ -280,8 +280,8 @@ Table: `service-sample` の Linux 対応範囲
 
 | プラットフォーム | 手段 | 内部の流れ |
 |---|---|---|
-| Linux | `systemctl restart {name}` | SIGTERM で停止後、systemd が新プロセスを `ExecStart=... run` で起動する。 |
-| Windows | `sc stop {name}` + `sc start {name}`、またはサービス管理画面の再起動 | `SERVICE_CONTROL_STOP` で停止後、SCM が新プロセスを起動し `ServiceMain` を再呼び出しする。 |
+| Linux | `systemctl restart {name}` | SIGTERM で停止後、systemd が新プロセスを `ExecStart=... run` で起動します。 |
+| Windows | `sc stop {name}` + `sc start {name}`、またはサービス管理画面の再起動 | `SERVICE_CONTROL_STOP` で停止後、SCM が新プロセスを起動し `ServiceMain` を再呼び出しします。 |
 
 Table: `service-sample` の手動再起動の手段
 
@@ -289,7 +289,7 @@ Table: `service-sample` の手動再起動の手段
 
 | 観点 | Linux | Windows |
 |---|---|---|
-| 異常終了時の自動再起動 | 対応。unit の `Restart=on-failure` / `RestartSec=5` により失敗終了から 5 秒後に再起動する。 | 対応。install 時に `SERVICE_CONFIG_FAILURE_ACTIONS` (`SC_ACTION_RESTART`、遅延 5 秒) と `SERVICE_CONFIG_FAILURE_ACTIONS_FLAG` を登録し、失敗から 5 秒後に再起動する。 |
+| 異常終了時の自動再起動 | 対応。unit の `Restart=on-failure` / `RestartSec=5` により失敗終了から 5 秒後に再起動します。 | 対応。install 時に `SERVICE_CONFIG_FAILURE_ACTIONS` (`SC_ACTION_RESTART`、遅延 5 秒) と `SERVICE_CONFIG_FAILURE_ACTIONS_FLAG` を登録し、失敗から 5 秒後に再起動します。 |
 | 設定箇所 | `service-sample_linux.c` が生成する unit ファイル | `service-sample_windows.c` の install 処理 |
 
 Table: `service-sample` の自動再起動の対応状況
@@ -306,5 +306,5 @@ sc qfailure {name}
 
 再起動の抑制方式には次の差異が残ります。
 
-- Linux は `StartLimitBurst` (既定 10 秒間に 5 回) を超えると unit が failed 状態になり、自動再起動を停止する。
-- Windows は失敗カウンター方式で、無失敗期間が `dwResetPeriod` (86400 秒) 続くとカウンターがリセットされる。登録したアクションが 1 件のみのため、失敗回数によらず同じ再起動アクションが適用され続け、回数上限による停止はない。
+- Linux は `StartLimitBurst` (既定 10 秒間に 5 回) を超えると unit が failed 状態になり、自動再起動を停止します。
+- Windows は失敗カウンター方式で、無失敗期間が `dwResetPeriod` (86400 秒) 続くとカウンターがリセットされる。登録したアクションが 1 件のみのため、失敗回数によらず同じ再起動アクションが適用され続け、回数上限による停止はありません。

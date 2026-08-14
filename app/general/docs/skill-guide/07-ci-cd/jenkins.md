@@ -8,12 +8,12 @@ Jenkins はオープンソースの CI/CD オートメーション サーバー�
 
 ## 習得目標
 
-- [ ] Jenkins を Oracle Linux 8 にインストールし、サービスとして起動できる
-- [ ] Jenkins の初期設定ウィザード (管理者ユーザー作成・プラグイン インストール) を完了できる
+- [ ] Jenkins を Oracle Linux 8 にインストールし、サービスとして起動できます。
+- [ ] Jenkins の初期設定ウィザード (管理者ユーザー作成・プラグイン インストール) を完了できます。
 - [ ] `jenkins` ユーザーで rootless Podman を動作させる設定を行える
-- [ ] GitHub Actions と同じコンテナー イメージを使ったビルド ジョブ (Freestyle Project) を構成できる
-- [ ] HTML Publisher Plugin でビルド成果物のドキュメントをサイト公開できる
-- [ ] Jenkins の Credentials 機能で認証情報を安全に管理できる
+- [ ] GitHub Actions と同じコンテナー イメージを使ったビルド ジョブ (Freestyle Project) を構成できます。
+- [ ] HTML Publisher Plugin でビルド成果物のドキュメントをサイト公開できます。
+- [ ] Jenkins の Credentials 機能で認証情報を安全に管理できます。
 
 ## 学習マテリアル
 
@@ -124,10 +124,10 @@ http://<JENKINS_SERVER>:8080
 
 初期設定ウィザードでは、通常は次の流れで進めます。
 
-1. 初期管理者パスワードを入力する
-2. 必要なプラグインをインストールする
-3. 最初の管理者ユーザーを作成する
-4. Jenkins URL を確認する
+1. 初期管理者パスワードを入力します。
+2. 必要なプラグインをインストールします。
+3. 最初の管理者ユーザーを作成します。
+4. Jenkins URL を確認します。
 
 公開用手順書では、実際のパスワード値や画面キャプチャ内の機密情報は掲載しない運用を推奨します。
 
@@ -198,10 +198,10 @@ Jenkins では、ジョブ実行時にワークスペース内へリポジトリ
 
 この構成では、**Source Code Management** (ソース コード管理) は使わず、**Build Steps** (ビルド手順) 内のシェル スクリプトで以下を実行します。
 
-- CI と同じコンテナー イメージを `podman pull` する
-- ワークスペース内へリポジトリを `git clone` する
-- サブモジュールを含めて取得する
-- コンテナー内で `make` と `make test` を実行する
+- CI と同じコンテナー イメージを `podman pull` します。
+- ワークスペース内へリポジトリを `git clone` します。
+- サブモジュールを含めて取得します。
+- コンテナー内で `make` と `make test` を実行します。
 
 以下では、対象ワークスペースの Linux CI が Oracle Linux 開発コンテナーを使用する場合を例にします。  
 イメージ名は、展開先で使用するレジストリ、所有者、イメージ名へ置き換えてください。
@@ -232,9 +232,9 @@ podman pull example/oracle-linux-dev:latest
 
 #### ジョブ作成
 
-1. Jenkins ダッシュボードで **New Item** (新規ジョブ作成) を選択する
-2. 任意のジョブ名を入力する
-3. **Freestyle project** (フリースタイル・プロジェクト) を選択する
+1. Jenkins ダッシュボードで **New Item** (新規ジョブ作成) を選択します。
+2. 任意のジョブ名を入力します。
+3. **Freestyle project** (フリースタイル・プロジェクト) を選択します。
 4. **OK** を押す
 
 #### ソース コード管理
@@ -267,7 +267,7 @@ podman pull example/oracle-linux-dev:latest
 | ファイル | 役割 |
 |---|---|
 | `.jenkins/build.sh` | ホスト (Oracle Linux) 側で実行。Podman でコンテナーを起動して `inner-build.sh` を呼び出す |
-| `.jenkins/inner-build.sh` | コンテナー内でユーザー権限で実行。make, テスト, アーティファクト生成, ドキュメント生成を行う |
+| `.jenkins/inner-build.sh` | コンテナー内でユーザー権限で実行。make, テスト, アーティファクト生成, ドキュメント生成を行います。 |
 | `.jenkins/report-warnings.sh` | warning ZIP を集約し、Jenkins コンソールへ非失敗通知を出す |
 
 `inner-build.sh` は `.github/workflows/ci.yml` の Linux ジョブに準拠しており、以下の設定を反映しています。
@@ -276,7 +276,7 @@ podman pull example/oracle-linux-dev:latest
 - `PATH`: 各モジュールの `bin/` ディレクトリ
 - ビルド警告 (`.warn`) の収集と ZIP アーカイブ  
   `.warn` は集約せず、C/C++ はソース ファイル横と最終生成物横に残る  
-  警告が無い場合は warn ZIP を生成しない
+  警告が無い場合は warn ZIP を生成しません。
 - ドキュメント・アーティファクトの出力先: `pages/`
 
 #### ビルド手順
@@ -396,13 +396,13 @@ export OS_NAME="ol9"
 
 ジョブ保存後に **Build Now** (今すぐビルド) を実行し、以下を確認します。
 
-- リポジトリを正常に取得できる
-- `podman pull` で CI と同じイメージを取得できる
-- サブモジュールを含めて clone できる
-- `devcontainer-entrypoint.sh` によるユーザー初期化が成功する
-- コンテナー内の `/workspace` でコマンドを実行できる
-- `make` が成功する
-- `make test` が成功する
+- リポジトリを正常に取得できます。
+- `podman pull` で CI と同じイメージを取得できます。
+- サブモジュールを含めて clone できます。
+- `devcontainer-entrypoint.sh` によるユーザー初期化が成功します。
+- コンテナー内の `/workspace` でコマンドを実行できます。
+- `make` が成功します。
+- `make test` が成功します。
 - `MAKEFW_HOME` が `/workspace/framework/makefw` を指しており、`make` 実行前に有効になっている
 - `BUILD_DOCS="1"` の場合に `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME` が `/workspace/framework/docsfw` / `/workspace/framework/doxyfw` / `/workspace/framework/testfw` を指している
 - `source/pages/artifacts/linux-ol8-test-results.zip`、`linux-ol9-test-results.zip`、`linux-ol10-test-results.zip` などにテスト結果と `make test` ログが含まれる
@@ -452,12 +452,12 @@ Jenkins の **HTML Publisher Plugin** を使うと、ジョブのワークスペ
 
 ### HTML Publisher Plugin のインストール
 
-1. Jenkins ダッシュボードで **Manage Jenkins** (Jenkins の管理) を選択する
-2. **Plugins** (プラグイン) を選択する
+1. Jenkins ダッシュボードで **Manage Jenkins** (Jenkins の管理) を選択します。
+2. **Plugins** (プラグイン) を選択します。
 3. **Available plugins** (利用可能なプラグイン) タブを開く
-4. 検索欄に `HTML Publisher` と入力する
-5. **HTML Publisher** にチェックを入れて **Install** (インストール) する
-6. インストール完了後、必要に応じて Jenkins を再起動する
+4. 検索欄に `HTML Publisher` と入力します。
+5. **HTML Publisher** にチェックを入れて **Install** (インストール) します。
+6. インストール完了後、必要に応じて Jenkins を再起動します。
 
 ### ジョブへの設定追加
 
@@ -553,15 +553,15 @@ Jenkins 起動時に自動で適用されるよう、Init Script を使います
 **匿名アクセスが無効になっていることを確認する**
 
 1. **Manage Jenkins** (Jenkins の管理) **> Security** (セキュリティ) を開く
-2. **Authorization** (権限) の設定を確認する
-3. 匿名ユーザー (Anonymous) に **Overall/Read** 権限が付与されていないことを確認する
+2. **Authorization** (権限) の設定を確認します。
+3. 匿名ユーザー (Anonymous) に **Overall/Read** 権限が付与されていないことを確認します。
 
 匿名ユーザーに Read 権限が付与されている場合、ログインなしでドキュメントにアクセスできてしまいます。
 
 **ブラウザーで動作確認する**
 
-1. ログ アウト状態でドキュメントの URL にアクセスし、ログイン画面にリダイレクトされることを確認する
-2. 登録済みユーザーでログインし、ドキュメントが正常に表示されることを確認する
+1. ログ アウト状態でドキュメントの URL にアクセスし、ログイン画面にリダイレクトされることを確認します。
+2. 登録済みユーザーでログインし、ドキュメントが正常に表示されることを確認します。
 
 ## 関連ドキュメント
 

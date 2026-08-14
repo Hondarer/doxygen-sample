@@ -10,12 +10,12 @@ Git サブモジュールは、ひとつの Git リポジトリの中に別の G
 
 ## 習得目標
 
-- [ ] サブモジュールとは何か、使う理由を説明できる
-- [ ] `git clone --recurse-submodules` でサブモジュールごとクローンできる
-- [ ] `git submodule update --init --recursive` でサブモジュールを初期化できる
-- [ ] `git submodule update --remote` でサブモジュールを最新版に更新できる
-- [ ] `.gitmodules` ファイルの内容を読み、サブモジュールの設定を理解できる
-- [ ] サブモジュールの変更をメイン リポジトリにコミットできる
+- [ ] サブモジュールとは何か、使う理由を説明できます。
+- [ ] `git clone --recurse-submodules` でサブモジュールごとクローンできます。
+- [ ] `git submodule update --init --recursive` でサブモジュールを初期化できます。
+- [ ] `git submodule update --remote` でサブモジュールを最新版に更新できます。
+- [ ] `.gitmodules` ファイルの内容を読み、サブモジュールの設定を理解できます。
+- [ ] サブモジュールの変更をメイン リポジトリにコミットできます。
 
 ## 学習マテリアル
 

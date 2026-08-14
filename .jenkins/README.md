@@ -78,7 +78,7 @@ Jenkins の Execute shell が `bash source/.jenkins/build.sh` で呼び出す場
 |---|---|
 | `--rm` | コンテナー終了後に自動削除 |
 | `-i` | stdin を開いたまま保持 (heredoc 渡し用) |
-| `--user root` | root でコンテナーを起動し、entrypoint でユーザーを初期化する |
+| `--user root` | root でコンテナーを起動し、entrypoint でユーザーを初期化します。 |
 | `--userns=keep-id` | rootless Podman でホストの UID/GID をコンテナー内に継承 |
 | `--entrypoint /bin/bash` | sshd 常駐用の既定 ENTRYPOINT を上書き |
 | `-v "$WORKDIR:/workspace:Z"` | リポジトリ ルートを `/workspace` にマウント (`:Z` は SELinux ラベル付与) |
@@ -312,6 +312,6 @@ source/app/**/test/**/*.warn
 
 ## 関連ドキュメント
 
-- [VS Code と CI の環境変数メンテナンス手順](../docs/vscode-variables.md)
-- [Jenkins セットアップ手順 (スキル ガイド)](../docs/skill-guide/07-ci-cd/jenkins.md)
-- [GitHub Actions CI/CD 仕様](../docs/github-actions.md)
+- [VS Code と CI の環境変数メンテナンス手順](../app/general/docs/vscode-variables.md)
+- [Jenkins セットアップ手順 (スキル ガイド)](../app/general/docs/skill-guide/07-ci-cd/jenkins.md)
+- [GitHub Actions CI/CD 仕様](../app/c-modernization-kit/docs/github-actions.md)

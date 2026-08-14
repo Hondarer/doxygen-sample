@@ -440,9 +440,9 @@ endif
 Windows 環境では、Git for Windows に付属する MinGW 環境を活用します。これにより:
 
 - `bash`, `pwd`, `dirname` などの Linux コマンドが使える
-- `sh` コマンドで既存のシェル スクリプトを実行できる
-- framework/makefw/bin/ 配下のシェル スクリプトがそのまま動作する
-- doxyfw の makefile がそのまま動作する
+- `sh` コマンドで既存のシェル スクリプトを実行できます。
+- framework/makefw/bin/ 配下のシェル スクリプトがそのまま動作します。
+- doxyfw の makefile がそのまま動作します。
 
 ### makefw フレームワーク
 
@@ -462,7 +462,7 @@ makefw は testfw から makefile 関連機能を切り出したフレームワ�
 
 この構成により、以下のメリットがあります:
 
-1. libexample.dll/.so が examplebase を内部に静的リンクする
+1. libexample.dll/.so が examplebase を内部に静的リンクします。
 2. 依存関係が単純化され、配布時に libexample.dll/.so のみを配置すれば動作
 3. Windows と Linux で同様の動作を実現
 
@@ -746,15 +746,15 @@ obj ディレクトリの削除により、コンパイル時の PDB と ILK フ
 
 ### メリット
 
-- **再利用性**: makefw がクロスプラットフォーム対応され、他のプロジェクトでも利用できる
+- **再利用性**: makefw がクロスプラットフォーム対応され、他のプロジェクトでも利用できます。
 - **保守性**: Linux と Windows で同じ makefile を使用できるため、メンテナンス性が向上
-- **互換性**: MinGW 環境により、既存のシェル スクリプトとシェル コマンドを活用できる
-- **ネイティブ性**: MSVC を使用することで、Windows ネイティブなバイナリを生成できる
+- **互換性**: MinGW 環境により、既存のシェル スクリプトとシェル コマンドを活用できます。
+- **ネイティブ性**: MSVC を使用することで、Windows ネイティブなバイナリを生成できます。
 - **安定性**: Linux の動作は完全に維持される
 
 ### 注意点
 
-- **makefw の共有**: makefw は複数のプロジェクトで共有されるため、変更時には慎重に行う
+- **makefw の共有**: makefw は複数のプロジェクトで共有されるため、変更時には慎重に行います。
 - **コンパイラ フラグ**: MSVC と GCC でコンパイラ フラグが異なるため、makepart.mk の条件分岐を慎重に設定
 - **環境設定順序**: Windows では環境設定スクリプトを必ず正しい順序で実行
 - **MinGW 必須**: doxyfw は MinGW の bash を前提としているため、Windows では MinGW 環境が必須

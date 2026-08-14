@@ -233,7 +233,7 @@ dotnet build -c Debug
 **制限事項**: C# Dev Kit には、UI からビルド構成を選択する機能が現時点で存在しません。
 
 - ソリューション エクスプローラーでの構成選択 UI がない
-- `csharp.preview.improvedLaunchExperience` 設定は起動構成の選択用で、ビルド構成の切り替えには使用できない
+- `csharp.preview.improvedLaunchExperience` 設定は起動構成の選択用で、ビルド構成の切り替えには使用できません。
 
 **回避策**:
 

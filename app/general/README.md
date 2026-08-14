@@ -1,0 +1,12 @@
+# general
+
+このディレクトリは、すべての app に共通する規範、設計、運用手順、スキルを管理します。
+
+- [作業規則](AGENTS.md)
+- [文書一覧](docs/README.md)
+- [AGENTS とスキルの設計指針](docs/agents-and-skills-guideline.md)
+- [コーディング規範](docs/coding-guideline.md)
+- [テスト チュートリアル](docs/testing-tutorial.md)
+- [VS Code 環境変数](docs/vscode-variables.md)
+
+個別 app 固有の情報は、対象 app の AGENTS.md、README.md、`docs/` に記載します。

@@ -10,13 +10,13 @@ Git の基本操作を習得することは、対象ワークスペースを利�
 
 ## 習得目標
 
-- [ ] `git init` / `git clone` でリポジトリを作成・取得できる
-- [ ] `git add` / `git commit` で変更を記録できる
-- [ ] `git status` / `git log` / `git diff` で状態を確認できる
-- [ ] `git branch` / `git checkout` / `git switch` でブランチを作成・切り替えできる
-- [ ] `git merge` / `git rebase` でブランチを統合できる
-- [ ] `git pull` / `git push` でリモート リポジトリと同期できる
-- [ ] `.gitignore` でトラッキング対象外ファイルを設定できる
+- [ ] `git init` / `git clone` でリポジトリを作成・取得できます。
+- [ ] `git add` / `git commit` で変更を記録できます。
+- [ ] `git status` / `git log` / `git diff` で状態を確認できます。
+- [ ] `git branch` / `git checkout` / `git switch` でブランチを作成・切り替えできます。
+- [ ] `git merge` / `git rebase` でブランチを統合できます。
+- [ ] `git pull` / `git push` でリモート リポジトリと同期できます。
+- [ ] `.gitignore` でトラッキング対象外ファイルを設定できます。
 
 ## 学習マテリアル
 

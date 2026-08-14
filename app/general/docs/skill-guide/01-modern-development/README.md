@@ -19,7 +19,7 @@ Table: スキル ガイド一覧
 - `docs/` - Documentation as Code / Design as Code の実践
 - サブモジュール (`app/utility` / `app/transport-example` / `doxyfw` / `docsfw` / `testfw` / `makefw`) - Pipeline as Code / Infrastructure as Code の実践
 - 生成 AI へのコンテキスト提供を意識したドキュメント管理
-- 重要な設計判断は ADR の考え方で記録し、変更理由を後から追えるようにできる
+- 重要な設計判断は ADR の考え方で記録し、変更理由を後から追えるようにできます。
 
 ## 次のステップ
 

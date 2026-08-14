@@ -8,11 +8,11 @@ Podman はデーモンレス・rootless で動作するオープンソースの�
 
 ## 習得目標
 
-- [ ] Podman をインストールし、rootless で動作することを確認できる
-- [ ] `podman pull` / `podman run` / `podman images` の基本操作ができる
-- [ ] GitHub Container Registry (ghcr.io) と Docker Hub からイメージを取得できる
+- [ ] Podman をインストールし、rootless で動作することを確認できます。
+- [ ] `podman pull` / `podman run` / `podman images` の基本操作ができます。
+- [ ] GitHub Container Registry (ghcr.io) と Docker Hub からイメージを取得できます。
 - [ ] rootless Podman に必要な subordinate UID/GID の設定を行える
-- [ ] `--entrypoint` や `-v` (ボリューム マウント) などの実行オプションを理解できる
+- [ ] `--entrypoint` や `-v` (ボリューム マウント) などの実行オプションを理解できます。
 
 ## 学習マテリアル
 

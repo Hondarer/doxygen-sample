@@ -1,48 +1,30 @@
 # skills
 
-このディレクトリは、作業時に参照する skill 文書の配置ディレクトリです。  
-skill は、特定の作業で判断に迷いやすい点、参照先、実装方針を `SKILL.md` にまとめた作業ガイドです。
+このディレクトリは、`make skills` がリポジトリ内のスキル正本を集約する射影先です。  
+管理対象の `SKILL.md` はここへ直接配置せず、対象範囲を所有する app または framework の `.agents/skills/` に配置します。
 
-## まず見る場所
+## 参照方法
 
-各 skill は次の構成です。
+作業内容に該当するスキルがある場合は、`SKILL.md` の `description` で適用条件を確認してから本文と参照先を読みます。  
+複数のスキルが該当する場合は、各スキルの必須事項を併用します。
 
-```text
-.agents/skills/
-+-- <skill-name>/
-    +-- SKILL.md
-```
+各 `SKILL.md` の YAML front matter には、`name` と `description` だけを記載します。  
+適用条件は `description` に含め、詳細な規範や手順は正本ドキュメントへ集約します。
 
-`SKILL.md` 冒頭の `description` と `when_to_use` を確認し、作業内容に合う skill を選びます。  
-複数の skill が関係する場合は、より対象範囲が狭い skill を優先します。
+## 正本の配置
 
-## このリポジトリでの扱い
-
-このディレクトリ直下は `make skills` による **射影の配置場所** です。リポジトリ管理対象の skill はここに直接置かず、正本はすべて各サブモジュールまたは `app/<appname>/` 配下に置きます。
-
-`make skills` の実行により、以下の正本からこのディレクトリへ集約されます (Linux: symlink、Windows: コピー)。
-
-| 種別 | 正本 |
+| 対象範囲 | 正本 |
 |---|---|
-| サブモジュール固有の skill | 各サブモジュールの `.agents/skills/<skill>/` |
-| 非サブモジュール app 固有の skill | `app/<appname>/.agents/skills/<skill>/` |
+| ワークスペース固有 | `app/c-modernization-kit/.agents/skills/<skill>/` |
+| 全 app 共通 | `app/general/.agents/skills/<skill>/` |
+| app 固有 | `app/<name>/.agents/skills/<skill>/` |
+| framework 固有 | `framework/<name>/.agents/skills/<skill>/` |
 
-生成された集約先ではなく正本側を編集してください。
+プロジェクト ルートは射影先であるため、管理対象スキルの正本を原則として配置しません。  
+個人用の一時的なスキルは `.gitignore` の対象として配置できます。
 
-同期の仕組みは [`docs/general/sync-skills.md`](../../docs/general/sync-skills.md) を参照してください。
-
-### 個人的・一時的な利用
-
-個人的または一時的なシナリオでは、このディレクトリ直下に skill を直接配置することもできます。  
-`.gitignore` により `README.md` と `.gitignore` 以外はすべてリポジトリ管理対象外となるため、誤ってコミットされることはありません。
-
-## 追加・更新するとき
-
-- サブモジュール固有の作業知識は、対象サブモジュール側の `.agents/skills/` に追加します
-- 非サブモジュール app 固有の作業知識は、対象 app 側の `.agents/skills/` に追加します
-- 上記追加・削除後は `make skills` で集約結果を更新します
-- skill 名は、用途が分かる小文字の kebab-case にします
-- 各 `SKILL.md` には、少なくとも `name`、`description`、`when_to_use` を記載します
+追加、削除、または名称変更の後は `make skills` を実行します。  
+配置規則と同期手順は、[スキルの配置と同期](../../app/c-modernization-kit/docs/skill-sync.md) を参照してください。
 
 ## スキル一覧
 
@@ -50,5 +32,6 @@ skill は、特定の作業で判断に迷いやすい点、参照先、実装�
 
 ## 関連文書
 
-- [`AGENTS.md`](../../AGENTS.md) - このリポジトリ全体の作業方針
-- [`docs/general/sync-skills.md`](../../docs/general/sync-skills.md) - skill 集約の設計と同期手順
+- [ワークスペースの作業規則](../../AGENTS.md)
+- [AGENTS.md とスキルの設計指針](../../app/general/docs/agents-and-skills-guideline.md)
+- [スキルの配置と同期](../../app/c-modernization-kit/docs/skill-sync.md)

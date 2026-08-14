@@ -17,7 +17,7 @@
 - `.vscode/c_cpp_properties.json` を直接編集しても make のビルド設定には反映されない
 - Linux の `_DEFAULT_SOURCE` のように実ビルドでも必要な define は `app/makepart.mk` などの正本側へ書く
 - `TARGET_ARCH` は app 側の実値を `.vscode` へ持ち込まず、Linux / Win32 ともに `TARGET_ARCH=target_arch` を同期スクリプトが補う
-- `.vscode/c_cpp_properties.json` の配列は、特殊項目を先頭に固定し、それ以外をソートして同期する
+- `.vscode/c_cpp_properties.json` の配列は、特殊項目を先頭に固定し、それ以外をソートして同期します。
 
 ### 同期の流れ
 
@@ -51,8 +51,8 @@ bash framework/makefw/bin/sync_c_cpp_properties.sh --check
 
 `.vscode/c_cpp_properties.json` の `defines` は、app 正本の単純な mirror ではありません。
 
-- `_DEFAULT_SOURCE` のような通常 define は `makepart.mk` / `app/makepart.mk` 側の正本からそのまま反映する
-- `TARGET_ARCH` は app 側の実値を無視し、常に `TARGET_ARCH=target_arch` を使う
+- `_DEFAULT_SOURCE` のような通常 define は `makepart.mk` / `app/makepart.mk` 側の正本からそのまま反映します。
+- `TARGET_ARCH` は app 側の実値を無視し、常に `TARGET_ARCH=target_arch` を使用します。
 - `TARGET_ARCH=target_arch` を先頭に置き、それ以外の項目はソートして並べる
 
 これは IntelliSense 用の互換条件ですが、通常の define 自体は make の build 設定と分離しません。
@@ -68,9 +68,9 @@ test ! -f app/c_cpp_properties.warn
 
 対象ワークスペースでは、実行時に必要なライブラリ探索パスとコマンド探索パスを `.vscode/.env.linux` と `.vscode/.env.windows` に集約しています。
 
-- VS Code の `make test` タスクとデバッグ構成は `envFile` で直接参照する
+- VS Code の `make test` タスクとデバッグ構成は `envFile` で直接参照します。
 - GitHub Actions と Jenkins は `bin/load-app-env.sh` を介して同じファイルを読む
-- VS Code の統合ターミナルは `envFile` を扱えないため、`.vscode/settings.json` へ同じ内容を複製する
+- VS Code の統合ターミナルは `envFile` を扱えないため、`.vscode/settings.json` へ同じ内容を複製します。
 
 更新要否の判断は、これらの設定ファイルではなく、`app` 配下の各アプリケーションの構成と依存関係に基づいて行います。
 
@@ -130,9 +130,9 @@ see: [CI と Jenkins での読み込み](#ci-と-jenkins-での読み込み)
 
 `bin/sync-app-env.sh` が `app/<name>/**/makepart.mk` を make で評価し、次の規則で導出します。
 
-- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/cbin` が現れる app は、`app/<name>/prod/cbin` をコマンド探索パスへ追加する
+- `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/cbin` が現れる app は、`app/<name>/prod/cbin` をコマンド探索パスへ追加します。
 - `OUTPUT_DIR` に `$(MYAPP_DIR)/prod/lib` が現れる app は、`app/<name>/prod/lib` をライブラリ探索パスへ追加する (Windows では `PATH` へ追加する)
-- `test/lib` のように `prod/` 以外を指す `OUTPUT_DIR` は対象外とする
+- `test/lib` のように `prod/` 以外を指す `OUTPUT_DIR` は対象外とします。
 - 並び順は app 名の `LC_ALL=C sort` とし、Windows の `PATH` は app ごとに `lib`、`cbin` の順に並べる
 
 `LIB_TYPE` (static / shared / both) による絞り込みは行いません。  

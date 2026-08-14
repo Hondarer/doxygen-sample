@@ -10,12 +10,12 @@ WSL を使う場合は Linux 環境と同様の手順でビルドでき、MinGW 
 
 ## 習得目標
 
-- [ ] WSL のインストールと基本的な Linux コマンドの実行ができる
-- [ ] WSL から VS Code を起動し、C コードを編集・ビルドできる
-- [ ] Git for Windows の Git Bash でシェル コマンドを実行できる
-- [ ] `Start-VSCode-With-Env.ps1` の役割と使い方を理解できる
-- [ ] Windows と Linux での実行ファイル・ライブラリのファイル名の違いを説明できる
-- [ ] `make` コマンドが Windows で動作するよう環境が設定されていることを確認できる
+- [ ] WSL のインストールと基本的な Linux コマンドの実行ができます。
+- [ ] WSL から VS Code を起動し、C コードを編集・ビルドできます。
+- [ ] Git for Windows の Git Bash でシェル コマンドを実行できます。
+- [ ] `Start-VSCode-With-Env.ps1` の役割と使い方を理解できます。
+- [ ] Windows と Linux での実行ファイル・ライブラリのファイル名の違いを説明できます。
+- [ ] `make` コマンドが Windows で動作するよう環境が設定されていることを確認できます。
 
 ## 学習マテリアル
 

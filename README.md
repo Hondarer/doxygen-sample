@@ -2,6 +2,13 @@
 
 既存の C コードを継続的に改善するための統合ワークスペースです。
 
+## 入口
+
+- [作業規則](AGENTS.md)
+- [文書一覧](docs/README.md)
+- [全 app 共通の規範](app/general/docs/README.md)
+- [ワークスペース固有の運用](app/c-modernization-kit/docs/README.md)
+
 ## 概要
 
 C および C++ の開発、ビルド、自動テスト、ドキュメント生成を Linux と Windows で共通化します。  

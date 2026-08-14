@@ -275,14 +275,14 @@ end note
 **目的**:
 
 - ビルドやドキュメント生成は最後まで走らせる
-- warning artifact があれば、ワークフロー自体は成功のまま通知する
-- Pull Request でも `deploy-pages` に依存せず警告を確認できるようにする
+- warning artifact があれば、ワークフロー自体は成功のまま通知します。
+- Pull Request でも `deploy-pages` に依存せず警告を確認できるようにします。
 
 **処理フロー**:
 
-1. workflow run にアップロードされた artifact 一覧を取得する
-2. `linux-ol8-warns` / `linux-ol9-warns` / `linux-ol10-warns` / `windows-warns` / `docs-warns` の有無を確認する
-3. warning artifact があれば warning annotation を出し、Step Summary に対象 artifact 名を列挙する
+1. workflow run にアップロードされた artifact 一覧を取得します。
+2. `linux-ol8-warns` / `linux-ol9-warns` / `linux-ol10-warns` / `windows-warns` / `docs-warns` の有無を確認します。
+3. warning artifact があれば warning annotation を出し、Step Summary に対象 artifact 名を列挙します。
 4. warning artifact が無ければ Step Summary に「warning なし」を出す
 
 ### deploy-pages ジョブ
@@ -411,7 +411,7 @@ https://<username>.github.io/<repository>/
 **固定 URL の利点**:
 
 - テスト結果アーカイブは常に同じファイル名で配置されるため、固定 URL でアクセス可能
-- ドキュメントへのリンクをハード コードしても、更新後も同じ URL でアクセスできる
+- ドキュメントへのリンクをハード コードしても、更新後も同じ URL でアクセスできます。
 
 Pages の `index.html` では、通常アーティファクト一覧とは別に、存在する場合のみ「ビルド・ドキュメント警告詳細」として `.warn` アーカイブを表示します。  
 `docs-warns.zip` には `docs.warn` と `app/**/doxy*.warn` がまとめて格納されます。

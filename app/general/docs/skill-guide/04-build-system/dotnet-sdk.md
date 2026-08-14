@@ -14,12 +14,12 @@
 
 ## 習得目標
 
-- [ ] `dotnet build`・`dotnet run`・`dotnet test` などの基本コマンドを実行できる
+- [ ] `dotnet build`・`dotnet run`・`dotnet test` などの基本コマンドを実行できます。
 - [ ] `.csproj` ファイルの基本構造 (`<Project>`・`<PropertyGroup>`・`<ItemGroup>`) を読み取れる
-- [ ] `Directory.Build.props` による共通設定の仕組みを理解できる
-- [ ] `dotnet publish` で実行可能な成果物を生成できる
-- [ ] `<ProjectReference>` によるプロジェクト参照を理解できる
-- [ ] `TargetFramework` (`net8.0` など) の意味を理解できる
+- [ ] `Directory.Build.props` による共通設定の仕組みを理解できます。
+- [ ] `dotnet publish` で実行可能な成果物を生成できます。
+- [ ] `<ProjectReference>` によるプロジェクト参照を理解できます。
+- [ ] `TargetFramework` (`net8.0` など) の意味を理解できます。
 
 ## 学習マテリアル
 

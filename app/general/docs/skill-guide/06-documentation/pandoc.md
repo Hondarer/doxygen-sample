@@ -10,12 +10,12 @@ Pandoc は「ドキュメント変換のスイス アーミーナイフ」と呼
 
 ## 習得目標
 
-- [ ] `pandoc input.md -o output.html` で基本的な変換ができる
-- [ ] `--template` オプションでカスタム テンプレートを適用できる
-- [ ] `--css` オプションでスタイル シートを指定できる
-- [ ] `pandoc input.md -o output.docx` で Word ドキュメントを生成できる
-- [ ] `--lua-filter` オプションで Lua フィルターを適用できる
-- [ ] Pandoc Markdown の拡張記法 (メタデータ ブロックなど) を理解できる
+- [ ] `pandoc input.md -o output.html` で基本的な変換ができます。
+- [ ] `--template` オプションでカスタム テンプレートを適用できます。
+- [ ] `--css` オプションでスタイル シートを指定できます。
+- [ ] `pandoc input.md -o output.docx` で Word ドキュメントを生成できます。
+- [ ] `--lua-filter` オプションで Lua フィルターを適用できます。
+- [ ] Pandoc Markdown の拡張記法 (メタデータ ブロックなど) を理解できます。
 
 ## 学習マテリアル
 

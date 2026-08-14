@@ -10,11 +10,11 @@ C 言語のコードを Google Test でテストするには C++ でテスト �
 
 ## 習得目標
 
-- [ ] `TEST()`・`TEST_F()` マクロでテスト ケースを定義できる
-- [ ] `EXPECT_EQ`・`EXPECT_NE`・`EXPECT_TRUE`・`EXPECT_FALSE` を使用できる
-- [ ] `ASSERT_*` と `EXPECT_*` の違いを説明できる
-- [ ] テスト フィクスチャ (`::testing::Test` の派生クラス) を作成できる
-- [ ] テストを実行し、結果レポートを確認できる
+- [ ] `TEST()`・`TEST_F()` マクロでテスト ケースを定義できます。
+- [ ] `EXPECT_EQ`・`EXPECT_NE`・`EXPECT_TRUE`・`EXPECT_FALSE` を使用できます。
+- [ ] `ASSERT_*` と `EXPECT_*` の違いを説明できます。
+- [ ] テスト フィクスチャ (`::testing::Test` の派生クラス) を作成できます。
+- [ ] テストを実行し、結果レポートを確認できます。
 - [ ] `app/example/test/src/libexamplebaseTest/addTest/` のテスト コードを読み取れる
 
 ## 学習マテリアル
@@ -28,7 +28,7 @@ C 言語のコードを Google Test でテストするには C++ でテスト �
 
 ### チュートリアル・入門
 
-- [testfw README](../../../framework/testfw/README.md) - 対象ワークスペースで使用するテスト フレームワークの説明
+- [testfw README](../../../../../framework/testfw/README.md) - 対象ワークスペースで使用するテスト フレームワークの説明
 
 ## 対象ワークスペースとの関連
 

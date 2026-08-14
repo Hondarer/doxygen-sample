@@ -10,6 +10,8 @@ c-modernization-kit を利用した計算機能のサンプルです。
 
 <!-- docsfw の仕上がりパスに対する相対リンク。この Markdown からの相対パスではないことに注意 -->
 
+生成前またはリンク先を参照できない場合は、[Doxygen の生成入口](../prod/README.md) と [doxyfw の生成手順](../../../framework/doxyfw/docs/makefile-usage.md) を参照してください。
+
 - [calc (public)](../../../doxygen/calc_public/index.html)
     - [公開 API (calc)](../../../doxygen/calc_public/group__CALC__PUBLIC__API.html)
     - [公開 API (calcbase)](../../../doxygen/calc_public/group__CALCBASE__PUBLIC__API.html)

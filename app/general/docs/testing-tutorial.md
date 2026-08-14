@@ -159,7 +159,7 @@ sudo pip3 install gcovr
 
 - **Visual Studio Build Tools** (または Visual Studio) - MSVC コンパイラとリンカー
 - **GNU Make** - Make ビルド システム (make.exe)
-- **Git for Windows** - MinGW ツールチェーンを含む
+- **Git for Windows** - MinGW ツールチェーンを含みます。
 - **Google Test/Mock** - テスト フレームワーク
 
 #### 環境設定スクリプト
@@ -332,7 +332,7 @@ WEAK_ATR int add(int a, int b, int *result)
 - **WEAK_ATR 属性**: リンク時に弱いシンボルとして扱われ、実装がない場合にモック関数が使用される
 - **C 言語関数**: `extern "C"` は不要 (`.cc` ファイルでも関数名が C++ にならない)
 - **モック インスタンス チェック**: `_mock_examplebase != nullptr` でモックの有無を確認
-- **トレース機能**: デバッグ時に関数呼び出しを確認できる
+- **トレース機能**: デバッグ時に関数呼び出しを確認できます。
 
 ### モック ライブラリの makefile
 
@@ -489,7 +489,7 @@ main 関数を含むプログラムをテストするには、リンカー ラ�
 GCC の `-Wl,--wrap=main` オプションを使用すると:
 
 - `main` 関数は `__wrap_main` として定義される
-- 元の `main` 関数は `__real_main` として参照可能になる
+- 元の `main` 関数は `__real_main` として参照可能になります。
 - `gtest_wrapmain` ライブラリが `__wrap_main` を提供し、Google Test を起動
 
 ### テスト コードの構造
@@ -689,7 +689,7 @@ include $(WORKSPACE_DIR)/framework/makefw/makefiles/makemain.mk
 
 #### main 関数のラップ
 
-- `USE_WRAP_MAIN := 1`: main 関数をラップして `__real_main` として呼び出し可能にする
+- `USE_WRAP_MAIN := 1`: main 関数をラップして `__real_main` として呼び出し可能にします。
     - Linux では `-Wl,--wrap=main` オプションが自動的に設定される
     - Windows では適切なリンカー オプションが自動的に設定される
 
@@ -1010,7 +1010,7 @@ EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("result\n")))
 
 各テスト ケースは独立して実行可能にする:
 
-- テスト ケース間で状態を共有しない
+- テスト ケース間で状態を共有しません。
 - グローバル変数の使用は最小限に
 - SetUp/TearDown を活用
 
@@ -1224,7 +1224,7 @@ LIBS += mock_examplebase  # OK
 
 #### ビルド エラー: コンパイラ オプションの違い
 
-**原因**: GCC と MSVC ではコンパイラ オプションが異なる
+**原因**: GCC と MSVC ではコンパイラ オプションが異なります。
 
 **解決策**: makefw サブモジュールのビルド フレームワークが自動的にプラットフォームを検出し、  
 適切なコンパイラ オプションを設定します。makefile の設定を確認してください。

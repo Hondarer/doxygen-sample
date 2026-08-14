@@ -41,7 +41,7 @@ ADR は「正解集」ではなく、その時点での合意内容を記録す�
 1. 実装手順ではなく、判断と根拠を書く
 2. 比較した案があるなら、却下した理由も短く残す
 3. 長文の総合仕様書にせず、1 件 1 判断に分ける
-4. コード変更や設定変更と同じ Pull Request で更新する
+4. コード変更や設定変更と同じ Pull Request で更新します。
 
 ## MADR
 
@@ -63,4 +63,4 @@ MADR で特に押さえたい点は次のとおりです。
 - [adr.github.io](https://adr.github.io/) - Architecture Decision Records のガイド集
 - [MADR を簡単に管理するツール madr-kit の紹介](https://zenn.dev/mahiguch/articles/70cb5b9cf04db1) - 日本語で ADR と MADR の関係、MADR の基本項目、`docs/decisions/` 配下で管理するイメージを把握できる入口
 - [MADR 公式ガイド](https://adr.github.io/madr/) - MADR の考え方、テンプレート、適用手順、カテゴリ分けまで確認できる公式の入口
-- [adr/madr リポジトリ](https://github.com/adr/madr) - `template/` 配下の各テンプレートと Quick start を参照でき、`docs/decisions` に配置して始める実例も確認できる
+- [adr/madr リポジトリ](https://github.com/adr/madr) - `template/` 配下の各テンプレートと Quick start を参照でき、`docs/decisions` に配置して始める実例も確認できます。

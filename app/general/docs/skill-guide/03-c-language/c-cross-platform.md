@@ -13,11 +13,11 @@ Linux の共有ビルドでは makefw が `-fvisibility=hidden` を付け、公�
 
 ## 習得目標
 
-- [ ] `#ifdef _WIN32` / `#ifdef __linux__` などのマクロで OS を判別できる
-- [ ] `#ifdef _MSC_VER` / `#ifdef __GNUC__` でコンパイラを判別できる
-- [ ] Windows の `__declspec(dllexport)` / `__declspec(dllimport)` の意味を理解できる
-- [ ] GCC の `__attribute__((visibility("default")))` の意味を理解できる
-- [ ] 共通マクロ (`EXPORT` など) を定義してプラットフォーム差異を吸収できる
+- [ ] `#ifdef _WIN32` / `#ifdef __linux__` などのマクロで OS を判別できます。
+- [ ] `#ifdef _MSC_VER` / `#ifdef __GNUC__` でコンパイラを判別できます。
+- [ ] Windows の `__declspec(dllexport)` / `__declspec(dllimport)` の意味を理解できます。
+- [ ] GCC の `__attribute__((visibility("default")))` の意味を理解できます。
+- [ ] 共通マクロ (`EXPORT` など) を定義してプラットフォーム差異を吸収できます。
 - [ ] `app/example/prod/include/libexample.h` のクロスプラットフォーム宣言を読み取れる
 
 ## 学習マテリアル
@@ -52,8 +52,8 @@ SAMPLE_EXPORT int SAMPLE_API sample_open(void);
 
 関連ファイル:
 
-- `app/com_util/prod/include/com_util/base/dll_exports.h` - エクスポート / 可視性の共通テンプレート
-- `app/com_util/prod/include/com_util/com_util_export.h` - com_util 向けの薄いラッパー
+- `prod/include/<library>/base/dll_exports.h` - エクスポートと可視性を定義する共通テンプレート
+- `prod/include/<library>/<library>_export.h` - ライブラリ固有の薄いラッパー
 - `framework/makefw/makefiles/makelibsrc_c_cpp.mk` - Linux 共有ビルドの `-fvisibility=hidden`
 - [コーディング規範](../../coding-guideline.md) の「共有ライブラリのシンボル可視性」
 
