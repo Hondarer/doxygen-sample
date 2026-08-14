@@ -3,9 +3,8 @@
 
 MOCK_WEAK_IMPL(int, calc_handler, int kind, int a, int b, int *result)
 {
-    int mock_ret;
+    int mock_ret = 0;
 
-    mock_ret = 0;
     if (_mock_calc != nullptr)
     {
         mock_ret = _mock_calc->calc_handler(kind, a, b, result);

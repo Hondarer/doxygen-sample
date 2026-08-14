@@ -3,9 +3,8 @@
 
 MOCK_WEAK_IMPL(int, calcbase_divide, int a, int b, int *result)
 {
-    int mock_ret;
+    int mock_ret = 0;
 
-    mock_ret = 0;
     if (_mock_calcbase != nullptr)
     {
         mock_ret = _mock_calcbase->calcbase_divide(a, b, result);
