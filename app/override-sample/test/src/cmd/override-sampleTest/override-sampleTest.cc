@@ -135,7 +135,7 @@ TEST_F(override_sampleTest, check_stdout_default)
         string::npos,
         res.stdout_out.find(
             "sample_func: a=1, b=2 の処理 (*result = a + b;) を行います")); // [確認] - デフォルト処理のメッセージが出力されること。
-    EXPECT_NE(string::npos, res.stdout_out.find("rtc: 0"));                 // [確認] - rtc が 0 であること。
+    EXPECT_NE(string::npos, res.stdout_out.find("ret: 0"));                 // [確認] - ret が 0 であること。
     EXPECT_NE(string::npos, res.stdout_out.find("result: 3"));              // [確認] - result が 3 (1+2) であること。
     EXPECT_EQ(
         string::npos,
@@ -167,7 +167,7 @@ TEST_F(override_sampleTest, check_stdout_with_config)
         string::npos,
         res.stdout_out.find(
             "override_func: a=1, b=2 の処理 (*result = a * b;) を行います")); // [確認] -  オーバーライド処理のメッセージが出力されること。
-    EXPECT_NE(string::npos, res.stdout_out.find("rtc: 0"));    // [確認] - rtc が 0 であること。
+    EXPECT_NE(string::npos, res.stdout_out.find("ret: 0"));    // [確認] - ret が 0 であること。
     EXPECT_NE(string::npos, res.stdout_out.find("result: 2")); // [確認] - result が 2 (1*2) であること。
 }
 

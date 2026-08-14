@@ -97,10 +97,10 @@ int main(int argc, char *argv[])
 
     printf("--- sym_loader info ---\n");
     ret = base_sym_loader_info();
-    printf("rtc: %d\n\n", ret);
+    printf("ret: %d\n\n", ret);
 
     ret = sample_func(1, 2, &result);
-    base_console_output("rtc: %d\n", ret);
+    base_console_output("ret: %d\n", ret);
     if (ret != BASE_OK)
     {
         fprintf(stderr, "func failed (sample_func(1, 2, &result))\n");
