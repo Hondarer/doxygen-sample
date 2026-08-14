@@ -161,7 +161,8 @@ class service_sampleTest : public Test
         g_on_run_rc = 0;
         g_on_stop_rc = 0;
 
-        ON_CALL(mock_com_util_, com_util_tracer_create()).WillByDefault(Return(tracer_handle_));
+        ON_CALL(mock_com_util_, com_util_tracer_create(COM_UTIL_TRACER_CONCURRENCY_TRACER_MANAGED))
+            .WillByDefault(Return(tracer_handle_));
         ON_CALL(mock_com_util_, com_util_tracer_set_name(_, _, _)).WillByDefault(Return(0));
         ON_CALL(mock_com_util_, com_util_tracer_set_os_level(_, _)).WillByDefault(Return(0));
         ON_CALL(mock_com_util_, com_util_tracer_set_file_level(_, _, _, _, _, _)).WillByDefault(Return(0));

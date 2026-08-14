@@ -58,7 +58,7 @@ static int svc_tracer_open(const svc_definition *def, const int enable_stderr)
 {
     com_util_trace_level stderr_level;
 
-    g_tracer = com_util_tracer_create();
+    g_tracer = com_util_tracer_create(COM_UTIL_TRACER_CONCURRENCY_TRACER_MANAGED);
     if (g_tracer == NULL)
     {
         return -1;
@@ -95,7 +95,7 @@ static void svc_tracer_close(void)
     if (g_tracer != NULL)
     {
         com_util_tracer_stop(g_tracer);
-        com_util_tracer_dispose(g_tracer);
+        com_util_tracer_dispose(&g_tracer);
         g_tracer = NULL;
     }
 }
