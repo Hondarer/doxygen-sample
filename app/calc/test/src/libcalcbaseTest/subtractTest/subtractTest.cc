@@ -6,6 +6,7 @@ class subtractTest : public Test
 {
 };
 
+// subtract(10, 3) が 7 を返すことの確認
 TEST_F(subtractTest, test_10_subtract_3)
 {
     // Arrange
@@ -30,6 +31,7 @@ TEST_F(subtractTest, test_10_subtract_3)
     EXPECT_EQ(7, result);         // [確認_正常系] - subtract が result に 7 を設定すること。
 }
 
+// subtract(3, 10) が -7 を返すことの確認
 TEST_F(subtractTest, test_3_subtract_10)
 {
     // Arrange
@@ -54,6 +56,7 @@ TEST_F(subtractTest, test_3_subtract_10)
     EXPECT_EQ(-7, result);        // [確認_正常系] - subtract が result に -7 を設定すること。
 }
 
+// subtract(5, 5) が 0 を返すことの確認
 TEST_F(subtractTest, test_5_subtract_5)
 {
     // Arrange
@@ -78,6 +81,7 @@ TEST_F(subtractTest, test_5_subtract_5)
     EXPECT_EQ(0, result);         // [確認_正常系] - subtract が result に 0 を設定すること。
 }
 
+// result が NULL のとき subtract が CALC_ERROR を返すことの確認
 TEST_F(subtractTest, test_null_result)
 {
     // Arrange

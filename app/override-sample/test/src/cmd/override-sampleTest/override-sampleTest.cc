@@ -215,6 +215,7 @@ TEST_F(override_sampleTest, onUnload_syslog_disabled_by_default)
 }
 
 #if defined(PLATFORM_LINUX)
+// 過長な TMPDIR で設定ファイル パス構築に失敗し終了コード 1 になることの確認
 TEST_F(override_sampleTest, too_long_tmpdir_causes_exit_code_1)
 {
     // Arrange

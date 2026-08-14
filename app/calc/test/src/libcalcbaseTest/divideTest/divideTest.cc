@@ -6,6 +6,7 @@ class divideTest : public Test
 {
 };
 
+// divide(20, 4) が 5 を返すことの確認
 TEST_F(divideTest, test_20_divide_4)
 {
     // Arrange
@@ -21,6 +22,7 @@ TEST_F(divideTest, test_20_divide_4)
     EXPECT_EQ(5, result);         // [確認_正常系] - divide が result に 5 を設定すること。
 }
 
+// divide(10, 3) が整数除算の 3 を返すことの確認
 TEST_F(divideTest, test_10_divide_3)
 {
     // Arrange
@@ -36,6 +38,7 @@ TEST_F(divideTest, test_10_divide_3)
     EXPECT_EQ(3, result);         // [確認_正常系] - divide が整数除算の結果として result に 3 を設定すること。
 }
 
+// ゼロ除算時に divide が CALC_ERROR を返すことの確認
 TEST_F(divideTest, test_divide_by_zero)
 {
     // Arrange
@@ -50,6 +53,7 @@ TEST_F(divideTest, test_divide_by_zero)
     EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - divide の戻り値が CALC_ERROR であること。
 }
 
+// divide(-12, 4) が -3 を返すことの確認
 TEST_F(divideTest, test_negative_divide)
 {
     // Arrange
@@ -65,6 +69,7 @@ TEST_F(divideTest, test_negative_divide)
     EXPECT_EQ(-3, result);        // [確認_正常系] - divide が result に -3 を設定すること。
 }
 
+// result が NULL のとき divide が CALC_ERROR を返すことの確認
 TEST_F(divideTest, test_null_result)
 {
     // Arrange

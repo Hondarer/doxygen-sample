@@ -7,6 +7,7 @@ class subfolder_sampleTest_a : public Test
 {
 };
 
+// func_a() が 1 を返すことの確認
 TEST_F(subfolder_sampleTest_a, test_func_a)
 {
     // Arrange

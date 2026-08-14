@@ -16,6 +16,7 @@ class ParamTest1Test : public TestWithParam<tuple<int, int, int>>
 {
 };
 
+// パラメーター化した乗算の戻り値が期待値と一致することの確認
 TEST_P(ParamTest1Test, MultiplyTest)
 {
     // Arrange

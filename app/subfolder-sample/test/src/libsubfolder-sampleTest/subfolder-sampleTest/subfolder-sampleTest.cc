@@ -7,6 +7,7 @@ class subfolder_sampleTest : public Test
 {
 };
 
+// func() が 0 を返すことの確認
 TEST_F(subfolder_sampleTest, test_func)
 {
     // Arrange

@@ -6,6 +6,7 @@ class test_static_access : public Test
 {
 };
 
+// static 変数の値が samplestatic の戻り値になることの確認
 TEST_F(test_static_access, test)
 {
     // Arrange

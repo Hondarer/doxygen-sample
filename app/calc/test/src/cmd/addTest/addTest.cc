@@ -7,6 +7,7 @@ class addTest : public Test
 {
 };
 
+// 位置引数が不足する場合に異常終了することの確認
 TEST_F(addTest, less_argc)
 {
     // Arrange
@@ -19,9 +20,10 @@ TEST_F(addTest, less_argc)
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
 }
 
+// 2 つの位置整数を加算して標準出力へ出すことの確認
 TEST_F(addTest, normal)
 {
     // Arrange
@@ -37,18 +39,19 @@ TEST_F(addTest, normal)
             {
                 *result = 3;
                 return CALC_SUCCESS;
-            }); // [Pre-Assert確認] - add(1, 2, &result) が 1 回呼び出されること。
+            }); // [Pre-Assert確認_正常系] - add(1, 2, &result) が 1 回呼び出されること。
                 // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
     EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("3\n")))
-        .WillOnce(DoDefault()); // [Pre-Assert確認] - printf() が 1 回呼び出され、内容が "3\n" であること。
+        .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
 
     // Act
     int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
 }
 
+// 負の位置整数を加算できることの確認
 TEST_F(addTest, negative_operands)
 {
     // Arrange
@@ -63,15 +66,16 @@ TEST_F(addTest, negative_operands)
             {
                 *result = -9;
                 return CALC_SUCCESS;
-            }); // [Pre-Assert確認] - 負の整数が add() へ渡されること。
+            }); // [Pre-Assert確認_正常系] - 負の整数が add() へ渡されること。
 
     // Act
     int rtc = __real_main(3, (char **)&argv); // [手順] - 負の位置整数で main() を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - 負の位置整数が受理されること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - 負の位置整数が受理されること。
 }
 
+// help オプションで必須位置引数なしでも正常終了することの確認
 TEST_F(addTest, help)
 {
     // Arrange
@@ -83,5 +87,5 @@ TEST_F(addTest, help)
     int rtc = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認] - 必須位置引数なしでも正常終了すること。
+    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - 必須位置引数なしでも正常終了すること。
 }

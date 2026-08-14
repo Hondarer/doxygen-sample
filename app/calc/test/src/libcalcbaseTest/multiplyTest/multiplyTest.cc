@@ -6,6 +6,7 @@ class multiplyTest : public Test
 {
 };
 
+// multiply(5, 4) が 20 を返すことの確認
 TEST_F(multiplyTest, test_5_multiply_4)
 {
     // Arrange
@@ -21,6 +22,7 @@ TEST_F(multiplyTest, test_5_multiply_4)
     EXPECT_EQ(20, result);        // [確認_正常系] - multiply が result に 20 を設定すること。
 }
 
+// multiply(3, 0) が 0 を返すことの確認
 TEST_F(multiplyTest, test_3_multiply_0)
 {
     // Arrange
@@ -36,6 +38,7 @@ TEST_F(multiplyTest, test_3_multiply_0)
     EXPECT_EQ(0, result);         // [確認_正常系] - multiply が result に 0 を設定すること。
 }
 
+// multiply(-3, 4) が -12 を返すことの確認
 TEST_F(multiplyTest, test_negative_multiply)
 {
     // Arrange
@@ -51,6 +54,7 @@ TEST_F(multiplyTest, test_negative_multiply)
     EXPECT_EQ(-12, result);       // [確認_正常系] - multiply が result に -12 を設定すること。
 }
 
+// result が NULL のとき multiply が CALC_ERROR を返すことの確認
 TEST_F(multiplyTest, test_null_result)
 {
     // Arrange

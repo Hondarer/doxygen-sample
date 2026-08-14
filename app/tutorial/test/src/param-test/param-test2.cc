@@ -44,6 +44,7 @@ class ParamTest2Test : public TestWithParam<ParamTest2TestParam>
 {
 };
 
+// パラメーター化した乗算の戻り値が期待値と一致することの確認
 TEST_P(ParamTest2Test, MultiplyTest)
 {
     // Arrange

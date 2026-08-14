@@ -6,6 +6,7 @@ class addTest : public Test
 {
 };
 
+// add(1, 2) が 3 を返すことの確認
 TEST_F(addTest, test_1_add_2)
 {
     // Arrange
@@ -21,6 +22,7 @@ TEST_F(addTest, test_1_add_2)
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
 
+// add(2, 1) が 3 を返すことの確認
 TEST_F(addTest, test_2_add_1)
 {
     // Arrange
@@ -36,6 +38,7 @@ TEST_F(addTest, test_2_add_1)
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
 
+// result が NULL のとき add が CALC_ERROR を返すことの確認
 TEST_F(addTest, test_null_result)
 {
     // Arrange
