@@ -24,7 +24,7 @@
 /* --- 対応関数を追加した場合、以下に追加が必要です。                         --- */
 
 /** sample_func に対応する関数ポインターの型定義。 */
-typedef int (*sample_func_t)(const int, const int, int *);
+typedef int (*sample_func_fn)(const int, const int, int *);
 
 #ifdef __cplusplus
 extern "C"
@@ -34,7 +34,7 @@ extern "C"
     /** sample_func に対応する sym_loader エントリへのポインター。 */
     extern com_util_sym_loader_entry *const pfo_sample_func;
 
-    /* typedef any (*func_name_t)(...); */                       /* 将来追加 */
+    /* typedef any (*func_name_fn)(...); */                      /* 将来追加 */
     /* extern com_util_sym_loader_entry *const pfo_func_name; */ /* 将来追加 */
 
     /** sym_loader に設定するポインター配列。 */

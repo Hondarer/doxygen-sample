@@ -6,7 +6,7 @@
  *  @date           2025/11/22
  *  @version        1.0.0
  *
- *  コマンド ライン引数から 2 つの整数と演算子を受け取り、calcHandler 関数を使用して
+ *  コマンド ライン引数から 2 つの整数と演算子を受け取り、calc_handler 関数を使用して
  *  計算結果を標準出力に出力します。
  *
  *  @copyright      Copyright (C) CompanyName, Ltd. 2025. All rights reserved.
@@ -29,7 +29,7 @@
  *  使用例:
  *
     @code{.c}
-    ./add 10 + 20
+    ./calcbase_add 10 + 20
     // 出力: 30
     @endcode
  *
@@ -43,34 +43,34 @@ int main(int argc, char *argv[])
     int arg1 = 0;
     int arg3 = 0;
     const char *operator_value = NULL;
-    com_util_argparser_init("指定された演算子に基づいて 2 つの整数を計算します。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
-    com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
+    com_util_argparser_default_init("指定された演算子に基づいて 2 つの整数を計算します。");
+    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_default_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
+    com_util_argparser_default_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
                                                   &operator_value);
-    com_util_argparser_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
-    if (com_util_argparser_get_register_error_count() > 0)
+    com_util_argparser_default_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
+    if (com_util_argparser_default_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        com_util_argparser_default_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_default_parse(argc, argv);
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        com_util_argparser_default_print_usage(stdout);
         return EXIT_SUCCESS;
     }
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_error_messages(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
     if (operator_value[0] == 0x00 || operator_value[1] != 0x00)
     {
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
     int result;
@@ -92,13 +92,13 @@ int main(int argc, char *argv[])
         break;
     default:
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
-    if (calcHandler(kind, arg1, arg3, &result) != 0)
+    if (calc_handler(kind, arg1, arg3, &result) != CALC_OK)
     {
-        fprintf(stderr, "Error: calcHandler failed\n");
+        fprintf(stderr, "Error: calc_handler failed\n");
         return EXIT_FAILURE;
     }
 

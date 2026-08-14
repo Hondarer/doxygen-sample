@@ -60,11 +60,11 @@
  * ============================================================ */
 
 /** ServiceMain からアクセスできるようにファイル static に保持するサービス定義。 */
-static const svc_definition *g_def = NULL;
+static const svc_definition *s_def = NULL;
 /** サービス ステータス ハンドル。ServiceMain で初期化される。 */
-static SERVICE_STATUS_HANDLE g_status_handle = NULL;
+static SERVICE_STATUS_HANDLE s_status_handle = NULL;
 /** 現在のサービス ステータス。 */
-static SERVICE_STATUS g_status = {0};
+static SERVICE_STATUS s_status = {0};
 
 /* ============================================================
  *  内部ヘルパー
@@ -79,14 +79,14 @@ static SERVICE_STATUS g_status = {0};
  */
 static void set_service_status(const DWORD state, const DWORD controls, const DWORD checkpoint, const DWORD wait_hint)
 {
-    g_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    g_status.dwCurrentState = state;
-    g_status.dwControlsAccepted = controls;
-    g_status.dwWin32ExitCode = NO_ERROR;
-    g_status.dwServiceSpecificExitCode = 0;
-    g_status.dwCheckPoint = checkpoint;
-    g_status.dwWaitHint = wait_hint;
-    SetServiceStatus(g_status_handle, &g_status);
+    s_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+    s_status.dwCurrentState = state;
+    s_status.dwControlsAccepted = controls;
+    s_status.dwWin32ExitCode = NO_ERROR;
+    s_status.dwServiceSpecificExitCode = 0;
+    s_status.dwCheckPoint = checkpoint;
+    s_status.dwWaitHint = wait_hint;
+    SetServiceStatus(s_status_handle, &s_status);
 }
 
 /**
@@ -101,19 +101,19 @@ static void set_service_status(const DWORD state, const DWORD controls, const DW
  */
 static void set_service_stopped(const DWORD specific_exit_code)
 {
-    g_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    g_status.dwCurrentState = SERVICE_STOPPED;
-    g_status.dwControlsAccepted = 0;
-    g_status.dwWin32ExitCode = NO_ERROR;
-    g_status.dwServiceSpecificExitCode = 0;
+    s_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+    s_status.dwCurrentState = SERVICE_STOPPED;
+    s_status.dwControlsAccepted = 0;
+    s_status.dwWin32ExitCode = NO_ERROR;
+    s_status.dwServiceSpecificExitCode = 0;
     if (specific_exit_code != 0)
     {
-        g_status.dwWin32ExitCode = ERROR_SERVICE_SPECIFIC_ERROR;
-        g_status.dwServiceSpecificExitCode = specific_exit_code;
+        s_status.dwWin32ExitCode = ERROR_SERVICE_SPECIFIC_ERROR;
+        s_status.dwServiceSpecificExitCode = specific_exit_code;
     }
-    g_status.dwCheckPoint = 0;
-    g_status.dwWaitHint = 0;
-    SetServiceStatus(g_status_handle, &g_status);
+    s_status.dwCheckPoint = 0;
+    s_status.dwWaitHint = 0;
+    SetServiceStatus(s_status_handle, &s_status);
 }
 
 /**
@@ -121,7 +121,7 @@ static void set_service_stopped(const DWORD specific_exit_code)
  *  @return         dwControlsAccepted に設定する値。
  *
  *  STOP / SHUTDOWN は常に受け付けます。\n
- *  g_def の on_event が設定されている場合は電源・セッション・
+ *  s_def の on_event が設定されている場合は電源・セッション・
  *  シャットダウン前のコントロールを、on_reload が設定されている場合は
  *  PARAMCHANGE を追加で受け付けます。
  */
@@ -130,11 +130,11 @@ static DWORD accepted_controls(void)
     DWORD controls;
 
     controls = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN;
-    if (g_def != NULL && g_def->on_event != NULL)
+    if (s_def != NULL && s_def->on_event != NULL)
     {
         controls |= SERVICE_ACCEPT_POWEREVENT | SERVICE_ACCEPT_SESSIONCHANGE | SERVICE_ACCEPT_PRESHUTDOWN;
     }
-    if (g_def != NULL && g_def->on_reload != NULL)
+    if (s_def != NULL && s_def->on_reload != NULL)
     {
         controls |= SERVICE_ACCEPT_PARAMCHANGE;
     }
@@ -190,7 +190,7 @@ static void write_dispatcher_error(const DWORD err)
 static int ensure_elevated_for_operation(const char *command, const char *operation_name, int *handled)
 {
     int exit_code;
-    int rc;
+    int ret;
 
     if (handled == NULL)
     {
@@ -198,8 +198,8 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
     }
 
     exit_code = EXIT_FAILURE;
-    rc = com_util_elevated_process_run_if_needed(command, &exit_code, handled);
-    if (rc != 0)
+    ret = com_util_elevated_process_run_if_needed(command, &exit_code, handled);
+    if (ret != 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "%s には管理者権限が必要です。",
                                operation_name);
@@ -222,7 +222,7 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
 
 void svc_os_notify_ready(void)
 {
-    if (g_status_handle == NULL)
+    if (s_status_handle == NULL)
     {
         return;
     }
@@ -231,7 +231,7 @@ void svc_os_notify_ready(void)
 
 void svc_os_notify_stopping(void)
 {
-    if (g_status_handle == NULL)
+    if (s_status_handle == NULL)
     {
         return;
     }
@@ -268,12 +268,12 @@ static void handle_power_event(const DWORD ev_type)
     if (ev_type == PBT_APMSUSPEND)
     {
         info.type = SVC_EVENT_POWER_SUSPEND;
-        svc_dispatch_event(g_def, &info);
+        svc_dispatch_event(s_def, &info);
     }
     else if (ev_type == PBT_APMRESUMEAUTOMATIC || ev_type == PBT_APMRESUMESUSPEND)
     {
         info.type = SVC_EVENT_POWER_RESUME;
-        svc_dispatch_event(g_def, &info);
+        svc_dispatch_event(s_def, &info);
     }
 }
 
@@ -300,7 +300,7 @@ static void handle_session_change(const DWORD ev_type, const LPVOID ev_data)
     }
 
     notification = (const WTSSESSION_NOTIFICATION *)ev_data;
-    snprintf(session_id_buf, sizeof(session_id_buf), "%lu", (unsigned long)notification->dwSessionId);
+    (void)com_util_snprintf(session_id_buf, sizeof(session_id_buf), "%lu", (unsigned long)notification->dwSessionId);
 
     if (ev_type == WTS_SESSION_LOGON)
     {
@@ -311,7 +311,7 @@ static void handle_session_change(const DWORD ev_type, const LPVOID ev_data)
         info.type = SVC_EVENT_SESSION_LOGOFF;
     }
     info.session_id = session_id_buf;
-    svc_dispatch_event(g_def, &info);
+    svc_dispatch_event(s_def, &info);
 }
 
 /**
@@ -339,7 +339,7 @@ static DWORD WINAPI service_ctrl_handler(DWORD ctrl, DWORD ev_type, LPVOID ev_da
         /* シャットダウン前の猶予通知を配送してから停止経路に入る */
         info.type = SVC_EVENT_PRESHUTDOWN;
         info.session_id = NULL;
-        svc_dispatch_event(g_def, &info);
+        svc_dispatch_event(s_def, &info);
         set_service_status(SERVICE_STOP_PENDING, 0, 1, 5000);
         svc_request_stop();
     }
@@ -353,12 +353,12 @@ static DWORD WINAPI service_ctrl_handler(DWORD ctrl, DWORD ev_type, LPVOID ev_da
     }
     else if (ctrl == SERVICE_CONTROL_PARAMCHANGE)
     {
-        svc_dispatch_reload(g_def);
+        svc_dispatch_reload(s_def);
     }
     else if (ctrl == SERVICE_CONTROL_INTERROGATE)
     {
         /* 現在のステータスを再通知する */
-        SetServiceStatus(g_status_handle, &g_status);
+        SetServiceStatus(s_status_handle, &s_status);
     }
 
     return NO_ERROR;
@@ -380,14 +380,14 @@ static VOID WINAPI service_main(DWORD argc, LPWSTR *argv)
     (void)argc;
     (void)argv;
 
-    if (g_def == NULL)
+    if (s_def == NULL)
     {
         return;
     }
 
     /* コントロール ハンドラーを登録する */
-    g_status_handle = RegisterServiceCtrlHandlerExU(g_def->name, service_ctrl_handler, NULL);
-    if (g_status_handle == NULL)
+    s_status_handle = RegisterServiceCtrlHandlerExU(s_def->name, service_ctrl_handler, NULL);
+    if (s_status_handle == NULL)
     {
         return;
     }
@@ -396,9 +396,9 @@ static VOID WINAPI service_main(DWORD argc, LPWSTR *argv)
     set_service_status(SERVICE_START_PENDING, 0, 1, 3000);
 
     /* on_start を呼ぶ */
-    if (g_def->on_start != NULL)
+    if (s_def->on_start != NULL)
     {
-        rc = g_def->on_start(g_def->user_data);
+        rc = s_def->on_start(s_def->user_data);
         if (rc != 0)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
@@ -412,7 +412,7 @@ static VOID WINAPI service_main(DWORD argc, LPWSTR *argv)
     svc_os_notify_ready();
 
     /* on_run を呼ぶ (停止要求まで戻らない) */
-    rc = g_def->on_run(g_def->user_data);
+    rc = s_def->on_run(s_def->user_data);
     if (rc != 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
@@ -423,11 +423,11 @@ static VOID WINAPI service_main(DWORD argc, LPWSTR *argv)
     svc_os_notify_stopping();
 
     /* on_stop を呼ぶ (on_run が失敗しても後始末のため実行する) */
-    if (g_def->on_stop != NULL)
+    if (s_def->on_stop != NULL)
     {
         int stop_rc;
 
-        stop_rc = g_def->on_stop(g_def->user_data);
+        stop_rc = s_def->on_stop(s_def->user_data);
         if (stop_rc != 0)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
@@ -453,7 +453,7 @@ int svc_os_run_service(const svc_definition *def)
     com_util_service_entry_u dispatch_table[2];
 
     /* def をファイル static に退避する (ServiceMain は固定シグネチャのため直接渡せない) */
-    g_def = def;
+    s_def = def;
 
     dispatch_table[0].service_name = def->name;
     dispatch_table[0].service_proc = service_main;
@@ -496,7 +496,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* binPath は "\"<パス>\" run" 形式にする (パスにスペースが含まれる場合の対策) */
-    if (snprintf(bin_path, sizeof(bin_path), "\"%s\" run", exe_path) < 0)
+    if (com_util_snprintf(bin_path, sizeof(bin_path), "\"%s\" run", exe_path) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "パスの生成に失敗しました。");
         return EXIT_FAILURE;

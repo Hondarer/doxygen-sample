@@ -38,11 +38,11 @@
  * ============================================================ */
 
 /** プロセス共通の tracer ハンドル。main() が open / close します。 */
-static com_util_tracer *g_tracer = NULL;
+static com_util_tracer *s_tracer = NULL;
 
 com_util_tracer *svc_get_tracer(void)
 {
-    return g_tracer;
+    return s_tracer;
 }
 
 /**
@@ -51,21 +51,21 @@ com_util_tracer *svc_get_tracer(void)
  *  @param[in]      enable_stderr  stderr バックエンドを有効にする場合は 0 以外を渡します。
  *  @return         成功時は 0、失敗時は -1 を返します。
  *
- *  失敗時は g_tracer = NULL のまま返します。呼び出し元は失敗時も処理を継続し、
+ *  失敗時は s_tracer = NULL のまま返します。呼び出し元は失敗時も処理を継続し、
  *  tracer 出力が無効化されるだけの状態として扱ってください。
  */
-static int svc_tracer_open(const svc_definition *def, const int enable_stderr)
+static int tracer_open(const svc_definition *def, const int enable_stderr)
 {
     com_util_trace_level stderr_level;
 
-    g_tracer = com_util_tracer_create(COM_UTIL_TRACER_CONCURRENCY_TRACER_MANAGED);
-    if (g_tracer == NULL)
+    s_tracer = com_util_tracer_create(COM_UTIL_TRACER_CONCURRENCY_TRACER_MANAGED);
+    if (s_tracer == NULL)
     {
         return -1;
     }
 
-    com_util_tracer_set_name(g_tracer, def->name, 0);
-    com_util_tracer_set_os_level(g_tracer, COM_UTIL_TRACE_LEVEL_NONE);
+    com_util_tracer_set_name(s_tracer, def->name, 0);
+    com_util_tracer_set_os_level(s_tracer, COM_UTIL_TRACE_LEVEL_NONE);
 
     if (enable_stderr != 0)
     {
@@ -75,28 +75,28 @@ static int svc_tracer_open(const svc_definition *def, const int enable_stderr)
     {
         stderr_level = COM_UTIL_TRACE_LEVEL_NONE;
     }
-    com_util_tracer_set_stderr_level(g_tracer, stderr_level);
+    com_util_tracer_set_stderr_level(s_tracer, stderr_level);
 
     /* Windows で一般ユーザーによる実行の場合、昇格が発生し同じファイルに複数プロセスが */
     /* 出力するため、共有モードを指定する。                                             */
     /* パスとファイル名は com_util tracer のデフォルト解決に任せる。                    */
-    com_util_tracer_set_file_level(g_tracer, NULL, COM_UTIL_TRACE_LEVEL_VERBOSE, 0, 0, COM_UTIL_TRACE_FILE_SINK_SHARED);
+    com_util_tracer_set_file_level(s_tracer, NULL, COM_UTIL_TRACE_LEVEL_VERBOSE, 0, 0, COM_UTIL_TRACE_FILE_SINK_SHARED);
 
-    return com_util_tracer_start(g_tracer);
+    return com_util_tracer_start(s_tracer);
 }
 
 /**
  *  @brief  tracer を停止・解放します。
  *
- *  g_tracer が NULL の場合は何もしません。
+ *  s_tracer が NULL の場合は何もしません。
  */
-static void svc_tracer_close(void)
+static void tracer_close(void)
 {
-    if (g_tracer != NULL)
+    if (s_tracer != NULL)
     {
-        com_util_tracer_stop(g_tracer);
-        com_util_tracer_dispose(&g_tracer);
-        g_tracer = NULL;
+        com_util_tracer_stop(s_tracer);
+        com_util_tracer_dispose(&s_tracer);
+        s_tracer = NULL;
     }
 }
 
@@ -105,35 +105,35 @@ static void svc_tracer_close(void)
  * ============================================================ */
 
 /** 停止要求の有無。1 = 停止要求済み。 */
-static volatile int g_stop_requested = 0;
+static int s_stop_requested = 0;
 /** 停止フラグ・condvar を保護するミューテックス。 */
-static com_util_local_lock *g_stop_lock = NULL;
+static com_util_local_lock *s_stop_lock = NULL;
 /** 停止要求を on_run に通知するための条件変数。 */
-static com_util_condvar *g_stop_cv = NULL;
+static com_util_condvar *s_stop_cv = NULL;
 
 void svc_request_stop(void)
 {
-    if (g_stop_lock == NULL || g_stop_cv == NULL)
+    if (s_stop_lock == NULL || s_stop_cv == NULL)
     {
         return;
     }
-    com_util_local_lock_lock(g_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
-    g_stop_requested = 1;
-    com_util_local_lock_unlock(g_stop_lock);
-    com_util_condvar_broadcast(g_stop_cv);
+    com_util_local_lock_lock(s_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
+    s_stop_requested = 1;
+    com_util_local_lock_unlock(s_stop_lock);
+    com_util_condvar_broadcast(s_stop_cv);
 }
 
 int svc_stop_requested(void)
 {
     int requested;
 
-    if (g_stop_lock == NULL)
+    if (s_stop_lock == NULL)
     {
         return 0;
     }
-    com_util_local_lock_lock(g_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
-    requested = g_stop_requested;
-    com_util_local_lock_unlock(g_stop_lock);
+    com_util_local_lock_lock(s_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
+    requested = s_stop_requested;
+    com_util_local_lock_unlock(s_stop_lock);
     return requested;
 }
 
@@ -141,18 +141,18 @@ int svc_wait_for_stop(const int timeout_ms)
 {
     int requested;
 
-    if (g_stop_lock == NULL || g_stop_cv == NULL)
+    if (s_stop_lock == NULL || s_stop_cv == NULL)
     {
         return 1;
     }
-    com_util_local_lock_lock(g_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
-    if (g_stop_requested == 0)
+    com_util_local_lock_lock(s_stop_lock, COM_UTIL_SYNC_WAIT_FOREVER);
+    if (s_stop_requested == 0)
     {
         /* spurious wakeup 対策のため待機後に再確認する */
-        com_util_condvar_wait(g_stop_cv, g_stop_lock, timeout_ms);
+        com_util_condvar_wait(s_stop_cv, s_stop_lock, timeout_ms);
     }
-    requested = g_stop_requested;
-    com_util_local_lock_unlock(g_stop_lock);
+    requested = s_stop_requested;
+    com_util_local_lock_unlock(s_stop_lock);
     return requested;
 }
 
@@ -214,7 +214,7 @@ void svc_dispatch_reload(const svc_definition *def)
  *  いずれかが補足されると shutdown.h 経由でこの callback が呼ばれます。
  *  svc_request_stop() を呼んで on_run のメイン ループを停止させます。
  */
-static void svc_shutdown_request_callback(const com_util_shutdown_event *event, void *context)
+static void shutdown_request_callback(const com_util_shutdown_event *event, void *context)
 {
     (void)event;
     (void)context;
@@ -232,7 +232,7 @@ int svc_run_lifecycle(const svc_definition *def)
     int rc;
 
     com_util_console_init();
-    com_util_shutdown_request_register(svc_shutdown_request_callback, NULL);
+    com_util_shutdown_request_register(shutdown_request_callback, NULL);
 
     rc = EXIT_SUCCESS;
     if (def->on_start != NULL)
@@ -313,29 +313,29 @@ int main(int argc, char *argv[])
     int need_help = 0;
     const char *command = NULL;
 
-    com_util_argparser_init("サービスの登録、削除、起動を行います。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_register_positional_string("command", "install、uninstall、run、console のいずれか。",
+    com_util_argparser_default_init("サービスの登録、削除、起動を行います。");
+    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_default_register_positional_string("command", "install、uninstall、run、console のいずれか。",
                                                   COM_UTIL_ARGPARSER_REQUIRED, &command);
 
-    if (com_util_argparser_get_register_error_count() > 0)
+    if (com_util_argparser_default_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        com_util_argparser_default_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_default_parse(argc, argv);
 
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        com_util_argparser_default_print_usage(stdout);
         return EXIT_SUCCESS;
     }
 
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_error_messages(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -343,28 +343,28 @@ int main(int argc, char *argv[])
         strcmp(command, "console") != 0)
     {
         fprintf(stderr, "不明なコマンド '%s'\n\n", command);
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
     /* run コマンドのみサービス モード: SCM/systemd 起動のため stderr は無効化する */
     int is_service_mode = (strcmp(command, "run") == 0);
-    svc_tracer_open(&g_service_def, !is_service_mode); /* 失敗しても g_tracer=NULL で継続 */
+    tracer_open(&g_service_def, !is_service_mode); /* 失敗しても s_tracer=NULL で継続 */
 
     /* 停止イベント抽象の初期化 */
-    if (com_util_local_lock_create(&g_stop_lock) != COM_UTIL_OK)
+    if (com_util_local_lock_create(&s_stop_lock) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "ミューテックスの生成に失敗しました。");
-        svc_tracer_close();
+        tracer_close();
         return EXIT_FAILURE;
     }
-    if (com_util_condvar_create(&g_stop_cv) != COM_UTIL_OK)
+    if (com_util_condvar_create(&s_stop_cv) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "条件変数の生成に失敗しました。");
-        com_util_local_lock_destroy(g_stop_lock);
-        g_stop_lock = NULL;
-        svc_tracer_close();
+        com_util_local_lock_destroy(s_stop_lock);
+        s_stop_lock = NULL;
+        tracer_close();
         return EXIT_FAILURE;
     }
 
@@ -387,12 +387,12 @@ int main(int argc, char *argv[])
         rc = svc_run_lifecycle(&g_service_def);
     }
 
-    com_util_condvar_destroy(g_stop_cv);
-    g_stop_cv = NULL;
-    com_util_local_lock_destroy(g_stop_lock);
-    g_stop_lock = NULL;
+    com_util_condvar_destroy(s_stop_cv);
+    s_stop_cv = NULL;
+    com_util_local_lock_destroy(s_stop_lock);
+    s_stop_lock = NULL;
 
-    svc_tracer_close();
+    tracer_close();
 
     return rc;
 }

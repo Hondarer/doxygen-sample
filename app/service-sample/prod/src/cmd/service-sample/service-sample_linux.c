@@ -168,7 +168,7 @@ static int get_systemd_major_version(void)
 static int ensure_elevated_for_operation(const char *command, const char *operation_name, int *handled)
 {
     int exit_code;
-    int rc;
+    int ret;
 
     if (handled == NULL)
     {
@@ -176,8 +176,8 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
     }
 
     exit_code = EXIT_FAILURE;
-    rc = com_util_elevated_process_run_if_needed(command, &exit_code, handled);
-    if (rc != 0)
+    ret = com_util_elevated_process_run_if_needed(command, &exit_code, handled);
+    if (ret != 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                                "%s には root 権限 (sudo) が必要です。", operation_name);
@@ -246,8 +246,8 @@ void svc_os_notify_status(const char *text)
     {
         return;
     }
-    /* 長すぎる場合は切り詰めを許容する */
-    snprintf(message, sizeof(message), "STATUS=%s", text);
+    /* 長すぎる場合は切り詰めを許容する。com_util_snprintf は切り詰めで空文字にするため使わない。 */
+    snprintf(message, sizeof(message), "STATUS=%s", text); /* 置換対象外: 通知文の意図的な切り詰め */
     sd_notify_send(message);
 }
 
@@ -280,7 +280,6 @@ int svc_os_install(const svc_definition *def)
     char svc_name_buf[256];
     const char *managed_oom_preference_line;
     FILE *fp;
-    int written;
     /* execvp は char * を期待するため、const char * を持つローカル バッファーを使う */
     char *argv_daemon_reload[] = {"systemctl", "daemon-reload", NULL};
     char *argv_enable[4];
@@ -288,7 +287,12 @@ int svc_os_install(const svc_definition *def)
     int handled;
     int systemd_major_version;
 
-    snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
+    if (com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != COM_UTIL_OK)
+    {
+        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+                              "サービス名が長すぎます。");
+        return EXIT_FAILURE;
+    }
     argv_enable[0] = "systemctl";
     argv_enable[1] = "enable";
     argv_enable[2] = svc_name_buf;
@@ -327,8 +331,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* ユニット ファイルのパスを生成する */
-    written = snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
-    if (written < 0 || (size_t)written >= sizeof(unit_path))
+    if (com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルのパスが長すぎます。");
@@ -336,7 +339,7 @@ int svc_os_install(const svc_definition *def)
     }
 
     /* ユニット ファイルの内容を生成する */
-    written = snprintf(unit_content, sizeof(unit_content),
+    if (com_util_snprintf(unit_content, sizeof(unit_content),
                        "[Unit]\n"
                        "Description=%s\n"
                        "After=network.target\n"
@@ -353,8 +356,7 @@ int svc_os_install(const svc_definition *def)
                        "\n"
                        "[Install]\n"
                        "WantedBy=multi-user.target\n",
-                       def->description, exec_path, managed_oom_preference_line);
-    if (written < 0 || (size_t)written >= sizeof(unit_content))
+                       def->description, exec_path, managed_oom_preference_line) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルの内容が長すぎます。");
@@ -410,7 +412,6 @@ int svc_os_uninstall(const svc_definition *def)
 {
     char unit_path[512];
     char svc_name_buf[256];
-    int written;
     /* execvp は char * を期待するため、const char * を持つローカル バッファーを使う */
     char *argv_stop[4];
     char *argv_disable[4];
@@ -418,7 +419,12 @@ int svc_os_uninstall(const svc_definition *def)
     int rc;
     int handled;
 
-    snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name);
+    if (com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != COM_UTIL_OK)
+    {
+        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+                              "サービス名が長すぎます。");
+        return EXIT_FAILURE;
+    }
     argv_stop[0] = "systemctl";
     argv_stop[1] = "stop";
     argv_stop[2] = svc_name_buf;
@@ -434,8 +440,7 @@ int svc_os_uninstall(const svc_definition *def)
         return rc;
     }
 
-    written = snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name);
-    if (written < 0 || (size_t)written >= sizeof(unit_path))
+    if (com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルのパスが長すぎます。");

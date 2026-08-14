@@ -22,7 +22,8 @@ app/override-sample/prod/
 +-- include/
 |   +-- base/
 |   |   +-- base_export.h      # base の DLL エクスポートマクロ
-|   |   +-- base_spec.h        # base ヘッダー (sample_func, console_output 等の宣言)
+|   |   +-- base_const.h       # base の結果コード定数
+|   |   +-- base_spec.h        # base ヘッダー (sample_func, base_console_output 等の宣言)
 |   +-- override/
 |   |   +-- override_export.h  # override の DLL エクスポートマクロ
 |   |   +-- override_spec.h    # override ヘッダー (override_func の宣言)
@@ -31,7 +32,7 @@ app/override-sample/prod/
 |   |   +-- sym_loader_libbase.h  # sym_loader エントリの extern 宣言
 |   |   +-- sym_loader_libbase.c  # sym_loader エントリの実体定義
 |   |   +-- sample_func.c      # sample_func の実装 (sym_loader 経由でオーバーライドを呼び出す)
-|   |   +-- console_output.c   # console_output の実装 (printf ラッパー)
+|   |   +-- console_output.c   # base_console_output の実装 (printf ラッパー)
 |   |   +-- dllmain_libbase.c  # onLoad / onUnload の実装
 |   +-- override/
 |       +-- override_func.c    # override_func の実装 (libbase から dlopen で呼ばれる)
@@ -61,10 +62,10 @@ int WINAPI sample_func(const int a, const int b, int *result);
 - 設定ファイルで `override_func` が定義されているとき: `liboverride.so` / `liboverride.dll` を動的にロードし、`override_func` に処理を委譲します。
 - それ以外のとき: `*result = a + b` を計算して返す
 
-#### console_output
+#### base_console_output
 
 ```c
-void WINAPI console_output(const char *format, ...);
+void WINAPI base_console_output(const char *format, ...);
 ```
 
 `printf` と同じ書式でコンソールに出力する関数です。  

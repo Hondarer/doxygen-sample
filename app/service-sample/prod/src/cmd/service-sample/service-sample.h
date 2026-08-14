@@ -220,6 +220,10 @@ extern "C"
      *  on_run() の周期処理ループでこの関数を使うことで、
      *  停止要求を受け取ったときにメイン ループを正常に抜けられます。
      *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフです。\n
+     *  内部の停止フラグと条件変数をロックで保護します。
+     *
      *  @par            使用例
         @code{.c}
         static int on_run(void *user_data)
@@ -238,6 +242,10 @@ extern "C"
     /**
      *  @brief          停止要求が届いているかを即時判定します。
      *  @return         停止要求済みの場合は 1、そうでない場合は 0 を返します。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフです。\n
+     *  内部の停止フラグをロックで保護します。
      */
     int svc_stop_requested(void);
 
@@ -247,6 +255,10 @@ extern "C"
      *  SIGTERM / SIGINT (Linux console)、SetConsoleCtrlHandler (Windows console)、
      *  ServiceCtrlHandler (Windows SCM) の 3 経路すべてが最終的にこの関数を呼びます。\n
      *  複数回呼んでも安全 (べき等) です。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフです。\n
+     *  内部の停止フラグと条件変数をロックで保護します。
      */
     void svc_request_stop(void);
 
@@ -262,6 +274,10 @@ extern "C"
      *  - Linux  : sd_notify の "STATUS=" として送信し、systemctl status に表示されます。\n
      *             NOTIFY_SOCKET が設定されていない場合は何もしません。\n
      *  - Windows: SCM に等価な機能がないため、トレース出力のみ行います。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。\n
+     *  同一プロセスからの並行呼び出しを呼び出し側で防止してください。
      */
     void svc_set_status_text(const char *text);
 
@@ -277,6 +293,9 @@ extern "C"
      *  - Linux  : /etc/systemd/system/{name}.service を生成し、systemctl enable を実行します。\n
      *             root 権限が必要です。\n
      *  - Windows: SCM に CreateService で登録します。管理者権限が必要です。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
      */
     int svc_os_install(const svc_definition *def);
 
@@ -289,6 +308,9 @@ extern "C"
      *             root 権限が必要です。\n
      *  - Windows: 動作中のサービスを停止してから DeleteService で削除します。\n
      *             管理者権限が必要です。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
      */
     int svc_os_uninstall(const svc_definition *def);
 
@@ -302,6 +324,9 @@ extern "C"
      *             常駐の前後でイベント監視スレッド (電源・セッション イベント、
      *             SIGHUP、watchdog 応答) を起動・停止します。\n
      *  - Windows: StartServiceCtrlDispatcher でサービス ディスパッチャーに接続します。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
      */
     int svc_os_run_service(const svc_definition *def);
 
@@ -396,6 +421,10 @@ extern "C"
      *  各プラットフォーム ファイル (svc_os_install / svc_os_uninstall 等) が
      *  診断トレースを出力するために使用します。\n
      *  NULL を tracer 出力マクロに渡しても安全 (出力されないだけ) です。
+     *
+     *  @par            スレッド セーフ
+     *  本関数は条件付きスレッド セーフです。\n
+     *  起動完了後の参照は安全です。生成と破棄は main スレッドのみが行います。
      */
     com_util_tracer *svc_get_tracer(void);
 

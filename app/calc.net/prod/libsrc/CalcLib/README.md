@@ -127,7 +127,7 @@ var divResult = CalcLibrary.Divide(20, 5);    // 4
 
 - `bool IsSuccess` - 操作が成功したかどうかを示します。
 - `int Value` - 計算結果 (`IsSuccess` が true の場合のみ有効)
-- `int ErrorCode` - エラー コード (0 = 成功、-1 = エラー)
+- `int ErrorCode` - エラー コード (0 = CALC_OK、-1 = CALC_ERR_UNKNOWN、-2 = CALC_ERR_INVALID_ARGUMENT)
 
 ### CalcException クラス
 
@@ -142,12 +142,13 @@ var divResult = CalcLibrary.Divide(20, 5);    // 4
 
 ネイティブ calc ライブラリは以下のエラー コードを返します。
 
-- `0` (CALC_SUCCESS) - 操作成功
-- `-1` (CALC_ERROR) - 操作失敗
+- `0` (CALC_OK) - 操作成功
+- `-1` (CALC_ERR_UNKNOWN) - 操作失敗
+- `-2` (CALC_ERR_INVALID_ARGUMENT) - 引数が不正
 
 一般的な失敗シナリオ:
 
-- **ゼロ除算** - 任意の数をゼロで除算
+- **ゼロ除算** - 任意の数をゼロで除算 (`CALC_ERR_INVALID_ARGUMENT`)
 - **無効な操作種別** - サポートされていない操作を使用 (列挙型を使用している場合は発生しない)
 
 ## プラットフォーム固有の注意事項

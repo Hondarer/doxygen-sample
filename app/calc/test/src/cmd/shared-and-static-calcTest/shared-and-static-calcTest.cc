@@ -12,8 +12,8 @@ class shared_and_static_addTest : public Test
         // (あらかじめ、mock にトレース対応処理を記述しておく必要がある。
         //  トレース対応処理の実装も手間なので、ポイントになりそうな関数でのみサポートするとよい)
         resetTraceLevel();
-        setTraceLevel("calcHandler", TRACE_DETAIL);
-        setTraceLevel("add", TRACE_DETAIL);
+        setTraceLevel("calc_handler", TRACE_DETAIL);
+        setTraceLevel("calcbase_add", TRACE_DETAIL);
     }
 };
 
@@ -45,22 +45,22 @@ TEST_F(shared_and_static_addTest, normal)
                           "2"}; // [状態] - main() に与える引数を、"1", "+", "2" とする。
 
     // Pre-Assert
-    EXPECT_CALL(mock_calc, calcHandler(CALC_KIND_ADD, 1, 2, _))
+    EXPECT_CALL(mock_calc, calc_handler(CALC_KIND_ADD, 1, 2, _))
         .WillOnce(
             [](int, int, int, int *result)
             {
                 *result = 3;
-                return CALC_SUCCESS;
-            }); // [Pre-Assert確認_正常系] - calcHandler(CALC_KIND_ADD, 1, 2, &result) が 1 回呼び出されること。
-    // [Pre-Assert手順] - calcHandler(CALC_KIND_ADD, 1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
-    EXPECT_CALL(mock_calcbase, add(1, 2, _))
+                return CALC_OK;
+            }); // [Pre-Assert確認_正常系] - calc_handler(CALC_KIND_ADD, 1, 2, &result) が 1 回呼び出されること。
+    // [Pre-Assert手順] - calc_handler(CALC_KIND_ADD, 1, 2, &result) にて result に 3 を設定し、CALC_OK を返す。
+    EXPECT_CALL(mock_calcbase, calcbase_add(1, 2, _))
         .WillOnce(
             [](int, int, int *result)
             {
                 *result = 3;
-                return CALC_SUCCESS;
-            }); // [Pre-Assert確認_正常系] - add(1, 2, &result) が 1 回呼び出されること。
-                // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
+                return CALC_OK;
+            }); // [Pre-Assert確認_正常系] - calcbase_add(1, 2, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - calcbase_add(1, 2, &result) にて result に 3 を設定し、CALC_OK を返す。
     EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("result_shared: 3\n")))
         .WillOnce(
             DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "result_shared: 3\n" であること。

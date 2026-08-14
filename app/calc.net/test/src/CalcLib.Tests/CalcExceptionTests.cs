@@ -56,11 +56,12 @@ namespace CalcLib.Tests
             var exception = Assert.Throws<CalcException>(() => // [手順] - CalcLibrary.CalculateOrThrow(CalcKind.Divide, 100, 0) を呼び出す (ゼロ除算)。
                 CalcLibrary.CalculateOrThrow(CalcKind.Divide, 100, 0)); // [確認] - CalcException が発生すること。
 
-            Assert.Equal(-1, exception.ErrorCode); // [確認] - 例外のエラー コードが -1 であること。
+            Assert.Equal(CalcLibrary.CALC_ERR_INVALID_ARGUMENT,
+                         exception.ErrorCode); // [確認] - 例外のエラー コードが CALC_ERR_INVALID_ARGUMENT であること。
             Assert.Contains("kind=Divide", exception.Message); // [確認] - メッセージに "kind=Divide" が含まれること。
             Assert.Contains("a=100", exception.Message); // [確認] - メッセージに "a=100" が含まれること。
             Assert.Contains("b=0", exception.Message); // [確認] - メッセージに "b=0" が含まれること。
-            Assert.Contains("errorCode=-1", exception.Message); // [確認] - メッセージに "errorCode=-1" が含まれること。
+            Assert.Contains("errorCode=-2", exception.Message); // [確認] - メッセージに "errorCode=-2" が含まれること。
         }
 
         [Fact]
@@ -93,7 +94,8 @@ namespace CalcLib.Tests
             catch (CalcException ex)
             {
                 caughtAsCalcException = true;
-                Assert.Equal(-1, ex.ErrorCode); // [確認] - エラー コードが -1 であること。
+                Assert.Equal(CalcLibrary.CALC_ERR_INVALID_ARGUMENT,
+                             ex.ErrorCode); // [確認] - エラー コードが CALC_ERR_INVALID_ARGUMENT であること。
             }
 
             Assert.True(caughtAsCalcException); // [確認] - CalcException としてキャッチできたこと。

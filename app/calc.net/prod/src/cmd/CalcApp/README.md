@@ -83,7 +83,7 @@ CalcApp <num1> <operator> <num2>
 
 # エラー ケース - ゼロ除算
 ./CalcApp 10 / 0
-# 出力: Error: calcHandler failed
+# 出力: Error: calc_handler failed
 # 終了コード: 1
 ```
 

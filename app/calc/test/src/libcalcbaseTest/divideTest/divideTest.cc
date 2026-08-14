@@ -6,79 +6,84 @@ class divideTest : public Test
 {
 };
 
-// divide(20, 4) が 5 を返すことの確認
+// calcbase_divide(20, 4) が 5 を返すことの確認
 TEST_F(divideTest, test_20_divide_4)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = divide(20, 4, &result); // [手順] - divide(20, 4, &result) を呼び出す。
+    ret = calcbase_divide(20, 4, &result); // [手順] - calcbase_divide(20, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(5, result);         // [確認_正常系] - divide が result に 5 を設定すること。
+    EXPECT_EQ(CALC_OK, ret); // [確認_正常系] - calcbase_divide の戻り値が CALC_OK であること。
+    EXPECT_EQ(5, result);         // [確認_正常系] - calcbase_divide が result に 5 を設定すること。
 }
 
-// divide(10, 3) が整数除算の 3 を返すことの確認
+// calcbase_divide(10, 3) が整数除算の 3 を返すことの確認
 TEST_F(divideTest, test_10_divide_3)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = divide(10, 3, &result); // [手順] - divide(10, 3, &result) を呼び出す。
+    ret = calcbase_divide(10, 3, &result); // [手順] - calcbase_divide(10, 3, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(3, result);         // [確認_正常系] - divide が整数除算の結果として result に 3 を設定すること。
+    EXPECT_EQ(CALC_OK, ret); // [確認_正常系] - calcbase_divide の戻り値が CALC_OK であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - calcbase_divide が整数除算の結果として result に 3 を設定すること。
 }
 
-// ゼロ除算時に divide が CALC_ERROR を返すことの確認
+// ゼロ除算時に calcbase_divide が CALC_ERR_INVALID_ARGUMENT を返すことの確認
 TEST_F(divideTest, test_divide_by_zero)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = divide(10, 0, &result); // [手順] - divide(10, 0, &result) **ゼロ除算** を呼び出す。
+    ret = calcbase_divide(10, 0, &result); // [手順] - calcbase_divide(10, 0, &result) **ゼロ除算** を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - divide の戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERR_INVALID_ARGUMENT, ret); // [確認_異常系] - calcbase_divide の戻り値が CALC_ERR_INVALID_ARGUMENT であること。
 }
 
-// divide(-12, 4) が -3 を返すことの確認
+// calcbase_divide(-12, 4) が -3 を返すことの確認
 TEST_F(divideTest, test_negative_divide)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = divide(-12, 4, &result); // [手順] - divide(-12, 4, &result) を呼び出す。
+    ret = calcbase_divide(-12, 4, &result); // [手順] - calcbase_divide(-12, 4, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - divide の戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(-3, result);        // [確認_正常系] - divide が result に -3 を設定すること。
+    EXPECT_EQ(CALC_OK, ret); // [確認_正常系] - calcbase_divide の戻り値が CALC_OK であること。
+    EXPECT_EQ(-3, result);        // [確認_正常系] - calcbase_divide が result に -3 を設定すること。
 }
 
-// result が NULL のとき divide が CALC_ERROR を返すことの確認
+// result が NULL のとき calcbase_divide が CALC_ERR_INVALID_ARGUMENT を返すことの確認
 TEST_F(divideTest, test_null_result)
 {
     // Arrange
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = divide(20, 4, NULL); // [手順] - divide(20, 4, NULL) を呼び出す。
+    ret = calcbase_divide(20, 4, NULL); // [手順] - calcbase_divide(20, 4, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - divide の戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERR_INVALID_ARGUMENT, ret); // [確認_異常系] - calcbase_divide の戻り値が CALC_ERR_INVALID_ARGUMENT であること。
 }

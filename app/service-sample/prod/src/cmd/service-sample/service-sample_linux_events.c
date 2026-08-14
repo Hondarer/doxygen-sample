@@ -81,12 +81,12 @@ typedef struct svc_linux_events_ctx
 } svc_linux_events_ctx;
 
 /** イベント監視スレッドの内部状態 (プロセスで 1 つ)。 */
-static svc_linux_events_ctx g_ctx = {NULL, NULL, NULL, NULL, -1, -1, -1, -1};
+static svc_linux_events_ctx s_ctx = {NULL, NULL, NULL, NULL, -1, -1, -1, -1};
 
 /** SIGHUP ハンドラー設定前のアクション (svc_linux_events_stop() で復元する)。 */
-static struct sigaction g_old_sighup_action;
+static struct sigaction s_old_sighup_action;
 /** SIGHUP ハンドラーを設定済みかどうか。1 = 設定済み。 */
-static int g_sighup_installed = 0;
+static int s_sighup_installed = 0;
 
 /* ============================================================
  *  SIGHUP ハンドラー (self-pipe)
@@ -104,10 +104,10 @@ static void sighup_signal_handler(int signum)
     ssize_t written;
 
     (void)signum;
-    if (g_ctx.reload_fd >= 0)
+    if (s_ctx.reload_fd >= 0)
     {
         value = 1;
-        written = write(g_ctx.reload_fd, &value, sizeof(value));
+        written = write(s_ctx.reload_fd, &value, sizeof(value));
         (void)written;
     }
 }
@@ -134,8 +134,8 @@ static int acquire_inhibit_lock(const char *what)
     int rc;
 
     lock_fd = -1;
-    rc = sd_bus_call_method(g_ctx.bus, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "Inhibit", &error, &reply,
-                            "ssss", what, g_ctx.def->name, "イベント コールバックの実行猶予を確保するため", "delay");
+    rc = sd_bus_call_method(s_ctx.bus, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "Inhibit", &error, &reply,
+                            "ssss", what, s_ctx.def->name, "イベント コールバックの実行猶予を確保するため", "delay");
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
@@ -170,15 +170,15 @@ static int acquire_inhibit_lock(const char *what)
  */
 static void release_inhibit_locks(void)
 {
-    if (g_ctx.inhibit_sleep_fd >= 0)
+    if (s_ctx.inhibit_sleep_fd >= 0)
     {
-        com_util_close(g_ctx.inhibit_sleep_fd, NULL);
-        g_ctx.inhibit_sleep_fd = -1;
+        com_util_close(s_ctx.inhibit_sleep_fd, NULL);
+        s_ctx.inhibit_sleep_fd = -1;
     }
-    if (g_ctx.inhibit_shutdown_fd >= 0)
+    if (s_ctx.inhibit_shutdown_fd >= 0)
     {
-        com_util_close(g_ctx.inhibit_shutdown_fd, NULL);
-        g_ctx.inhibit_shutdown_fd = -1;
+        com_util_close(s_ctx.inhibit_shutdown_fd, NULL);
+        s_ctx.inhibit_shutdown_fd = -1;
     }
 }
 
@@ -213,20 +213,20 @@ static int on_prepare_for_sleep(sd_bus_message *m, void *userdata, sd_bus_error 
     if (starting != 0)
     {
         info.type = SVC_EVENT_POWER_SUSPEND;
-        svc_dispatch_event(g_ctx.def, &info);
+        svc_dispatch_event(s_ctx.def, &info);
         /* lock を解放してサスペンドを許可する */
-        if (g_ctx.inhibit_sleep_fd >= 0)
+        if (s_ctx.inhibit_sleep_fd >= 0)
         {
-            com_util_close(g_ctx.inhibit_sleep_fd, NULL);
-            g_ctx.inhibit_sleep_fd = -1;
+            com_util_close(s_ctx.inhibit_sleep_fd, NULL);
+            s_ctx.inhibit_sleep_fd = -1;
         }
     }
     else
     {
         info.type = SVC_EVENT_POWER_RESUME;
-        svc_dispatch_event(g_ctx.def, &info);
+        svc_dispatch_event(s_ctx.def, &info);
         /* 次のサスペンドに備えて lock を再取得する */
-        g_ctx.inhibit_sleep_fd = acquire_inhibit_lock("sleep");
+        s_ctx.inhibit_sleep_fd = acquire_inhibit_lock("sleep");
     }
     return 0;
 }
@@ -259,20 +259,20 @@ static int on_prepare_for_shutdown(sd_bus_message *m, void *userdata, sd_bus_err
     {
         info.type = SVC_EVENT_PRESHUTDOWN;
         info.session_id = NULL;
-        svc_dispatch_event(g_ctx.def, &info);
+        svc_dispatch_event(s_ctx.def, &info);
         /* lock を解放してシャットダウンを許可する */
-        if (g_ctx.inhibit_shutdown_fd >= 0)
+        if (s_ctx.inhibit_shutdown_fd >= 0)
         {
-            com_util_close(g_ctx.inhibit_shutdown_fd, NULL);
-            g_ctx.inhibit_shutdown_fd = -1;
+            com_util_close(s_ctx.inhibit_shutdown_fd, NULL);
+            s_ctx.inhibit_shutdown_fd = -1;
         }
     }
     else
     {
         /* シャットダウンが取り消された場合に備えて lock を再取得する */
-        if (g_ctx.inhibit_shutdown_fd < 0)
+        if (s_ctx.inhibit_shutdown_fd < 0)
         {
-            g_ctx.inhibit_shutdown_fd = acquire_inhibit_lock("shutdown");
+            s_ctx.inhibit_shutdown_fd = acquire_inhibit_lock("shutdown");
         }
     }
     return 0;
@@ -297,7 +297,7 @@ static int dispatch_session_signal(sd_bus_message *m, const svc_event_type type)
 
     info.type = type;
     info.session_id = session_id;
-    svc_dispatch_event(g_ctx.def, &info);
+    svc_dispatch_event(s_ctx.def, &info);
     return 0;
 }
 
@@ -374,7 +374,7 @@ static int on_reload_requested(sd_event_source *source, int fd, uint32_t revents
 
     bytes = read(fd, &value, sizeof(value));
     (void)bytes;
-    svc_dispatch_reload(g_ctx.def);
+    svc_dispatch_reload(s_ctx.def);
     return 0;
 }
 
@@ -392,38 +392,38 @@ static void setup_bus_monitoring(void)
 {
     int rc;
 
-    rc = sd_bus_open_system(&g_ctx.bus);
+    rc = sd_bus_open_system(&s_ctx.bus);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "D-Bus (system bus) に接続できないため電源・セッション イベントは無効です: %s",
                                strerror(-rc));
-        g_ctx.bus = NULL;
+        s_ctx.bus = NULL;
         return;
     }
 
-    rc = sd_bus_match_signal(g_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "PrepareForSleep",
+    rc = sd_bus_match_signal(s_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "PrepareForSleep",
                              on_prepare_for_sleep, NULL);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "PrepareForSleep の購読に失敗しました: %s", strerror(-rc));
     }
-    rc = sd_bus_match_signal(g_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "PrepareForShutdown",
+    rc = sd_bus_match_signal(s_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "PrepareForShutdown",
                              on_prepare_for_shutdown, NULL);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "PrepareForShutdown の購読に失敗しました: %s", strerror(-rc));
     }
-    rc = sd_bus_match_signal(g_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "SessionNew",
+    rc = sd_bus_match_signal(s_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "SessionNew",
                              on_session_new, NULL);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "SessionNew の購読に失敗しました: %s", strerror(-rc));
     }
-    rc = sd_bus_match_signal(g_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "SessionRemoved",
+    rc = sd_bus_match_signal(s_ctx.bus, NULL, LOGIND_SERVICE, LOGIND_OBJECT, LOGIND_INTERFACE, "SessionRemoved",
                              on_session_removed, NULL);
     if (rc < 0)
     {
@@ -432,18 +432,18 @@ static void setup_bus_monitoring(void)
     }
 
     /* イベント発生時にコールバックを実行する猶予を確保するための delay lock */
-    g_ctx.inhibit_sleep_fd = acquire_inhibit_lock("sleep");
-    g_ctx.inhibit_shutdown_fd = acquire_inhibit_lock("shutdown");
+    s_ctx.inhibit_sleep_fd = acquire_inhibit_lock("sleep");
+    s_ctx.inhibit_shutdown_fd = acquire_inhibit_lock("shutdown");
 
-    rc = sd_bus_attach_event(g_ctx.bus, g_ctx.event, SD_EVENT_PRIORITY_NORMAL);
+    rc = sd_bus_attach_event(s_ctx.bus, s_ctx.event, SD_EVENT_PRIORITY_NORMAL);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "D-Bus をイベント ループに接続できないため電源・セッション イベントは無効です: %s",
                                strerror(-rc));
         release_inhibit_locks();
-        sd_bus_flush_close_unref(g_ctx.bus);
-        g_ctx.bus = NULL;
+        sd_bus_flush_close_unref(s_ctx.bus);
+        s_ctx.bus = NULL;
     }
 }
 
@@ -463,7 +463,7 @@ static void events_thread_func(void *arg)
 
     (void)arg;
 
-    rc = sd_event_new(&g_ctx.event);
+    rc = sd_event_new(&s_ctx.event);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
@@ -472,14 +472,14 @@ static void events_thread_func(void *arg)
     }
 
     /* WATCHDOG_USEC が設定されている場合のみ有効になる (未設定なら何もしない) */
-    rc = sd_event_set_watchdog(g_ctx.event, 1);
+    rc = sd_event_set_watchdog(s_ctx.event, 1);
     if (rc < 0)
     {
         com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                "watchdog 応答の設定に失敗しました: %s", strerror(-rc));
     }
 
-    rc = sd_event_add_io(g_ctx.event, NULL, g_ctx.stop_fd, EPOLLIN, on_stop_requested, NULL);
+    rc = sd_event_add_io(s_ctx.event, NULL, s_ctx.stop_fd, EPOLLIN, on_stop_requested, NULL);
     if (rc < 0)
     {
         /* 停止指示を監視できないとスレッドを終了させられないため、ループに入らない */
@@ -488,9 +488,9 @@ static void events_thread_func(void *arg)
     }
     else
     {
-        if (g_ctx.reload_fd >= 0)
+        if (s_ctx.reload_fd >= 0)
         {
-            rc = sd_event_add_io(g_ctx.event, NULL, g_ctx.reload_fd, EPOLLIN, on_reload_requested, NULL);
+            rc = sd_event_add_io(s_ctx.event, NULL, s_ctx.reload_fd, EPOLLIN, on_reload_requested, NULL);
             if (rc < 0)
             {
                 com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
@@ -498,12 +498,12 @@ static void events_thread_func(void *arg)
             }
         }
 
-        if (g_ctx.def->on_event != NULL)
+        if (s_ctx.def->on_event != NULL)
         {
             setup_bus_monitoring();
         }
 
-        rc = sd_event_loop(g_ctx.event);
+        rc = sd_event_loop(s_ctx.event);
         if (rc < 0)
         {
             com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
@@ -512,13 +512,13 @@ static void events_thread_func(void *arg)
     }
 
     release_inhibit_locks();
-    if (g_ctx.bus != NULL)
+    if (s_ctx.bus != NULL)
     {
-        sd_bus_flush_close_unref(g_ctx.bus);
-        g_ctx.bus = NULL;
+        sd_bus_flush_close_unref(s_ctx.bus);
+        s_ctx.bus = NULL;
     }
-    sd_event_unref(g_ctx.event);
-    g_ctx.event = NULL;
+    sd_event_unref(s_ctx.event);
+    s_ctx.event = NULL;
 }
 
 /* ============================================================
@@ -533,22 +533,22 @@ static void events_thread_func(void *arg)
  */
 static void release_local_resources(void)
 {
-    if (g_sighup_installed != 0)
+    if (s_sighup_installed != 0)
     {
-        sigaction(SIGHUP, &g_old_sighup_action, NULL);
-        g_sighup_installed = 0;
+        sigaction(SIGHUP, &s_old_sighup_action, NULL);
+        s_sighup_installed = 0;
     }
-    if (g_ctx.reload_fd >= 0)
+    if (s_ctx.reload_fd >= 0)
     {
-        com_util_close(g_ctx.reload_fd, NULL);
-        g_ctx.reload_fd = -1;
+        com_util_close(s_ctx.reload_fd, NULL);
+        s_ctx.reload_fd = -1;
     }
-    if (g_ctx.stop_fd >= 0)
+    if (s_ctx.stop_fd >= 0)
     {
-        com_util_close(g_ctx.stop_fd, NULL);
-        g_ctx.stop_fd = -1;
+        com_util_close(s_ctx.stop_fd, NULL);
+        s_ctx.stop_fd = -1;
     }
-    g_ctx.def = NULL;
+    s_ctx.def = NULL;
 }
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -562,16 +562,16 @@ int svc_linux_events_start(const svc_definition *def)
     {
         return -1;
     }
-    if (g_ctx.thread != NULL)
+    if (s_ctx.thread != NULL)
     {
         /* すでに起動済み */
         return 0;
     }
 
-    g_ctx.def = def;
+    s_ctx.def = def;
 
-    g_ctx.stop_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-    if (g_ctx.stop_fd < 0)
+    s_ctx.stop_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+    if (s_ctx.stop_fd < 0)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                               "停止指示用 eventfd の生成に失敗したため OS イベント監視は無効です。");
@@ -581,8 +581,8 @@ int svc_linux_events_start(const svc_definition *def)
 
     if (def->on_reload != NULL)
     {
-        g_ctx.reload_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-        if (g_ctx.reload_fd < 0)
+        s_ctx.reload_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+        if (s_ctx.reload_fd < 0)
         {
             com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                   "reload 用 eventfd の生成に失敗したため設定再読込は無効です。");
@@ -593,26 +593,26 @@ int svc_linux_events_start(const svc_definition *def)
             action.sa_handler = sighup_signal_handler;
             sigemptyset(&action.sa_mask);
             action.sa_flags = SA_RESTART;
-            if (sigaction(SIGHUP, &action, &g_old_sighup_action) != 0)
+            if (sigaction(SIGHUP, &action, &s_old_sighup_action) != 0)
             {
                 com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                       "SIGHUP ハンドラーの設定に失敗したため設定再読込は無効です。");
-                com_util_close(g_ctx.reload_fd, NULL);
-                g_ctx.reload_fd = -1;
+                com_util_close(s_ctx.reload_fd, NULL);
+                s_ctx.reload_fd = -1;
             }
             else
             {
-                g_sighup_installed = 1;
+                s_sighup_installed = 1;
             }
         }
     }
 
-    result = com_util_thread_create(&g_ctx.thread, events_thread_func, NULL);
+    result = com_util_thread_create(&s_ctx.thread, events_thread_func, NULL);
     if (result != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                               "イベント監視スレッドの起動に失敗したため OS イベント監視は無効です。");
-        g_ctx.thread = NULL;
+        s_ctx.thread = NULL;
         release_local_resources();
         return -1;
     }
@@ -626,20 +626,20 @@ void svc_linux_events_stop(void)
     uint64_t value;
     ssize_t written;
 
-    if (g_ctx.thread != NULL)
+    if (s_ctx.thread != NULL)
     {
         value = 1;
-        written = write(g_ctx.stop_fd, &value, sizeof(value));
+        written = write(s_ctx.stop_fd, &value, sizeof(value));
         (void)written;
 
-        result = com_util_thread_join(g_ctx.thread, SVC_EVENTS_JOIN_TIMEOUT_MS);
+        result = com_util_thread_join(s_ctx.thread, SVC_EVENTS_JOIN_TIMEOUT_MS);
         if (result != COM_UTIL_OK)
         {
             com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
                                   "イベント監視スレッドが時間内に終了しないため切り離します。");
-            com_util_thread_detach(g_ctx.thread);
+            com_util_thread_detach(s_ctx.thread);
         }
-        g_ctx.thread = NULL;
+        s_ctx.thread = NULL;
     }
 
     release_local_resources();

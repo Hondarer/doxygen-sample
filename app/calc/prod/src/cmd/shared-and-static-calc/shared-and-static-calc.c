@@ -7,7 +7,7 @@
  *  @version        1.0.0
  *
  *  コマンド ライン引数から 2 つの整数を受け取り、
- *  calc 関数、add, subtract, multiply, divide 関数を使用して
+ *  calc 関数、calcbase_add, calcbase_subtract, calcbase_multiply, calcbase_divide 関数を使用して
  *  加算結果を標準出力に出力します。
  *
  *  @copyright      Copyright (C) CompanyName, Ltd. 2025. All rights reserved.
@@ -31,7 +31,7 @@
  *  使用例:
  *
     @code{.c}
-    ./add 10 + 20
+    ./calcbase_add 10 + 20
     // 出力: 30
     @endcode
  *
@@ -45,34 +45,34 @@ int main(int argc, char *argv[])
     int arg1 = 0;
     int arg3 = 0;
     const char *operator_value = NULL;
-    com_util_argparser_init("動的リンクと静的リンクの計算結果を比較します。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
-    com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
+    com_util_argparser_default_init("動的リンクと静的リンクの計算結果を比較します。");
+    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_default_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
+    com_util_argparser_default_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
                                                   &operator_value);
-    com_util_argparser_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
-    if (com_util_argparser_get_register_error_count() > 0)
+    com_util_argparser_default_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
+    if (com_util_argparser_default_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        com_util_argparser_default_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_default_parse(argc, argv);
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        com_util_argparser_default_print_usage(stdout);
         return EXIT_SUCCESS;
     }
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_error_messages(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
     if (operator_value[0] == 0x00 || operator_value[1] != 0x00)
     {
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -81,17 +81,17 @@ int main(int argc, char *argv[])
     case '+':
     {
         int result_shared;
-        if (calcHandler(CALC_KIND_ADD, arg1, arg3, &result_shared) != 0)
+        if (calc_handler(CALC_KIND_ADD, arg1, arg3, &result_shared) != CALC_OK)
         {
-            fprintf(stderr, "Error: calcHandler failed\n");
+            fprintf(stderr, "Error: calc_handler failed\n");
             return EXIT_FAILURE;
         }
         printf("result_shared: %d\n", result_shared);
 
         int result_static;
-        if (add(arg1, arg3, &result_static) != 0)
+        if (calcbase_add(arg1, arg3, &result_static) != CALC_OK)
         {
-            fprintf(stderr, "Error: add failed\n");
+            fprintf(stderr, "Error: calcbase_add failed\n");
             return EXIT_FAILURE;
         }
         printf("result_static: %d\n", result_static);
@@ -101,17 +101,17 @@ int main(int argc, char *argv[])
     case '-':
     {
         int result_shared;
-        if (calcHandler(CALC_KIND_SUBTRACT, arg1, arg3, &result_shared) != 0)
+        if (calc_handler(CALC_KIND_SUBTRACT, arg1, arg3, &result_shared) != CALC_OK)
         {
-            fprintf(stderr, "Error: calcHandler failed\n");
+            fprintf(stderr, "Error: calc_handler failed\n");
             return EXIT_FAILURE;
         }
         printf("result_shared: %d\n", result_shared);
 
         int result_static;
-        if (subtract(arg1, arg3, &result_static) != 0)
+        if (calcbase_subtract(arg1, arg3, &result_static) != CALC_OK)
         {
-            fprintf(stderr, "Error: subtract failed\n");
+            fprintf(stderr, "Error: calcbase_subtract failed\n");
             return EXIT_FAILURE;
         }
         printf("result_static: %d\n", result_static);
@@ -121,17 +121,17 @@ int main(int argc, char *argv[])
     case 'x':
     {
         int result_shared;
-        if (calcHandler(CALC_KIND_MULTIPLY, arg1, arg3, &result_shared) != 0)
+        if (calc_handler(CALC_KIND_MULTIPLY, arg1, arg3, &result_shared) != CALC_OK)
         {
-            fprintf(stderr, "Error: calcHandler failed\n");
+            fprintf(stderr, "Error: calc_handler failed\n");
             return EXIT_FAILURE;
         }
         printf("result_shared: %d\n", result_shared);
 
         int result_static;
-        if (multiply(arg1, arg3, &result_static) != 0)
+        if (calcbase_multiply(arg1, arg3, &result_static) != CALC_OK)
         {
-            fprintf(stderr, "Error: multiply failed\n");
+            fprintf(stderr, "Error: calcbase_multiply failed\n");
             return EXIT_FAILURE;
         }
         printf("result_static: %d\n", result_static);
@@ -141,17 +141,17 @@ int main(int argc, char *argv[])
     case '/':
     {
         int result_shared;
-        if (calcHandler(CALC_KIND_DIVIDE, arg1, arg3, &result_shared) != 0)
+        if (calc_handler(CALC_KIND_DIVIDE, arg1, arg3, &result_shared) != CALC_OK)
         {
-            fprintf(stderr, "Error: calcHandler failed\n");
+            fprintf(stderr, "Error: calc_handler failed\n");
             return EXIT_FAILURE;
         }
         printf("result_shared: %d\n", result_shared);
 
         int result_static;
-        if (divide(arg1, arg3, &result_static) != 0)
+        if (calcbase_divide(arg1, arg3, &result_static) != CALC_OK)
         {
-            fprintf(stderr, "Error: divide failed\n");
+            fprintf(stderr, "Error: calcbase_divide failed\n");
             return EXIT_FAILURE;
         }
         printf("result_static: %d\n", result_static);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     }
     default:
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 

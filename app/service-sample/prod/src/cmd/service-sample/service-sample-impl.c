@@ -63,7 +63,7 @@ static int on_run(void *user_data)
 
         /* 状態テキストの通知例 (Linux では systemctl status に表示される) */
         cycle_count++;
-        snprintf(status_text, sizeof(status_text), "動作中 (周期処理 %lu 回目)", cycle_count);
+        (void)com_util_snprintf(status_text, sizeof(status_text), "動作中 (周期処理 %lu 回目)", cycle_count);
         svc_set_status_text(status_text);
     }
     com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "サービス処理 終了");

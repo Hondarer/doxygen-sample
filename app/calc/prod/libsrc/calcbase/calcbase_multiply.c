@@ -1,7 +1,7 @@
 /**
  *******************************************************************************
- *  @file           libsrc/calcbase/multiply.c
- *  @brief          2 つの整数を乗算する multiply 関数を提供します。
+ *  @file           libsrc/calcbase/calcbase_multiply.c
+ *  @brief          2 つの整数を乗算する calcbase_multiply 関数を提供します。
  *  @author         c-modenization-kit sample team
  *  @date           2025/11/22
  *  @version        1.0.0
@@ -16,12 +16,12 @@
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-int multiply(const int a, const int b, int *result)
+int calcbase_multiply(const int a, const int b, int *result)
 {
     if (result == NULL)
     {
-        return CALC_ERROR;
+        return CALC_ERR_INVALID_ARGUMENT;
     }
     *result = a * b;
-    return CALC_SUCCESS;
+    return CALC_OK;
 }

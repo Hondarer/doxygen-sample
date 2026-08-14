@@ -15,6 +15,7 @@
  */
 
 #include "sym_loader_libbase.h"
+#include <com_util/base/result.h>
 #include <stdio.h>
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -25,12 +26,12 @@ char sym_loader_configpath[SYM_LOADER_CONFIG_PATH_MAX] = {0};
 /* --- 対応関数を追加した場合、以下に追加が必要です。                         --- */
 
 /** sample_func 用の sym_loader エントリ実体。 */
-static com_util_sym_loader_entry sfo_sample_func = COM_UTIL_SYM_LOADER_ENTRY_INIT("sample_func", sample_func_t);
+static com_util_sym_loader_entry sfo_sample_func = COM_UTIL_SYM_LOADER_ENTRY_INIT("sample_func", sample_func_fn);
 /* Doxygen コメントは、ヘッダーに記載 */
 
 com_util_sym_loader_entry *const pfo_sample_func = &sfo_sample_func;
 
-/* static com_util_sym_loader_entry sfo_func_name = COM_UTIL_SYM_LOADER_ENTRY_INIT("func_name", func_name_t); */ /* 将来追加 */
+/* static com_util_sym_loader_entry sfo_func_name = COM_UTIL_SYM_LOADER_ENTRY_INIT("func_name", func_name_fn); */ /* 将来追加 */
 /* com_util_sym_loader_entry *const pfo_func_name = &sfo_func_name; */ /* 将来追加 */
 
 /* --- sym_loader に渡すポインター配列                --- */
@@ -49,8 +50,15 @@ const size_t fobj_length_libbase = sizeof(fobj_array_libbase) / sizeof(fobj_arra
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-int sym_loader_info_libbase()
+int base_sym_loader_info(void)
 {
+    int ret;
+
     printf("- congigpath: %s\n", sym_loader_configpath);
-    return com_util_sym_loader_info(fobj_array_libbase, fobj_length_libbase);
+    ret = com_util_sym_loader_info(fobj_array_libbase, fobj_length_libbase);
+    if (ret != COM_UTIL_OK)
+    {
+        return BASE_ERR_UNKNOWN;
+    }
+    return BASE_OK;
 }

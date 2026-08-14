@@ -26,17 +26,17 @@ namespace CalcLib.Internal
     internal static class NativeMethods
     {
         /// <summary>
-        /// ネイティブ calcHandler 関数の宣言。
+        /// ネイティブ calc_handler 関数の宣言。
         /// 指定された演算種別に基づいて計算を実行します。
         /// </summary>
         /// <param name="kind">計算の種別 (加算、減算、乗算、除算)。</param>
         /// <param name="a">第一オペランド。</param>
         /// <param name="b">第二オペランド。</param>
         /// <param name="result">計算結果 (出力パラメーター)。</param>
-        /// <returns>成功時は 0 (CALC_SUCCESS)、失敗時は -1 (CALC_ERROR)。</returns>
+        /// <returns>成功時は 0 (CALC_OK)、失敗時は負の結果コード。</returns>
         [DllImport("libcalc", // Windows (libcalc.dll), Linux (libcalc.so) で適切な dllName を自動選択
                    CallingConvention = CallingConvention.Winapi, // Windows (__stdcall), Linux (cdecl) で適切な呼び出しを自動選択
-                   EntryPoint = "calcHandler")]
+                   EntryPoint = "calc_handler")]
         internal static extern int CalcHandler(int kind, int a, int b, out int result);
     }
 }

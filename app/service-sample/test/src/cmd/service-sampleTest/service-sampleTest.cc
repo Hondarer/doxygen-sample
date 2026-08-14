@@ -170,8 +170,8 @@ class service_sampleTest : public Test
         ON_CALL(mock_com_util_, com_util_tracer_start(_)).WillByDefault(Return(0));
         ON_CALL(mock_com_util_, com_util_tracer_stop(_)).WillByDefault(Return(0));
         ON_CALL(mock_com_util_, com_util_tracer_dispose(_)).WillByDefault(Return());
-        ON_CALL(mock_com_util_, _com_util_tracer_write(_, _, _, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, _com_util_tracer_writef(_, _, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_com_util_, com_util_tracer_write_at(_, _, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_com_util_, com_util_tracer_writef_at(_, _, _, _)).WillByDefault(Return(0));
     }
 };
 

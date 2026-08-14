@@ -25,6 +25,7 @@
 #include <com_util/runtime/sym_loader.h>
 #include <stddef.h>
 
+#include <base/base_const.h>
 #include <base/base_export.h>
 
 /**
@@ -41,10 +42,13 @@ extern "C"
      *  @brief          計算処理を行います。
      *  @param[in]      a 第一オペランド。
      *  @param[in]      b 第二オペランド。
-     *  @param[out]     result 計算結果を格納するポインター。
-     *  @return         成功時は 0、失敗時は -1 を返します。
+     *  @param[out]     result 計算結果を格納するポインター。NULL を渡してはなりません。
+     *  @return         成功時は @ref BASE_OK を返します。
+     *  @return         @p result が NULL の場合は @ref BASE_ERR_INVALID_ARGUMENT を返します。
      *
-     *  @warning        result が NULL の場合は -1 を返します。
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
+     *  本関数と同じ共有状態へアクセスする API の呼び出しを、呼び出し側で直列化してください。
      */
     BASE_EXPORT extern int BASE_API sample_func(int a, int b, int *result);
 
@@ -58,16 +62,25 @@ extern "C"
      *
      *  @par            使用例
         @code{.c}
-         console_output("result: %d\n", 42);  // 出力: result: 42
+         base_console_output("result: %d\n", 42);  // 出力: result: 42
         @endcode
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
+     *  本関数と同じ共有状態へアクセスする API の呼び出しを、呼び出し側で直列化してください。
      */
-    BASE_EXPORT extern void BASE_API console_output(const char *format, ...);
+    BASE_EXPORT extern void BASE_API base_console_output(const char *format, ...);
 
     /**
      *  @brief          libbase が管理する com_util_sym_loader_entry ポインター配列の内容を標準出力に表示します。
-     *  @return         すべてのエントリが正常に解決されている場合は 0、1 つでも失敗している場合は -1 を返します。
+     *  @return         すべてのエントリが正常に解決されている場合は @ref BASE_OK を返します。
+     *  @return         1 つでも失敗している場合は @ref BASE_ERR_UNKNOWN を返します。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフではありません。
+     *  本関数と同じ共有状態へアクセスする API の呼び出しを、呼び出し側で直列化してください。
      */
-    BASE_EXPORT extern int BASE_API sym_loader_info_libbase(void);
+    BASE_EXPORT extern int BASE_API base_sym_loader_info(void);
 
 #ifdef __cplusplus
 }

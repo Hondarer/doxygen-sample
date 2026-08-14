@@ -33,14 +33,14 @@ TEST_F(addTest, normal)
     const char *argv[] = {"addTest", "1", "2"}; // [状態] - main() に与える引数を、"1", "2" とする。
 
     // Pre-Assert
-    EXPECT_CALL(mock_calcbase, add(1, 2, _))
+    EXPECT_CALL(mock_calcbase, calcbase_add(1, 2, _))
         .WillOnce(
             [](int, int, int *result)
             {
                 *result = 3;
-                return CALC_SUCCESS;
-            }); // [Pre-Assert確認_正常系] - add(1, 2, &result) が 1 回呼び出されること。
-                // [Pre-Assert手順] - add(1, 2, &result) にて result に 3 を設定し、CALC_SUCCESS を返す。
+                return CALC_OK;
+            }); // [Pre-Assert確認_正常系] - calcbase_add(1, 2, &result) が 1 回呼び出されること。
+                // [Pre-Assert手順] - calcbase_add(1, 2, &result) にて result に 3 を設定し、CALC_OK を返す。
     EXPECT_CALL(mock_stdio, printf(_, _, _, StrEq("3\n")))
         .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
 
@@ -60,13 +60,13 @@ TEST_F(addTest, negative_operands)
     const char *argv[] = {"addTest", "-4", "-5"}; // [状態] - 負の整数を位置引数に指定する。
 
     // Pre-Assert
-    EXPECT_CALL(mock_calcbase, add(-4, -5, _))
+    EXPECT_CALL(mock_calcbase, calcbase_add(-4, -5, _))
         .WillOnce(
             [](int, int, int *result)
             {
                 *result = -9;
-                return CALC_SUCCESS;
-            }); // [Pre-Assert確認_正常系] - 負の整数が add() へ渡されること。
+                return CALC_OK;
+            }); // [Pre-Assert確認_正常系] - 負の整数が calcbase_add() へ渡されること。
 
     // Act
     int rtc = __real_main(3, (char **)&argv); // [手順] - 負の位置整数で main() を呼び出す。

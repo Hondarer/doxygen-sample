@@ -16,7 +16,7 @@
 // calcbase (静的リンク専用ライブラリ、DLL/SO を生成しない) は対象外とする。
 // app/calc/prod/include/calcbase/calcbase_spec.h の関数は export マクロを一切伴わない
 // extern 宣言であり、これは意図した設計 (see: framework/testfw/docs/about-shared-lib-static-linking.md)。
-#define CALC_EXPORT_TABLE(EXPORT_ENTRY) EXPORT_ENTRY(calcHandler, int(CALC_API *)(int kind, int a, int b, int *result))
+#define CALC_EXPORT_TABLE(EXPORT_ENTRY) EXPORT_ENTRY(calc_handler, int(CALC_API *)(int kind, int a, int b, int *result))
 
 // テーブルからシグネチャの static_assert と期待シンボル名一覧を生成する。
 // 定型マクロ (TESTFW_EXPORT_STATIC_ASSERT_ENTRY/TESTFW_EXPORT_NAME_ENTRY) は

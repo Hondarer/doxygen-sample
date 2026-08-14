@@ -20,21 +20,21 @@ int sample_func(const int a, const int b, int *result)
 {
     if (result == NULL)
     {
-        return -1;
+        return BASE_ERR_INVALID_ARGUMENT;
     }
 
-    sample_func_t fp = com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_t);
+    sample_func_fn fp = com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_fn);
     if (fp != NULL)
     {
         /* 拡張 (オーバーライド) 処理 */
-        console_output("sample_func: 拡張処理が見つかりました。拡張処理に移譲します\n");
+        base_console_output("sample_func: 拡張処理が見つかりました。拡張処理に移譲します\n");
         return fp(a, b, result);
     }
     else
     {
         /* 基底 (デフォルト) 処理 */
-        console_output("sample_func: a=%d, b=%d の処理 (*result = a + b;) を行います\n", a, b);
+        base_console_output("sample_func: a=%d, b=%d の処理 (*result = a + b;) を行います\n", a, b);
         *result = a + b;
-        return 0;
+        return BASE_OK;
     }
 }

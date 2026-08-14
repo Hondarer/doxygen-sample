@@ -1,13 +1,14 @@
 #include <testfw.h>
 #include <mock_calcbase.h>
 
-MOCK_WEAK_IMPL(int, divide, int a, int b, int *result)
+MOCK_WEAK_IMPL(int, calcbase_subtract, int a, int b, int *result)
 {
-    int rtc = 0;
+    int ret;
 
+    ret = 0;
     if (_mock_calcbase != nullptr)
     {
-        rtc = _mock_calcbase->divide(a, b, result);
+        ret = _mock_calcbase->calcbase_subtract(a, b, result);
     }
 
     if (getTraceLevel() > TRACE_NONE)
@@ -15,7 +16,7 @@ MOCK_WEAK_IMPL(int, divide, int a, int b, int *result)
         printf("  > %s %d, %d, 0x%p", __func__, a, b, (void *)result);
         if (getTraceLevel() >= TRACE_DETAIL)
         {
-            printf(" -> %d, %d\n", *result, rtc);
+            printf(" -> %d, %d\n", *result, ret);
         }
         else
         {
@@ -23,5 +24,5 @@ MOCK_WEAK_IMPL(int, divide, int a, int b, int *result)
         }
     }
 
-    return rtc;
+    return ret;
 }

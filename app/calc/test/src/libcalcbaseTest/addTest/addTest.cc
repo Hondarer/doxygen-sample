@@ -6,48 +6,51 @@ class addTest : public Test
 {
 };
 
-// add(1, 2) が 3 を返すことの確認
+// calcbase_add(1, 2) が 3 を返すことの確認
 TEST_F(addTest, test_1_add_2)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
+    ret = calcbase_add(1, 2, &result); // [手順] - calcbase_add(1, 2, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - add の戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
+    EXPECT_EQ(CALC_OK, ret); // [確認_正常系] - calcbase_add の戻り値が CALC_OK であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - calcbase_add が result に 3 を設定すること。
 }
 
-// add(2, 1) が 3 を返すことの確認
+// calcbase_add(2, 1) が 3 を返すことの確認
 TEST_F(addTest, test_2_add_1)
 {
     // Arrange
     int result;
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = add(2, 1, &result); // [手順] - add(2, 1, &result) を呼び出す。
+    ret = calcbase_add(2, 1, &result); // [手順] - calcbase_add(2, 1, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_SUCCESS, rtc); // [確認_正常系] - add の戻り値が CALC_SUCCESS であること。
-    EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
+    EXPECT_EQ(CALC_OK, ret); // [確認_正常系] - calcbase_add の戻り値が CALC_OK であること。
+    EXPECT_EQ(3, result);         // [確認_正常系] - calcbase_add が result に 3 を設定すること。
 }
 
-// result が NULL のとき add が CALC_ERROR を返すことの確認
+// result が NULL のとき calcbase_add が CALC_ERR_INVALID_ARGUMENT を返すことの確認
 TEST_F(addTest, test_null_result)
 {
     // Arrange
+    int ret;
 
     // Pre-Assert
 
     // Act
-    int rtc = add(1, 2, NULL); // [手順] - add(1, 2, NULL) を呼び出す。
+    ret = calcbase_add(1, 2, NULL); // [手順] - calcbase_add(1, 2, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(CALC_ERROR, rtc); // [確認_異常系] - add の戻り値が CALC_ERROR であること。
+    EXPECT_EQ(CALC_ERR_INVALID_ARGUMENT, ret); // [確認_異常系] - calcbase_add の戻り値が CALC_ERR_INVALID_ARGUMENT であること。
 }

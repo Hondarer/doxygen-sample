@@ -1,7 +1,7 @@
 /**
  *******************************************************************************
- *  @file           libsrc/calcbase/add.c
- *  @brief          2 つの整数を加算する add 関数を提供します。
+ *  @file           libsrc/calcbase/calcbase_add.c
+ *  @brief          2 つの整数を加算する calcbase_add 関数を提供します。
  *  @author         c-modenization-kit sample team
  *  @date           2025/11/22
  *  @version        1.0.0
@@ -16,12 +16,12 @@
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-int add(const int a, const int b, int *result)
+int calcbase_add(const int a, const int b, int *result)
 {
     if (result == NULL)
     {
-        return CALC_ERROR;
+        return CALC_ERR_INVALID_ARGUMENT;
     }
     *result = a + b;
-    return CALC_SUCCESS;
+    return CALC_OK;
 }

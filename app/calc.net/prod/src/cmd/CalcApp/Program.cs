@@ -103,7 +103,7 @@ namespace CalcApp
 
             if (!result.IsSuccess)
             {
-                Console.Error.WriteLine("Error: calcHandler failed");
+                Console.Error.WriteLine("Error: calc_handler failed");
                 return 1;
             }
 

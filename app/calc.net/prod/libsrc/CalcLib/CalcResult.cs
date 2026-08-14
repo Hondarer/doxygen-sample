@@ -35,7 +35,7 @@ namespace CalcLib
 
         /// <summary>
         /// 演算が失敗した場合のエラー コードを取得します。
-        /// 0 (CALC_SUCCESS) は成功を、-1 (CALC_ERROR) は失敗を示します。
+        /// 0 (CALC_OK) は成功を、-1 (CALC_ERR_UNKNOWN) と -2 (CALC_ERR_INVALID_ARGUMENT) は失敗を示します。
         /// </summary>
         public int ErrorCode { get; }
 

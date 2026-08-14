@@ -6,13 +6,13 @@
 #include <calc.h>
 
 #if defined(COMPILER_MSVC)
-    #pragma comment(linker, "/INCLUDE:_mock_impl_calcHandler")
+    #pragma comment(linker, "/INCLUDE:_mock_impl_calc_handler")
 #endif /* COMPILER_MSVC */
 
 class Mock_calc
 {
   public:
-    MOCK_METHOD(int, calcHandler, (int, int, int, int *));
+    MOCK_METHOD(int, calc_handler, (int, int, int, int *));
 
     Mock_calc();
     ~Mock_calc();

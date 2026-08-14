@@ -11,7 +11,7 @@
 | ファイル | 責務 |
 |---|---|
 | `sym_loader_libbase.h` | 関数ポインター型の `typedef`、`com_util_sym_loader_entry` ポインタ・配列・設定ファイル パスの `extern` 宣言 |
-| `sym_loader_libbase.c` | `com_util_sym_loader_entry` 実体の定義、配列・要素数・設定ファイル パスの実体定義、`sym_loader_info_libbase()` の実装 |
+| `sym_loader_libbase.c` | `com_util_sym_loader_entry` 実体の定義、配列・要素数・設定ファイル パスの実体定義、`base_sym_loader_info()` の実装 |
 
 `com_util_sym_loader_entry` の実体は `sym_loader_libbase.c` 内で `static` 変数として定義します。外部からのアクセスは `com_util_sym_loader_entry *const` ポインター経由に限定することで、直接書き換えを防いでいます。
 
@@ -19,7 +19,7 @@
 
 ```text
 sample_func.c  (呼び出し元)
-    |  com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_t)
+    |  com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_fn)
     +---> sym_loader_libbase.h の extern 宣言 (pfo_sample_func)
               |
               sym_loader_libbase.c の実体 (sfo_sample_func)

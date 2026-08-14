@@ -40,8 +40,10 @@ extern "C"
      *  @param[in]      kind 演算の種別 (CALC_KIND_ADD など)。
      *  @param[in]      a 第一オペランド。
      *  @param[in]      b 第二オペランド。
-     *  @param[out]     result 計算結果を格納するポインター。
-     *  @return         成功時は CALC_SUCCESS、失敗時は CALC_SUCCESS 以外の値を返します。
+     *  @param[out]     result 計算結果を格納するポインター。NULL を渡してはなりません。
+     *  @return         成功時は @ref CALC_OK を返します。
+     *  @return         @p result が NULL の場合、または @p kind が不正な場合は @ref CALC_ERR_INVALID_ARGUMENT を返します。
+     *  @return         下位の計算関数が失敗した場合は、その結果コードを返します。
      *
      *  この関数は演算種別を受け取り、対応する計算関数を呼び出します。
      *  現在サポートされている演算種別は以下の通りです。
@@ -56,16 +58,17 @@ extern "C"
      *  @par            使用例
         @code{.c}
         int result;
-        if (calcHandler(CALC_KIND_ADD, 10, 20, &result) == CALC_SUCCESS) {
+        if (calc_handler(CALC_KIND_ADD, 10, 20, &result) == CALC_OK)
+        {
             printf("Result: %d\n", result);  // 出力: Result: 30
         }
         @endcode
      *
-     *  @warning        無効な kind を指定した場合、ゼロ除算の場合、
-     *                  または result が NULL の場合は失敗を返します。
-     *                  呼び出し側で戻り値のチェックを行ってください。
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフです。\n
+     *  共有状態を持ちません。
      */
-    CALC_EXPORT extern int CALC_API calcHandler(int kind, int a, int b, int *result);
+    CALC_EXPORT extern int CALC_API calc_handler(int kind, int a, int b, int *result);
 
 #ifdef __cplusplus
 }

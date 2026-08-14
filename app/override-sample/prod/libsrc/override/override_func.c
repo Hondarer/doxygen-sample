@@ -23,9 +23,9 @@ int override_func(const int a, const int b, int *result)
 {
     if (result == NULL)
     {
-        return -1;
+        return BASE_ERR_INVALID_ARGUMENT;
     }
-    console_output("override_func: a=%d, b=%d の処理 (*result = a * b;) を行います\n", a, b);
+    base_console_output("override_func: a=%d, b=%d の処理 (*result = a * b;) を行います\n", a, b);
     *result = a * b;
-    return 0;
+    return BASE_OK;
 }

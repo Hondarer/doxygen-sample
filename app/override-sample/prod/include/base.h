@@ -30,6 +30,7 @@
 #ifndef BASE_H
 #define BASE_H
 
+#include <base/base_const.h>
 #include <base/base_spec.h>
 
 #endif /* BASE_H */

@@ -33,32 +33,32 @@ int main(int argc, char *argv[])
 
     int need_help = 0;
 
-    com_util_argparser_init("関数の動的オーバーライドのサンプルコマンド。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_default_init("関数の動的オーバーライドのサンプルコマンド。");
+    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
 
-    if (com_util_argparser_get_register_error_count() > 0)
+    if (com_util_argparser_default_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        com_util_argparser_default_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_default_parse(argc, argv);
 
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        com_util_argparser_default_print_usage(stdout);
         return EXIT_SUCCESS;
     }
 
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        com_util_argparser_default_print_error_messages(stderr);
+        com_util_argparser_default_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
     int result;
-    int rtc;
+    int ret;
     char configpath[PLATFORM_PATH_MAX];
 
     {
@@ -96,12 +96,12 @@ int main(int argc, char *argv[])
 #endif /* PLATFORM_ */
 
     printf("--- sym_loader info ---\n");
-    rtc = sym_loader_info_libbase();
-    printf("rtc: %d\n\n", rtc);
+    ret = base_sym_loader_info();
+    printf("rtc: %d\n\n", ret);
 
-    rtc = sample_func(1, 2, &result);
-    console_output("rtc: %d\n", rtc);
-    if (rtc != 0)
+    ret = sample_func(1, 2, &result);
+    base_console_output("rtc: %d\n", ret);
+    if (ret != BASE_OK)
     {
         fprintf(stderr, "func failed (sample_func(1, 2, &result))\n");
     }

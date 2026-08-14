@@ -71,7 +71,7 @@ on_run の実装は `svc_wait_for_stop()` だけを見れば停止を検知で�
     rectangle "shutdown.h /\nsvc_shutdown_request_callback()" as sdh
     rectangle "ServiceCtrlHandler()" as sctl
     rectangle "svc_request_stop()" as req
-    rectangle "g_stop_cv broadcast" as cv
+    rectangle "s_stop_cv broadcast" as cv
     rectangle "on_run の\nsvc_wait_for_stop() が戻る" as wait
 
     sig --> sdh

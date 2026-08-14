@@ -1,7 +1,7 @@
 /**
  *******************************************************************************
- *  @file           libsrc/calcbase/subtract.c
- *  @brief          2 つの整数を減算する subtract 関数を提供します。
+ *  @file           libsrc/calcbase/calcbase_divide.c
+ *  @brief          2 つの整数を除算する calcbase_divide 関数を提供します。
  *  @author         c-modenization-kit sample team
  *  @date           2025/11/22
  *  @version        1.0.0
@@ -16,7 +16,16 @@
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-int subtract(const int a, const int b, int *result)
+int calcbase_divide(const int a, const int b, int *result)
 {
-    return add(a, -1 * b, result); /* 再帰的な関数呼び出しの実装例として add を呼ぶ */
+    if (result == NULL)
+    {
+        return CALC_ERR_INVALID_ARGUMENT;
+    }
+    if (b == 0)
+    {
+        return CALC_ERR_INVALID_ARGUMENT;
+    }
+    *result = a / b;
+    return CALC_OK;
 }

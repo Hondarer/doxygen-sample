@@ -1,6 +1,6 @@
 /**
  *******************************************************************************
- *  @file           calcHandler.c
+ *  @file           calc_handler.c
  *  @brief          演算種別に基づいて適切な計算関数を呼び出すハンドラーを提供します。
  *  @author         c-modenization-kit sample team
  *  @date           2025/11/22
@@ -17,24 +17,24 @@
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-int calcHandler(const int kind, const int a, const int b, int *result)
+int calc_handler(const int kind, const int a, const int b, int *result)
 {
     if (result == NULL)
     {
-        return CALC_ERROR;
+        return CALC_ERR_INVALID_ARGUMENT;
     }
 
     switch (kind)
     {
     case CALC_KIND_ADD:
-        return add(a, b, result);
+        return calcbase_add(a, b, result);
     case CALC_KIND_SUBTRACT:
-        return subtract(a, b, result);
+        return calcbase_subtract(a, b, result);
     case CALC_KIND_MULTIPLY:
-        return multiply(a, b, result);
+        return calcbase_multiply(a, b, result);
     case CALC_KIND_DIVIDE:
-        return divide(a, b, result);
+        return calcbase_divide(a, b, result);
     default:
-        return CALC_ERROR;
+        return CALC_ERR_INVALID_ARGUMENT;
     }
 }

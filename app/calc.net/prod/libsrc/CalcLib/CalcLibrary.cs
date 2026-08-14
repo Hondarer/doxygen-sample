@@ -27,14 +27,19 @@ namespace CalcLib
     public static class CalcLibrary
     {
         /// <summary>
-        /// ネイティブ ライブラリからの成功戻り値コード。
+        /// ネイティブ ライブラリからの成功戻り値コードを表します。
         /// </summary>
-        private const int CALC_SUCCESS = 0;
+        public const int CALC_OK = 0;
 
         /// <summary>
-        /// ネイティブ ライブラリからのエラー戻り値コード。
+        /// ネイティブ ライブラリからの分類不能エラー戻り値コードを表します。
         /// </summary>
-        private const int CALC_ERROR = -1;
+        public const int CALC_ERR_UNKNOWN = -1;
+
+        /// <summary>
+        /// ネイティブ ライブラリからの引数不正戻り値コードを表します。
+        /// </summary>
+        public const int CALC_ERR_INVALID_ARGUMENT = -2;
 
         /**
          *  @defgroup       CALCLIB_PUBLIC_API 公開 API (CalcLib)
@@ -69,7 +74,7 @@ namespace CalcLib
         {
             int returnCode = NativeMethods.CalcHandler((int)kind, a, b, out int result);
             return new CalcResult(
-                isSuccess: returnCode == CALC_SUCCESS,
+                isSuccess: returnCode == CALC_OK,
                 value: result,
                 errorCode: returnCode
             );

@@ -17,7 +17,7 @@
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-void console_output(const char *format, ...)
+void base_console_output(const char *format, ...)
 {
     va_list args;
     va_start(args, format);

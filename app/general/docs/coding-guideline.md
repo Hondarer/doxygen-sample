@@ -94,6 +94,58 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 > - ライブラリ接頭辞は **リンカー名前空間** を表します。外部リンケージを持つシンボルにのみ付け、`static` 関数・`s_` 変数には付けません。
 > - `_internal_` は **公開境界** を表します。`include_internal/` で宣言する関数・型には `<lib>_internal_`、外部リンケージ変数には `g_<lib>_internal_` の形で付けます。公開ヘッダーで宣言するシンボルと `static` には付けません。
 
+### テストのモック オブジェクト変数
+
+Google Mock の Mock クラスを格納する変数名は、その Mock クラス名をすべて小文字にした識別子とします。  
+`NiceMock` / `StrictMock` / `NaggyMock` で包む場合も、テンプレート引数の Mock クラス名を小文字にします。
+
+判定手順は次のとおりです。
+
+1. 変数の型が `Mock_` で始まるか、または `NiceMock` / `StrictMock` / `NaggyMock` のテンプレート引数が `Mock_` で始まるかを確認します。
+2. いずれでもない場合は、通常のローカル変数またはメンバー変数の規則を適用します。
+3. いずれかである場合は、Mock クラス名の各文字を小文字にした識別子を変数名とします。
+4. 型名に含まれない接頭辞や末尾 `_` は付けません。
+
+| 型 | 変数名 |
+|---|---|
+| `Mock_com_util` | `mock_com_util` |
+| `NiceMock<Mock_com_util>` | `mock_com_util` |
+| `Mock_stdio` | `mock_stdio` |
+| `NiceMock<Mock_stdio>` | `mock_stdio` |
+
+```cpp
+/* NG: どの Mock クラスかが名前から分からない */
+NiceMock<Mock_com_util> mock_;
+NiceMock<Mock_stdio> mock;
+
+/* OK: 型名を小文字にした識別子 */
+NiceMock<Mock_com_util> mock_com_util;
+NiceMock<Mock_stdio> mock_stdio;
+```
+
+> [!IMPORTANT]
+> Fixture のメンバーでも同じ規則です。  
+> `mock_` や `mock` のような省略名、および型名にない末尾 `_` (`mock_com_util_` など) は使いません。
+
+> [!WARNING]
+> `mock_` のまま複数の Mock クラスを扱うと、`file_open` の既定差し替えと `malloc` の失敗注入を別インスタンスへ書いてしまい、本物の I/O が単体テストから呼ばれることがあります。
+
+同一テスト関数に複数の Mock クラスがあるときは、それぞれ型名の小文字を使います。  
+引数で Mock オブジェクトを受け取るヘルパーも、仮引数名を同じ規則に揃えます。
+
+例外は次に限ります。
+
+- Google Test / Google Mock 本体、および外部 OSS 由来のテスト補助コード
+- 既存コードを変更しない保守。当該変数を触る変更では、同時に本規則へ合わせます
+
+検証コマンドは次のとおりです。対象 app に範囲を限定してください。
+
+```bash
+# Mock 型なのに変数名が mock_ または mock になっている宣言
+rg -n --glob '*.cc' --glob '*.h' 'Mock_[A-Za-z0-9_]+>\s+mock_;' .
+rg -n --glob '*.cc' --glob '*.h' 'Mock_[A-Za-z0-9_]+>\s+mock;' .
+```
+
 ### 予約識別子の回避
 
 規格が処理系用に予約している識別子の形式は使用しません。
@@ -2723,7 +2775,7 @@ int sample_context_open(const char *path, sample_context **context_out);
 
 本リポジトリの既存例:
 
-- `char *const *argv` — `com_util_argparser_parse` など
+- `char *const *argv` — `com_util_argparser_default_parse` など
 - `com_util_sym_loader_entry *const *` — `com_util_sym_loader_init` など
 - `const char **storage` — 文字列オプションの出力スロット (`argparser` の register 系)
 
