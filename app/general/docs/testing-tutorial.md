@@ -301,12 +301,12 @@ Mock_examplebase::~Mock_examplebase()
 // WEAK_ATR 属性により、リンク時に弱いシンボルとして扱われる
 WEAK_ATR int add(int a, int b, int *result)
 {
-    int rtc = 0;
+    int mock_ret = 0;
 
     // モック インスタンスが存在する場合はモックを呼び出す
     if (_mock_examplebase != nullptr)
     {
-        rtc = _mock_examplebase->add(a, b, result);
+        mock_ret = _mock_examplebase->add(a, b, result);
     }
 
     // トレース出力 (デバッグ用)
@@ -315,7 +315,7 @@ WEAK_ATR int add(int a, int b, int *result)
         printf("  > %s %d, %d, 0x%p", __func__, a, b, (void *)result);
         if (getTraceLevel() >= TRACE_DETAIL)
         {
-            printf(" -> %d, %d\n", *result, rtc);
+            printf(" -> %d, %d\n", *result, mock_ret);
         }
         else
         {
@@ -323,7 +323,7 @@ WEAK_ATR int add(int a, int b, int *result)
         }
     }
 
-    return rtc;
+    return mock_ret;
 }
 ```
 
@@ -410,10 +410,10 @@ TEST_F(addTest, test_1_add_2)
     // - モックの期待動作を設定 (この例では不要)
 
     // Act
-    int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
+    int actual_ret = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(EXAMPLE_SUCCESS, actual_ret); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
 ```
@@ -440,10 +440,10 @@ TEST_F(addTest, test_1_add_2)
     // Pre-Assert
 
     // Act
-    int rtc = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
+    int actual_ret = add(1, 2, &result); // [手順] - add(1, 2, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(EXAMPLE_SUCCESS, actual_ret); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
 
@@ -456,10 +456,10 @@ TEST_F(addTest, test_2_add_1)
     // Pre-Assert
 
     // Act
-    int rtc = add(2, 1, &result); // [手順] - add(2, 1, &result) を呼び出す。
+    int actual_ret = add(2, 1, &result); // [手順] - add(2, 1, &result) を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXAMPLE_SUCCESS, rtc); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
+    EXPECT_EQ(EXAMPLE_SUCCESS, actual_ret); // [確認_正常系] - add の戻り値が EXAMPLE_SUCCESS であること。
     EXPECT_EQ(3, result);         // [確認_正常系] - add が result に 3 を設定すること。
 }
 
@@ -471,10 +471,10 @@ TEST_F(addTest, test_null_result)
     // Pre-Assert
 
     // Act
-    int rtc = add(1, 2, NULL); // [手順] - add(1, 2, NULL) を呼び出す。
+    int actual_ret = add(1, 2, NULL); // [手順] - add(1, 2, NULL) を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXAMPLE_ERROR, rtc); // [確認_異常系] - add の戻り値が EXAMPLE_ERROR であること。
+    EXPECT_EQ(EXAMPLE_ERROR, actual_ret); // [確認_異常系] - add の戻り値が EXAMPLE_ERROR であること。
 }
 ```
 
@@ -512,10 +512,10 @@ TEST_F(addTest, less_argc)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(0, rtc); // [確認_異常系] - main() の戻り値が 0 以外であること。
+    EXPECT_NE(0, actual_ret); // [確認_異常系] - main() の戻り値が 0 以外であること。
 }
 
 TEST_F(addTest, normal)
@@ -538,10 +538,10 @@ TEST_F(addTest, normal)
         .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc); // [確認_正常系] - main() の戻り値が 0 であること。
+    EXPECT_EQ(0, actual_ret); // [確認_正常系] - main() の戻り値が 0 であること。
 }
 ```
 
@@ -826,10 +826,10 @@ TEST_F(exampleTest, less_argc)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(0, rtc); // [確認_異常系] - main() の戻り値が 0 以外であること。
+    EXPECT_NE(0, actual_ret); // [確認_異常系] - main() の戻り値が 0 以外であること。
 }
 
 // 正常系のテスト
@@ -853,10 +853,10 @@ TEST_F(exampleTest, normal)
         .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(0, rtc); // [確認_正常系] - main() の戻り値が 0 であること。
+    EXPECT_EQ(0, actual_ret); // [確認_正常系] - main() の戻り値が 0 であること。
 }
 ```
 
@@ -1054,10 +1054,10 @@ TEST_F(MyTest, null_pointer_case) { /* ... */ }
 
 ```cpp
 // Act
-int rtc = add(1, 2); // [手順] - add(1, 2) を呼び出す。
+int actual_ret = add(1, 2); // [手順] - add(1, 2) を呼び出す。
 
 // Assert
-EXPECT_EQ(3, rtc); // [確認_正常系] - add の戻り値が 3 であること。
+EXPECT_EQ(3, actual_ret); // [確認_正常系] - add の戻り値が 3 であること。
 ```
 
 ### makefile の保守性

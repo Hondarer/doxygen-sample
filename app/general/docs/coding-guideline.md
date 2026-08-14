@@ -209,10 +209,10 @@ snake_case とし、接頭辞は付けません。
 既存コードの `rc` / `rtc` 等を、本規則だけを目的に全面置換しません。  
 `result` の別名として `rc` / `rtc` を使いません。
 
-mock 関数本体の一時受けは、本節の例外です。  
-戻り値の意味を問わず `mock_ret` とし、意味論よりもテンプレート性を優先します。  
-生産コードの `ret` と混ぜないための名前です。  
-対象範囲と対象外は [How to mock](../../../framework/testfw/docs/how-to-mock.md) の「mock 関数本体の一時受け」を正とします。
+試験側の戻り値中継は、本節の例外です。  
+mock 関数本体は `mock_ret`、テスト本体は `actual_ret` を使います。  
+どちらも結果コード以外の戻り値を含み、生産コードの `ret` とは混ぜません。  
+対象範囲と対象外は [How to mock](../../../framework/testfw/docs/how-to-mock.md) の「試験側の戻り値中継」を正とします。
 
 ```c
 /* 望ましい (単純な透過 return — result は増やさない) */

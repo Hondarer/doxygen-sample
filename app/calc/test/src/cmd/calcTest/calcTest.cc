@@ -17,10 +17,10 @@ TEST_F(calcTest, less_argc)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, actual_ret); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
 }
 
 // 正常な引数で計算結果が表示されることの確認
@@ -45,10 +45,10 @@ TEST_F(calcTest, normal)
         .WillOnce(DoDefault()); // [Pre-Assert確認_正常系] - printf() が 1 回呼び出され、内容が "3\n" であること。
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret); // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
 }
 
 // -h 指定時に必須引数なしでも正常終了することの確認
@@ -60,8 +60,8 @@ TEST_F(calcTest, help)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
+    int actual_ret = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - 必須位置引数なしでも正常終了すること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret); // [確認_正常系] - 必須位置引数なしでも正常終了すること。
 }

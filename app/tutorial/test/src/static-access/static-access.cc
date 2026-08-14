@@ -16,8 +16,8 @@ TEST_F(test_static_access, test)
     // Pre-Assert
 
     // Act
-    int rtc = samplestatic(); // [手順] - samplestatic() を呼び出す。
+    int actual_ret = samplestatic(); // [手順] - samplestatic() を呼び出す。
 
     // Assert
-    EXPECT_EQ(123, rtc); // [確認] - samplestatic() からの戻り値が 123 であること。
+    EXPECT_EQ(123, actual_ret); // [確認] - samplestatic() からの戻り値が 123 であること。
 }

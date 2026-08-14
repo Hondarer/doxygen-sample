@@ -189,10 +189,10 @@ TEST_F(service_sampleTest, usage_without_args)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() を引数なしで呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() を引数なしで呼び出す。
 
     // Assert
-    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, actual_ret); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
     EXPECT_TRUE(g_calls.empty()); // [確認_異常系] - OS フックもコールバックも呼ばれないこと。
 }
 
@@ -205,10 +205,10 @@ TEST_F(service_sampleTest, help)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
+    int actual_ret = __real_main(2, (char **)&argv); // [手順] - help オプションで main() を呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - help の表示後に正常終了すること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret); // [確認_正常系] - help の表示後に正常終了すること。
     EXPECT_TRUE(g_calls.empty()); // [確認_正常系] - OS フックやサービス コールバックを呼び出さないこと。
 }
 
@@ -222,10 +222,10 @@ TEST_F(service_sampleTest, unknown_command)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_NE(EXIT_SUCCESS, rtc); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
+    EXPECT_NE(EXIT_SUCCESS, actual_ret); // [確認_異常系] - main() の戻り値が EXIT_SUCCESS 以外であること。
     EXPECT_TRUE(g_calls.empty()); // [確認_異常系] - OS フックもコールバックも呼ばれないこと。
 }
 
@@ -239,10 +239,10 @@ TEST_F(service_sampleTest, install_dispatch)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc);        // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret);        // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());       // [確認_正常系] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_install", g_calls[0]); // [確認_正常系] - svc_os_install() が呼ばれること。
 }
@@ -262,10 +262,10 @@ TEST_F(service_sampleTest, tracer_uses_default_file_path_with_shared_mode)
             Return(0)); // [Pre-Assert確認_正常系] - パスは com_util 既定値へ委譲し、既存の共有モードを維持すること。
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - tracer 設定後も通常の dispatch が成功すること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret); // [確認_正常系] - tracer 設定後も通常の dispatch が成功すること。
 }
 
 // uninstall コマンドが svc_os_uninstall を呼び出すことの確認
@@ -278,10 +278,10 @@ TEST_F(service_sampleTest, uninstall_dispatch)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc);          // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret);          // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());         // [確認_正常系] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_uninstall", g_calls[0]); // [確認_正常系] - svc_os_uninstall() が呼ばれること。
 }
@@ -296,10 +296,10 @@ TEST_F(service_sampleTest, run_dispatch)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc);            // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret);            // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(1U, g_calls.size());           // [確認_正常系] - フックが 1 回だけ呼ばれること。
     EXPECT_EQ("os_run_service", g_calls[0]); // [確認_正常系] - svc_os_run_service() が呼ばれること。
 }
@@ -318,10 +318,10 @@ TEST_F(service_sampleTest, console_lifecycle_order)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(EXIT_SUCCESS, rtc); // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
+    EXPECT_EQ(EXIT_SUCCESS, actual_ret); // [確認_正常系] - main() の戻り値が EXIT_SUCCESS であること。
     ASSERT_EQ(5U, g_calls.size());
     EXPECT_EQ("on_start", g_calls[0]);        // [確認_正常系] - on_start が最初に呼ばれること。
     EXPECT_EQ("notify_ready", g_calls[1]);    // [確認_正常系] - on_start 成功後に起動完了が通知されること。
@@ -341,10 +341,10 @@ TEST_F(service_sampleTest, console_on_start_failure)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(7, rtc);                 // [確認_異常系] - on_start の戻り値がそのまま終了コードになること。
+    EXPECT_EQ(7, actual_ret);                 // [確認_異常系] - on_start の戻り値がそのまま終了コードになること。
     ASSERT_EQ(1U, g_calls.size());     // [確認_異常系] - on_start 以降の処理が行われないこと。
     EXPECT_EQ("on_start", g_calls[0]); // [確認_異常系] - on_start のみが呼ばれること。
 }
@@ -360,10 +360,10 @@ TEST_F(service_sampleTest, console_on_run_failure)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(2, rtc); // [確認_異常系] - on_run の戻り値がそのまま終了コードになること。
+    EXPECT_EQ(2, actual_ret); // [確認_異常系] - on_run の戻り値がそのまま終了コードになること。
     ASSERT_EQ(5U, g_calls.size());
     EXPECT_EQ("notify_stopping", g_calls[3]); // [確認_異常系] - on_run 失敗後も停止開始が通知されること。
     EXPECT_EQ("on_stop", g_calls[4]);         // [確認_異常系] - on_run 失敗後も後始末の on_stop が呼ばれること。
@@ -380,10 +380,10 @@ TEST_F(service_sampleTest, console_on_stop_failure)
     // Pre-Assert
 
     // Act
-    int rtc = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
+    int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。
 
     // Assert
-    EXPECT_EQ(3, rtc);             // [確認_異常系] - on_stop の戻り値がそのまま終了コードになること。
+    EXPECT_EQ(3, actual_ret);             // [確認_異常系] - on_stop の戻り値がそのまま終了コードになること。
     ASSERT_EQ(5U, g_calls.size()); // [確認_異常系] - ライフサイクル全体が実行されること。
 }
 

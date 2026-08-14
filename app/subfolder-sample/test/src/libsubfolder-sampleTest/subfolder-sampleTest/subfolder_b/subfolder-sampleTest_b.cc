@@ -15,8 +15,8 @@ TEST_F(subfolder_sampleTest_b, test_func_b)
     // Pre-Assert
 
     // Act
-    int rtc = func_b(); // [手順] - func_b() を呼び出す。
+    int actual_ret = func_b(); // [手順] - func_b() を呼び出す。
 
     // Assert
-    EXPECT_EQ(2, rtc); // [確認] - func_b() から 2 が返されること。
+    EXPECT_EQ(2, actual_ret); // [確認] - func_b() から 2 が返されること。
 }
