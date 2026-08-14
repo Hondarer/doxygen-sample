@@ -262,7 +262,10 @@ if (ret != SAMPLE_OK)
 ```
 
 > [!NOTE]
-> 短い `ret` を連続する API 呼び出しで使い回すのは、Linux カーネルや BoringSSL / AWS-LC の cleanup パターンなど、システム系 C で広く見られる形です。  
+> [Linux Wireless の ath10k / ath11k / ath12k coding style](https://wireless.docs.kernel.org/en/latest/en/users/drivers/ath10k/codingstyle.html#status-error-variables) は、戻り値または状態コードを格納する変数名に `ret` を使うことを明記しています。  
+> [BoringSSL API Conventions](https://boringssl.googlesource.com/boringssl/+/HEAD/API-CONVENTIONS.md) は、cleanup を伴う C 関数で `int ret = 0;` と `goto err` を使い、自関数の成否を組み立てる例を示しています。  
+> これらの文書と本規範では、戻り値体系や `ret` の詳細な役割が異なるため、同一の規則とは扱いません。  
+> これらの実例は、`ret` が本リポジトリ固有の略記ではないことを示します。  
 > ローカル変数を短く保つ方針は [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) にも示されています。  
 > Python などで「変数の使い回しを避ける」と教わるのは、意味の異なる値を同じ名前に載せることへの警戒が本筋です。  
 > 結果コードという同一の役割を上書きするだけなら、呼び出しごとに `open_result` のような長い名前を付ける必要はありません。情報は増えず、走査とレビューの負荷だけが増えます。
@@ -3221,7 +3224,8 @@ Doxygen コメント (`/** */`) 内の `@code` ~ `@endcode` に書くコード�
 - [SEI CERT C INT00-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int00-c/) - 処理系のデータ モデルを理解し、仮定を静的表明で裏付けること
 - [SEI CERT C INT01-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/integers-int/int01-c/) - オブジェクトのサイズを表す値に `size_t` を使うこと
 - [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) - ローカル変数を短く保つ方針、共通の後始末がある関数における goto の使用とラベル命名、および 14 章のメモリ確保の指針 (`sizeof(*p)` の推奨)
-- [BoringSSL API Conventions](https://boringssl.googlesource.com/boringssl/+/HEAD/API-CONVENTIONS.md) - `int ret = 0;` と `goto err` による結果コードの組み立て例
+- [Linux Wireless の ath10k / ath11k / ath12k coding style](https://wireless.docs.kernel.org/en/latest/en/users/drivers/ath10k/codingstyle.html#status-error-variables) - 戻り値または状態コードを格納する変数名に `ret` を使う規定
+- [BoringSSL API Conventions](https://boringssl.googlesource.com/boringssl/+/HEAD/API-CONVENTIONS.md) - cleanup を伴う C 関数で `int ret = 0;` と `goto err` を使い、自関数の成否を組み立てる例
 - [C++ Core Guidelines ES.20](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es20-always-initialize-an-object) - 常時初期化を勧める側の一般則 (本規範の `ret` 未初期化は結果コード作業変数に限る例外)
 - [SEI CERT C MEM12-C](https://cmu-sei.github.io/secure-coding-standards/sei-cert-c-coding-standard/recommendations/memory-management-mem/mem12-c/) - 資源の確保と解放を伴う関数でエラー時に goto チェーンを使うこと
 - MISRA C:2012 Rule 15.1 / 15.2 / 15.3 - goto の使用を戒める 15.1 は Advisory、前方ジャンプを求める 15.2 とラベル スコープを定める 15.3 が Required
