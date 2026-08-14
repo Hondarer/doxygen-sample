@@ -8,9 +8,9 @@ Mock_calcbase::Mock_calcbase()
 {
     ON_CALL(*this, calcbase_add(_, _, _))
         .WillByDefault(Invoke(
-            [](int a, int b, int *result)
+            [](int a, int b, int *mock_ret)
             {
-                *result = a + b;
+                *mock_ret = a + b;
                 return CALC_OK;
             })); // モックの既定の挙動を定義する例
     ON_CALL(*this, calcbase_subtract(_, _, _))

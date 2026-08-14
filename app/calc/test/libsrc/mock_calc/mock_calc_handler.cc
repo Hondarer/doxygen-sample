@@ -3,12 +3,12 @@
 
 MOCK_WEAK_IMPL(int, calc_handler, int kind, int a, int b, int *result)
 {
-    int ret;
+    int mock_ret;
 
-    ret = 0;
+    mock_ret = 0;
     if (_mock_calc != nullptr)
     {
-        ret = _mock_calc->calc_handler(kind, a, b, result);
+        mock_ret = _mock_calc->calc_handler(kind, a, b, result);
     }
 
     if (getTraceLevel() > TRACE_NONE)
@@ -16,7 +16,7 @@ MOCK_WEAK_IMPL(int, calc_handler, int kind, int a, int b, int *result)
         printf("  > %s %d, %d, %d, 0x%p", __func__, kind, a, b, (void *)result);
         if (getTraceLevel() >= TRACE_DETAIL)
         {
-            printf(" -> %d, %d\n", *result, ret);
+            printf(" -> %d, %d\n", *result, mock_ret);
         }
         else
         {
@@ -24,5 +24,5 @@ MOCK_WEAK_IMPL(int, calc_handler, int kind, int a, int b, int *result)
         }
     }
 
-    return ret;
+    return mock_ret;
 }
