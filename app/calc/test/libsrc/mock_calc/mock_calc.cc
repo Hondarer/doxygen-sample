@@ -8,10 +8,10 @@ Mock_calc::Mock_calc()
 {
     ON_CALL(*this, calc_handler(_, _, _, _)).WillByDefault(Return(CALC_OK));
 
-    _mock_calc = this;
+    TESTFW_REGISTER_MOCK_INSTANCE(_mock_calc);
 }
 
 Mock_calc::~Mock_calc()
 {
-    _mock_calc = nullptr;
+    TESTFW_UNREGISTER_MOCK_INSTANCE(_mock_calc);
 }

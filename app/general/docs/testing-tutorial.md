@@ -276,15 +276,18 @@ Mock_examplebase::Mock_examplebase()
     ON_CALL(*this, divide(_, _, _))
         .WillByDefault(Return(EXAMPLE_SUCCESS));
 
-    _mock_examplebase = this;
+    TESTFW_REGISTER_MOCK_INSTANCE(_mock_examplebase);
 }
 
-// デストラクター: グローバル ポインターをクリア
+// デストラクター: グローバル ポインターの登録を解除
 Mock_examplebase::~Mock_examplebase()
 {
-    _mock_examplebase = nullptr;
+    TESTFW_UNREGISTER_MOCK_INSTANCE(_mock_examplebase);
 }
 ```
+
+同じ Mock クラスのオブジェクトは同時に 1 個だけ生成します。  
+登録マクロのライフサイクルと多重生成時の動作は、[testfw の mock](../../../framework/testfw/docs/how-to-mock.md) の「注入ライフサイクル」を参照してください。
 
 ### ステップ 3: モック関数の実装
 

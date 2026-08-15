@@ -19,10 +19,10 @@ Mock_calcbase::Mock_calcbase()
     ON_CALL(*this, calcbase_multiply(_, _, _)).WillByDefault(Return(CALC_OK));
     ON_CALL(*this, calcbase_divide(_, _, _)).WillByDefault(Return(CALC_OK));
 
-    _mock_calcbase = this;
+    TESTFW_REGISTER_MOCK_INSTANCE(_mock_calcbase);
 }
 
 Mock_calcbase::~Mock_calcbase()
 {
-    _mock_calcbase = nullptr;
+    TESTFW_UNREGISTER_MOCK_INSTANCE(_mock_calcbase);
 }
