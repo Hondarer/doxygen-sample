@@ -69,10 +69,9 @@
 static int run_command(char *const argv[])
 {
     int exit_code;
-    com_util_process_options options;
+    com_util_process_options options = {0};
     int result;
 
-    memset(&options, 0, sizeof(options));
     options.argv = argv;
 
     result = com_util_process_run_sync(&options, COM_UTIL_PROCESS_WAIT_FOREVER, &exit_code);
