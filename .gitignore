@@ -43,6 +43,7 @@
 
 ## 中間ファイル
 obj
+gen
 gcov
 *.gcda
 *.gcno
