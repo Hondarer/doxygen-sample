@@ -94,6 +94,67 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 > - ライブラリ接頭辞は **リンカー名前空間** を表します。外部リンケージを持つシンボルにのみ付け、`static` 関数・`s_` 変数には付けません。
 > - `_internal_` は **公開境界** を表します。`include_internal/` で宣言する関数・型には `<lib>_internal_`、外部リンケージ変数には `g_<lib>_internal_` の形で付けます。公開ヘッダーで宣言するシンボルと `static` には付けません。
 
+### 出力引数
+
+関数が呼び出し元へ値を書き戻す仮引数の名前は、`{name}_out` の接尾辞にします。  
+`out_{name}` の接頭辞は使いません。
+
+```c
+/* 望ましい */
+int sample_paths_equal(const char *lhs, const char *rhs, int *equal_out, int *errno_out);
+int sample_context_open(const char *path, sample_context **context_out);
+
+/* 望ましくない */
+int sample_paths_equal(const char *lhs, const char *rhs, int *out_equal, int *out_errno);
+int sample_context_open(const char *path, sample_context **out_context);
+```
+
+真偽の出力は、`_out` の直前を真偽を表す語にします。  
+例と公開 API での型は [真偽値の型](#真偽値の型) の命名、および [真偽値や状態を返す API の設計](#真偽値や状態を返す-api-の設計) を参照してください。
+
+容量を表す [in] 引数は `{name}_size` とします。  
+`out_{name}_sz` や `{name}_out` にはしません。
+
+```c
+int sample_path_dirname(char *dir_out, size_t dir_size, sample_error *detail_out, const char *path);
+```
+
+`_out` を付けると役割が重複する、または書き戻す値の意味が薄れる名前は使いません。
+
+| 避ける名前 | 理由 | 代わり |
+|---|---|---|
+| `out` | 方向だけで、書き戻す値の意味が無い | 意味名 + `_out`、または変換先の `dest` |
+| `out_buf` / `buf_out` | 「出力バッファー」を二重に述べる | 書き戻す値の意味名 (`value_out`、`key_out`) |
+| `dest_out` | `dest` がすでに書き込み先を表す | `dest` |
+| `{name}_out_size` / `out_{name}_sz` | 容量は入力であり、出力値ではない | `{name}_size` |
+
+変換・整形 API の書き込み先は、CRT の `strcpy_s` 系に合わせて `dest` / `dest_size` を使います。  
+ここへ `_out` は付けません。
+
+```c
+int sample_strcpy(char *dest, size_t dest_size, const char *src);
+```
+
+出力引数を受ける一時変数は、[関数内ローカル変数](#関数内ローカル変数) のとおり、対応する引数名から `_out` を除いた名前とします。
+
+次は出力引数ではないため、本節の `{name}_out` を付けません。
+
+- 標準出力のハンドル (`STD_OUTPUT_HANDLE` を受ける変数)
+- 出力ファイルのパスを表す入力文字列
+- Win32 の `nOutBufferSize` に対応する [in] のパイプ容量
+- 後始末用の `goto` ラベル (`out_free_buffer` など)
+
+#### 検証
+
+次の検索結果をレビューし、出力引数の `out_` 接頭辞と、上表の不自然な `_out` が残っていないことを確認します。
+
+```bash
+rg -n --glob '*.{c,h,cc}' --glob '!**/obj/**' --glob '!app/lua/**' --glob '!app/cjson/**' --glob '!app/sqlite/**' \
+  '\bout_[A-Za-z][A-Za-z0-9_]*|\b(buf_out|dest_out)\b' app
+```
+
+ヒットは使用場所を見て、除外対象と出力引数を区別します。
+
 ### テストのモック オブジェクト変数
 
 Google Mock の Mock クラスを格納する変数名は、その Mock クラス名をすべて小文字にした識別子とします。  
@@ -348,7 +409,8 @@ if (ret != SAMPLE_OK)
 `result` は **自関数が返す結果コードの蓄積** に限り使います。  
 計算の合計や変換結果など、結果コードではない値には `result` を使わず、`total` や `size` などの意味名を使います。
 
-出力引数を受ける一時変数は、対応する引数名から `_out` を除いた名前とします。
+出力引数を受ける一時変数は、対応する引数名から `_out` を除いた名前とします。  
+仮引数側の接尾辞規則は [出力引数](#出力引数) を参照してください。
 
 ループ カウンターの `i`、`j`、`k` と、走査用の汎用ポインター `p` は、宣言と使用が同一の短い範囲に収まる場合に限り使用できます。
 
