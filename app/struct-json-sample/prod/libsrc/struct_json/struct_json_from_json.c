@@ -23,7 +23,7 @@ static int struct_from_json(const sj_struct_desc *desc, const cJSON *json, unsig
  *  @brief          cJSON アイテム 1 個分をスカラー値としてメモリーへ書き戻します。
  */
 static int scalar_from_json(sj_field_kind kind, const cJSON *item, unsigned char *field_ptr, size_t elem_size,
-                             size_t char_buf_size)
+                            size_t char_buf_size)
 {
     switch (kind)
     {
@@ -118,12 +118,32 @@ static int element_from_json(const sj_field_desc *field, const cJSON *item, unsi
 /**
  *  @brief          フィールド記述子 1 個分 (スカラー、char 配列、固定長配列のいずれか) を cJSON から書き戻します。
  */
+static const char *json_key(const sj_field_desc *field)
+{
+    if ((field->json_name != NULL) && (field->json_name[0] != '\0'))
+    {
+        return field->json_name;
+    }
+    return field->name;
+}
+
 static int field_from_json(const sj_field_desc *field, const cJSON *json, unsigned char *base)
 {
-    const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, field->name);
+    const cJSON *item;
+
+    if (field->json_ignore != 0)
+    {
+        return COM_UTIL_OK;
+    }
+
+    item = cJSON_GetObjectItemCaseSensitive(json, json_key(field));
     if (item == NULL)
     {
-        return COM_UTIL_ERR_MISSING_REQUIRED;
+        if (field->json_required != 0)
+        {
+            return COM_UTIL_ERR_MISSING_REQUIRED;
+        }
+        return COM_UTIL_OK;
     }
 
     unsigned char *field_ptr = base + field->offset;

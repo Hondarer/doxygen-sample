@@ -1,0 +1,8 @@
+PROJECT_NAME           = "struct-json-sample"
+INPUT                  = .
+EXTRACT_STATIC         = YES
+USE_MDFILE_AS_MAINPAGE =
+
+ALIASES += json_name{1}="@par JSON キー^^@c \1"
+ALIASES += json_ignore="@par JSON 変換^^読み書きしません。"
+ALIASES += json_required="@par JSON 必須^^キーが無いとエラーです。"

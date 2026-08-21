@@ -25,7 +25,37 @@ int g_line = 1;
 
 %%
 
-"/*"([^*]|"*"+[^*/])*"*"+"/"   { for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } } }
+"/**<"([^*]|"*"+[^*/])*"*"+"/"  {
+                                    for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
+                                    yylval.str = strdup(yytext);
+                                    return DOC_POSTFIX;
+                                }
+"/*!<"([^*]|"*"+[^*/])*"*"+"/"  {
+                                    for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
+                                    yylval.str = strdup(yytext);
+                                    return DOC_POSTFIX;
+                                }
+"///<".*                        { yylval.str = strdup(yytext); return DOC_POSTFIX; }
+"//!<".*                        { yylval.str = strdup(yytext); return DOC_POSTFIX; }
+"/**"([^*]|"*"+[^*/])*"*"+"/"   {
+                                    for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
+                                    if (sg_doc_has_file_tag(yytext) == 0)
+                                    {
+                                        yylval.str = strdup(yytext);
+                                        return DOC_PREFIX;
+                                    }
+                                }
+"/*!"([^*]|"*"+[^*/])*"*"+"/"   {
+                                    for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
+                                    if (sg_doc_has_file_tag(yytext) == 0)
+                                    {
+                                        yylval.str = strdup(yytext);
+                                        return DOC_PREFIX;
+                                    }
+                                }
+"///".*                         { yylval.str = strdup(yytext); return DOC_PREFIX; }
+"//!".*                         { yylval.str = strdup(yytext); return DOC_PREFIX; }
+"/*"([^*]|"*"+[^*/])*"*"+"/"    { for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } } }
 "//".*                          { /* 行コメント */ }
 ^[ \t]*#.*                      { /* 前処理行 (#include, #ifndef 等) */ }
 [ \t]+                          { /* 空白 */ }

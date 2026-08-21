@@ -31,4 +31,4 @@
 
 - `make` (ビルド)
 - `make test` (単体テスト)
-- `./prod/cbin/struct-json-sample --save`/`--load`/`--patch` (動作確認、詳細は README.md)
+- `./prod/cbin/struct-json-sample` (動作確認。対話で `init` / `load <path>` / `patch` / `save <path>` / `dump` / `help` / `exit`。空行は `help`。詳細は README.md)

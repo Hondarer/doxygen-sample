@@ -56,6 +56,33 @@
     - `makepart.mk` の宣言を `STRUCTGEN_HEADERS` に変更した。
     - 名前からの解決関数は未実装 (次段階)。
 
+## Doxygen コメントの brief
+
+- 状態: 完了
+- 実施内容:
+    - `sj_field_desc` / `sj_struct_desc` に `brief` を追加した。
+    - `structgen` は前置 `@brief` と後置 Doxygen コメントから `brief` を取り、記述子へ埋め込む。`@file` コメントは構造体へ付けない。
+    - 対話パッチは `brief` があるときだけ名前の横へ表示する。
+    - `sample_types.h` のメンバーへ後置コメントを追加し、構造体の前置 `@brief` と両方の経路を見せる。
+
+## 対話サブコマンドのデモコマンド
+
+- 状態: 完了
+- 実施内容:
+    - `struct-json-sample` の起動引数を廃止し、対話で `init` / `load <path>` / `patch` / `save <path>` / `dump` / `help` / `exit` を発行する。ルートの空行は `help` と同じで、終了は `exit`。
+    - `--save` / `--load` / `--patch` は使わない。
+    - 1 つの `person` インスタンスを持ち回り、`init` のあと `patch` して `save` できるようにした。
+    - コマンドは `SAMPLE_TYPES_PERSON` の記述子だけを使う。領域は `desc->size` で確保し、`init` はゼロ初期化、`dump` は `sj_print` で記述子を歩く。
+
+## JSON アノテーション
+
+- 状態: 完了
+- 実施内容:
+    - `@json_name{...}` / `@json_ignore` / `@json_required` を Doxygen コメントから取り、記述子の JSON 層へ載せた。
+    - JSON キー欠落は既定で許し、`@json_required` のときだけエラーにする。
+    - `@json_ignore` は JSON の読み書きだけを外し、dump / patch の対象には残す。
+    - `prod/Doxyfile.part` の `ALIASES` で、タグを `@par` 段落として見えるようにした。
+
 ## Phase 4: com_util への切り出し検討
 
 - 状態: 未着手

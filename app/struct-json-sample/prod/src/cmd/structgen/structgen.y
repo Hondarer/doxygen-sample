@@ -27,6 +27,7 @@ sg_struct_list *g_structs = NULL;
     char *str;
     long num;
     sg_typespec typespec;
+    sg_doc_attrs doc;
     struct sg_field *field;
     struct sg_field_list *field_list;
     struct sg_struct *strct;
@@ -36,6 +37,7 @@ sg_struct_list *g_structs = NULL;
 %token T_INT T_UNSIGNED T_CHAR T_FLOAT T_DOUBLE
 %token LBRACE RBRACE LBRACKET RBRACKET SEMI COMMA STAR
 %token <str> IDENT
+%token <str> DOC_PREFIX DOC_POSTFIX
 %token <num> INTEGER
 %token OTHER
 
@@ -43,6 +45,8 @@ sg_struct_list *g_structs = NULL;
 %type <field_list> field_decl_list
 %type <field> field_decl
 %type <typespec> type_spec
+%type <str> doc_prefix_tokens
+%type <doc> doc_prefix doc_postfix
 
 %%
 
@@ -53,11 +57,43 @@ translation_unit:
     | translation_unit error SEMI { yyerrok; }
     ;
 
+doc_prefix:
+      /* empty */ { sg_doc_attrs empty = {0}; $$ = empty; }
+    | doc_prefix_tokens
+        {
+            $$ = sg_doc_attrs_from_raw($1, 0);
+            free($1);
+        }
+    ;
+
+doc_prefix_tokens:
+      DOC_PREFIX { $$ = $1; }
+    | doc_prefix_tokens DOC_PREFIX { $$ = sg_doc_concat($1, $2); }
+    ;
+
+doc_postfix:
+      /* empty */ { sg_doc_attrs empty = {0}; $$ = empty; }
+    | DOC_POSTFIX
+        {
+            $$ = sg_doc_attrs_from_raw($1, 1);
+            free($1);
+        }
+    ;
+
 typedef_struct_decl:
-      TYPEDEF STRUCT LBRACE field_decl_list RBRACE IDENT SEMI
-        { $$ = sg_struct_create($6, $4); }
-    | TYPEDEF STRUCT IDENT LBRACE field_decl_list RBRACE IDENT SEMI
-        { free($3); $$ = sg_struct_create($7, $5); }
+      doc_prefix TYPEDEF STRUCT LBRACE field_decl_list RBRACE IDENT SEMI doc_postfix
+        {
+            sg_doc_attrs attrs = sg_doc_attrs_choose($1, $9);
+            $$ = sg_struct_create($7, $5, attrs.brief);
+            free(attrs.json_name);
+        }
+    | doc_prefix TYPEDEF STRUCT IDENT LBRACE field_decl_list RBRACE IDENT SEMI doc_postfix
+        {
+            sg_doc_attrs attrs = sg_doc_attrs_choose($1, $10);
+            free($4);
+            $$ = sg_struct_create($8, $6, attrs.brief);
+            free(attrs.json_name);
+        }
     ;
 
 field_decl_list:
@@ -66,13 +102,21 @@ field_decl_list:
     ;
 
 field_decl:
-      type_spec IDENT SEMI
-        { $$ = sg_field_create($2, $1.name, $1.is_struct, 0, g_line); }
-    | type_spec IDENT LBRACKET INTEGER RBRACKET SEMI
-        { $$ = sg_field_create($2, $1.name, $1.is_struct, $4, g_line); }
-    | type_spec STAR IDENT SEMI
+      doc_prefix type_spec IDENT SEMI doc_postfix
         {
-            fprintf(stderr, "structgen: %d: ポインター メンバーは非対応です: %s\n", g_line, $3);
+            sg_doc_attrs attrs = sg_doc_attrs_choose($1, $5);
+            $$ = sg_field_create($3, $2.name, $2.is_struct, 0, g_line, attrs.brief, attrs.json_name, attrs.json_ignore,
+                                 attrs.json_required);
+        }
+    | doc_prefix type_spec IDENT LBRACKET INTEGER RBRACKET SEMI doc_postfix
+        {
+            sg_doc_attrs attrs = sg_doc_attrs_choose($1, $8);
+            $$ = sg_field_create($3, $2.name, $2.is_struct, $5, g_line, attrs.brief, attrs.json_name, attrs.json_ignore,
+                                 attrs.json_required);
+        }
+    | doc_prefix type_spec STAR IDENT SEMI doc_postfix
+        {
+            fprintf(stderr, "structgen: %d: ポインター メンバーは非対応です: %s\n", g_line, $4);
             exit(1);
         }
     ;

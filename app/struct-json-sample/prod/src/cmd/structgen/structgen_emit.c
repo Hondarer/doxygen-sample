@@ -222,6 +222,34 @@ static const char *generated_header_include(const char *header_out)
     return path_basename(header_out);
 }
 
+static void fprint_c_string(FILE *out, const char *text)
+{
+    if (text == NULL)
+    {
+        fputs("NULL", out);
+        return;
+    }
+
+    fputc('"', out);
+    for (const char *p = text; *p != '\0'; p++)
+    {
+        if ((*p == '"') || (*p == '\\'))
+        {
+            fputc('\\', out);
+            fputc(*p, out);
+        }
+        else if (*p == '\n')
+        {
+            fputs("\\n", out);
+        }
+        else
+        {
+            fputc(*p, out);
+        }
+    }
+    fputc('"', out);
+}
+
 static int count_structs(const sg_struct_list *list)
 {
     int count = 0;
@@ -291,13 +319,19 @@ static void emit_struct(FILE *out, const sg_struct *s, emitted_name **emitted)
             snprintf(elem_size_expr, sizeof(elem_size_expr), "%s", elem_sizeof_expr(f->type_name));
         }
 
-        fprintf(out, "    { \"%s\", %s, 0, offsetof(%s, %s), %s, %ld, %s, %s },\n", f->name, kind, s->name, f->name,
+        fprintf(out, "    { \"%s\", %s, 0, offsetof(%s, %s), %s, %ld, %s, %s, ", f->name, kind, s->name, f->name,
                 elem_size_expr, array_count_out, char_buf_expr, nested_expr);
+        fprint_c_string(out, f->brief);
+        fprintf(out, ", ");
+        fprint_c_string(out, f->json_name);
+        fprintf(out, ", %d, %d },\n", f->json_ignore, f->json_required);
     }
     fprintf(out, "};\n\n");
 
-    fprintf(out, "static const sj_struct_desc g_%s_desc = { \"%s\", sizeof(%s), g_%s_fields, %d };\n\n", s->name,
-            s->name, s->name, s->name, count_fields(s));
+    fprintf(out, "static const sj_struct_desc g_%s_desc = { \"%s\", sizeof(%s), g_%s_fields, %d, ", s->name, s->name,
+            s->name, s->name, count_fields(s));
+    fprint_c_string(out, s->brief);
+    fprintf(out, " };\n\n");
 
     emitted_name *node = (emitted_name *)calloc(1, sizeof(*node));
     node->name = s->name;

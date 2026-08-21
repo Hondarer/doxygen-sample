@@ -7,7 +7,7 @@
  *  @version        1.0.0
  *
  *  @ref sj_struct_desc (`struct_json_meta.h`、通常は `structgen` が生成) を歩いて、
- *  構造体インスタンスと cJSON オブジェクトを相互変換します。\n
+ *  構造体インスタンスと cJSON オブジェクトを相互変換し、値の表示も行います。\n
  *  戻り値は `com_util/base/result.h` の共通結果コード (@c COM_UTIL_OK およびその他の
  *  @c COM_UTIL_ERR_* ) です。
  *
@@ -20,6 +20,7 @@
 #define STRUCT_JSON_H
 
 #include <cJSON.h>
+#include <stdio.h>
 
 #include <struct_json/struct_json_export.h>
 #include <struct_json/struct_json_meta.h>
@@ -53,7 +54,8 @@ extern "C"
      *  @param[out]     instance    書き戻し先の構造体インスタンスです。\n
      *                              失敗時、途中まで書き込まれている場合があります。
      *  @return         @c COM_UTIL_OK (成功)、または負値のエラー コードです。\n
-     *                  キー欠落は @c COM_UTIL_ERR_MISSING_REQUIRED、型不一致や NULL 引数は
+     *                  @ref sj_field_desc::json_required のキー欠落は
+     *                  @c COM_UTIL_ERR_MISSING_REQUIRED、型不一致や NULL 引数は
      *                  @c COM_UTIL_ERR_INVALID_ARGUMENT、文字列がバッファーを超える場合は
      *                  @c COM_UTIL_ERR_BUFFER_TOO_SMALL を返します。
      */
@@ -94,6 +96,19 @@ extern "C"
      *                  標準入力の EOF または Ctrl+C による中断を表します。
      */
     SJ_EXPORT int SJ_API sj_patch_interactive(const sj_struct_desc *desc, void *instance);
+
+    /**
+     *  @brief          記述子の階層を辿り、構造体インスタンスの値をテキストへ書き出します。
+     *
+     *  スカラーと char 配列は現在値を、ネスト構造体と配列は要素ごとに降下して
+     *  表示します。JSON にはしません。
+     *
+     *  @param[in]      desc        構造体の記述子です。NULL を渡してはなりません。
+     *  @param[in]      instance    表示する構造体インスタンスです。NULL を渡してはなりません。
+     *  @param[in]      out         書き出し先です。NULL を渡してはなりません。
+     *  @return         @c COM_UTIL_OK (成功)、または負値のエラー コードです。
+     */
+    SJ_EXPORT int SJ_API sj_print(const sj_struct_desc *desc, const void *instance, FILE *out);
 
 #ifdef __cplusplus
 }

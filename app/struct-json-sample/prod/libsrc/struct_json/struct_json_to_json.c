@@ -150,6 +150,15 @@ static int field_to_json(const sj_field_desc *field, const unsigned char *base, 
 /**
  *  @brief          構造体インスタンス 1 個分を cJSON オブジェクトへ変換します。
  */
+static const char *json_key(const sj_field_desc *field)
+{
+    if ((field->json_name != NULL) && (field->json_name[0] != '\0'))
+    {
+        return field->json_name;
+    }
+    return field->name;
+}
+
 static int struct_to_json(const sj_struct_desc *desc, const unsigned char *base, cJSON **json_out)
 {
     cJSON *obj = cJSON_CreateObject();
@@ -162,14 +171,20 @@ static int struct_to_json(const sj_struct_desc *desc, const unsigned char *base,
     {
         const sj_field_desc *field = &desc->fields[i];
         cJSON *item = NULL;
+        int ret;
 
-        int ret = field_to_json(field, base, &item);
+        if (field->json_ignore != 0)
+        {
+            continue;
+        }
+
+        ret = field_to_json(field, base, &item);
         if (ret != COM_UTIL_OK)
         {
             cJSON_Delete(obj);
             return ret;
         }
-        if (!cJSON_AddItemToObject(obj, field->name, item))
+        if (!cJSON_AddItemToObject(obj, json_key(field), item))
         {
             cJSON_Delete(item);
             cJSON_Delete(obj);

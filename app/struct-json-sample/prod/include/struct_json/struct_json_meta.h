@@ -91,6 +91,36 @@ extern "C"
          *  他の `kind` では NULL です。
          */
         const sj_struct_desc *nested;
+
+        /**
+         *  @brief          フィールドの短い説明です。
+         *
+         *  structgen が Doxygen の前置 `@brief` または後置コメントから埋めます。\n
+         *  無いときは NULL です。JSON 変換には使いません。
+         */
+        const char *brief;
+
+        /**
+         *  @brief          JSON オブジェクトのキー名です。
+         *
+         *  NULL または空のときは @ref sj_field_desc::name を使います。\n
+         *  dump / patch の表示には使いません。
+         */
+        const char *json_name;
+
+        /**
+         *  @brief          1 なら JSON の読み書きから外します。
+         *
+         *  dump / patch の対象には残します。
+         */
+        int json_ignore;
+
+        /**
+         *  @brief          1 なら JSON のキー欠落をエラーにします。
+         *
+         *  0 のときは欠落しても値を触らず成功します。
+         */
+        int json_required;
     } sj_field_desc;
 
     /**
@@ -102,6 +132,14 @@ extern "C"
         size_t size;                 /**< 構造体全体のバイト サイズです (`sizeof`)。 */
         const sj_field_desc *fields; /**< フィールド記述子の配列です。 */
         size_t field_count;          /**< `fields` の要素数です。 */
+
+        /**
+         *  @brief          構造体の短い説明です。
+         *
+         *  structgen が Doxygen の前置 `@brief` または後置コメントから埋めます。\n
+         *  無いときは NULL です。JSON 変換には使いません。
+         */
+        const char *brief;
     };
 
 #ifdef __cplusplus

@@ -8,17 +8,15 @@
  *
  *  使用方法:
     @code{.sh}
-    struct-json-sample --save <path>
-    struct-json-sample --load <path> [--dump]
-    struct-json-sample --patch <path>
+    struct-json-sample
     @endcode
  *
- *  `--save` は組み込みのサンプル値を、structgen が `sample_types.h` から
- *  生成した型一覧の @c SAMPLE_TYPES_PERSON をキーに取得した記述子を使って
- *  JSON ファイルへ書き出します。\n
- *  `--load` は JSON ファイルを読み込み、`--dump` 指定時は内容を表示します。\n
- *  `--patch` は JSON ファイルを読み込み、対話形式でフィールドを編集してから
- *  同じファイルへ書き戻します。
+ *  起動後は対話でサブコマンドを発行します。\n
+ *  `load <path>` と `save <path>` はファイル名を引数に取ります。\n
+ *  その他は `init` / `patch` / `dump` / `help` / `exit` です。\n
+ *  ルートメニューの空行は `help` と同じです。終了は `exit` です。\n
+ *  記述子は型一覧の @c SAMPLE_TYPES_PERSON だけを使います。\n
+ *  領域は記述子のサイズで確保し、`init` はゼロ初期化します。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
  *
@@ -28,13 +26,17 @@
 #include <struct_json/struct_json.h>
 
 #include <com_util/base/result.h>
+#include <com_util/prompt/prompt.h>
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "gen/sample_types_meta.h"
-#include "sample_types.h"
+
+/** サブコマンド 1 行を受けるバッファーのバイト数です。 */
+#define SAMPLE_CMD_LINE_BYTES 256
 
 /**
  *  @brief          型一覧から person の記述子を取得します。
@@ -51,158 +53,261 @@ static const sj_struct_desc *person_desc(void)
 
 static void print_usage(const char *prog)
 {
-    fprintf(stderr, "usage:\n");
-    fprintf(stderr, "  %s --save <path>\n", prog);
-    fprintf(stderr, "  %s --load <path> [--dump]\n", prog);
-    fprintf(stderr, "  %s --patch <path>\n", prog);
+    fprintf(stderr, "usage: %s\n", prog);
 }
 
-static void fill_sample_address(address *a, const char *city, int zip)
+static void print_commands(void)
 {
-    snprintf(a->city, sizeof(a->city), "%s", city);
-    a->zip = zip;
+    fprintf(stderr, "commands: init  load <path>  patch  save <path>  dump  help  exit\n");
+    fprintf(stderr, "          (空行は help、終了は exit)\n");
 }
 
-static void fill_sample_person(person *p)
+/**
+ *  @brief          行先頭がコマンド名と一致するかを判定し、残りの引数を返します。
+ *
+ *  @param[in]      line        入力行です。
+ *  @param[in]      cmd         コマンド名です。
+ *  @param[out]     args_out    コマンド名の後の引数 (先行空白は除く) です。
+ *  @return         一致すれば 1、しなければ 0 です。
+ */
+static int match_command(const char *line, const char *cmd, const char **args_out)
 {
-    p->id = 1;
-    p->age = 30U;
-    p->score = 92.5;
-    snprintf(p->name, sizeof(p->name), "Alice");
-    fill_sample_address(&p->home, "Tokyo", 1000000);
-    fill_sample_address(&p->addresses[0], "Osaka", 5300000);
-    fill_sample_address(&p->addresses[1], "Kyoto", 6000000);
-    p->scores[0] = 80;
-    p->scores[1] = 90;
-    p->scores[2] = 70;
-}
+    size_t cmd_len = strlen(cmd);
 
-static void dump_address(const address *a)
-{
-    printf("  city=%s zip=%d\n", a->city, a->zip);
-}
-
-static void dump_person(const person *p)
-{
-    printf("id=%d age=%u score=%g name=%s\n", p->id, p->age, p->score, p->name);
-    printf("home:\n");
-    dump_address(&p->home);
-    printf("addresses:\n");
-    for (size_t i = 0; i < (sizeof(p->addresses) / sizeof(p->addresses[0])); i++)
+    if (strncmp(line, cmd, cmd_len) != 0)
     {
-        dump_address(&p->addresses[i]);
+        return 0;
     }
-    printf("scores:");
-    for (size_t i = 0; i < (sizeof(p->scores) / sizeof(p->scores[0])); i++)
+    if (line[cmd_len] == '\0')
     {
-        printf(" %d", p->scores[i]);
-    }
-    printf("\n");
-}
-
-static int run_save(const char *path)
-{
-    person p = {0};
-    const sj_struct_desc *desc = person_desc();
-    if (desc == NULL)
-    {
+        *args_out = "";
         return 1;
     }
-    fill_sample_person(&p);
+    if ((line[cmd_len] == ' ') || (line[cmd_len] == '\t'))
+    {
+        const char *args = line + cmd_len;
+        while ((*args == ' ') || (*args == '\t'))
+        {
+            args++;
+        }
+        *args_out = args;
+        return 1;
+    }
+    return 0;
+}
 
-    int ret = sj_save_file(desc, &p, path);
+static const char *require_path(const char *args)
+{
+    if ((args == NULL) || (args[0] == '\0'))
+    {
+        fprintf(stderr, "struct-json-sample: ファイル名を指定してください\n");
+        return NULL;
+    }
+    return args;
+}
+
+static int ensure_ready(int has_data)
+{
+    if (has_data == 0)
+    {
+        fprintf(stderr, "struct-json-sample: 先に init または load してください\n");
+        return 0;
+    }
+    return 1;
+}
+
+static void cmd_init(const sj_struct_desc *desc, void *instance, int *has_data)
+{
+    memset(instance, 0, desc->size);
+    *has_data = 1;
+}
+
+static void cmd_load(const sj_struct_desc *desc, void *instance, const char *path, int *has_data)
+{
+    int ret = sj_load_file(desc, instance, path);
+    if (ret != COM_UTIL_OK)
+    {
+        fprintf(stderr, "struct-json-sample: 読み込みに失敗しました (結果コード %d): %s\n", ret, path);
+        return;
+    }
+    *has_data = 1;
+}
+
+static void cmd_save(const sj_struct_desc *desc, const void *instance, const char *path, int has_data)
+{
+    int ret;
+
+    if (ensure_ready(has_data) == 0)
+    {
+        return;
+    }
+    ret = sj_save_file(desc, instance, path);
     if (ret != COM_UTIL_OK)
     {
         fprintf(stderr, "struct-json-sample: 保存に失敗しました (結果コード %d): %s\n", ret, path);
-        return 1;
     }
-    dump_person(&p);
-    return 0;
 }
 
-static int run_load(const char *path, int dump)
+static void cmd_patch(const sj_struct_desc *desc, void *instance, int has_data)
 {
-    person p = {0};
-    const sj_struct_desc *desc = person_desc();
-    if (desc == NULL)
-    {
-        return 1;
-    }
+    int ret;
 
-    int ret = sj_load_file(desc, &p, path);
-    if (ret != COM_UTIL_OK)
+    if (ensure_ready(has_data) == 0)
     {
-        fprintf(stderr, "struct-json-sample: 読み込みに失敗しました (結果コード %d): %s\n", ret, path);
-        return 1;
+        return;
     }
-    if (dump != 0)
-    {
-        dump_person(&p);
-    }
-    return 0;
-}
-
-static int run_patch(const char *path)
-{
-    person p = {0};
-    const sj_struct_desc *desc = person_desc();
-    if (desc == NULL)
-    {
-        return 1;
-    }
-
-    int ret = sj_load_file(desc, &p, path);
-    if (ret != COM_UTIL_OK)
-    {
-        fprintf(stderr, "struct-json-sample: 読み込みに失敗しました (結果コード %d): %s\n", ret, path);
-        return 1;
-    }
-
-    ret = sj_patch_interactive(desc, &p);
+    ret = sj_patch_interactive(desc, instance);
     if (ret != COM_UTIL_OK)
     {
         fprintf(stderr, "struct-json-sample: 対話パッチが中断されました (結果コード %d)\n", ret);
-        return 1;
     }
+}
 
-    ret = sj_save_file(desc, &p, path);
+static void cmd_dump(const sj_struct_desc *desc, const void *instance, int has_data)
+{
+    int ret;
+
+    if (ensure_ready(has_data) == 0)
+    {
+        return;
+    }
+    ret = sj_print(desc, instance, stdout);
     if (ret != COM_UTIL_OK)
     {
-        fprintf(stderr, "struct-json-sample: 保存に失敗しました (結果コード %d): %s\n", ret, path);
-        return 1;
+        fprintf(stderr, "struct-json-sample: 表示に失敗しました (結果コード %d)\n", ret);
     }
-    dump_person(&p);
-    return 0;
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    const sj_struct_desc *desc;
+    void *instance = NULL;
+    int has_data = 0;
+    int exit_code = 0;
+    com_util_prompt *prompt = NULL;
+    char line[SAMPLE_CMD_LINE_BYTES];
+
+    if (argc != 1)
     {
         print_usage(argv[0]);
         return 1;
     }
 
-    if (strcmp(argv[1], "--save") == 0)
+    desc = person_desc();
+    if (desc == NULL)
     {
-        return run_save(argv[2]);
+        return 1;
     }
 
-    if (strcmp(argv[1], "--load") == 0)
+    instance = malloc(desc->size);
+    if (instance == NULL)
     {
-        int dump = 0;
-        if ((argc >= 4) && (strcmp(argv[3], "--dump") == 0))
+        fprintf(stderr, "struct-json-sample: 領域を確保できません\n");
+        return 1;
+    }
+
+    prompt = com_util_prompt_create(NULL);
+    if (prompt == NULL)
+    {
+        fprintf(stderr, "struct-json-sample: プロンプトを作成できません\n");
+        free(instance);
+        return 1;
+    }
+
+    print_commands();
+
+    for (;;)
+    {
+        const char *args = NULL;
+        int ret = com_util_prompt_readline(prompt, line, sizeof(line), "struct-json-sample> ");
+        if ((ret == COM_UTIL_ERR_EOF) || (ret == COM_UTIL_ERR_CANCELED))
         {
-            dump = 1;
+            exit_code = (ret == COM_UTIL_ERR_EOF) ? 0 : 1;
+            break;
         }
-        return run_load(argv[2], dump);
+        if (ret != COM_UTIL_OK)
+        {
+            fprintf(stderr, "struct-json-sample: 入力に失敗しました (結果コード %d)\n", ret);
+            exit_code = 1;
+            break;
+        }
+        if (line[0] == '\0')
+        {
+            print_commands();
+            continue;
+        }
+
+        if (match_command(line, "exit", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else
+            {
+                break;
+            }
+        }
+        else if (match_command(line, "help", &args) != 0)
+        {
+            print_commands();
+        }
+        else if (match_command(line, "init", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else
+            {
+                cmd_init(desc, instance, &has_data);
+            }
+        }
+        else if (match_command(line, "load", &args) != 0)
+        {
+            const char *path = require_path(args);
+            if (path != NULL)
+            {
+                cmd_load(desc, instance, path, &has_data);
+            }
+        }
+        else if (match_command(line, "patch", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else
+            {
+                cmd_patch(desc, instance, has_data);
+            }
+        }
+        else if (match_command(line, "save", &args) != 0)
+        {
+            const char *path = require_path(args);
+            if (path != NULL)
+            {
+                cmd_save(desc, instance, path, has_data);
+            }
+        }
+        else if (match_command(line, "dump", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else
+            {
+                cmd_dump(desc, instance, has_data);
+            }
+        }
+        else
+        {
+            print_commands();
+        }
     }
 
-    if (strcmp(argv[1], "--patch") == 0)
-    {
-        return run_patch(argv[2]);
-    }
-
-    print_usage(argv[0]);
-    return 1;
+    com_util_prompt_dispose(prompt);
+    free(instance);
+    return exit_code;
 }

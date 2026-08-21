@@ -149,7 +149,7 @@ static int patch_scalar(com_util_prompt *prompt, const sj_field_desc *field, uns
     for (;;)
     {
         int ret = com_util_prompt_readline_fmt(prompt, line, sizeof(line), "%s (現在値 %s、空行で変更なし)> ",
-                                                field->name, current);
+                                               field->name, current);
         if (ret != COM_UTIL_OK)
         {
             return ret;
@@ -298,32 +298,47 @@ static int patch_struct(com_util_prompt *prompt, const sj_struct_desc *desc, uns
 
     for (;;)
     {
-        printf("-- %s --\n", desc->name);
+        if ((desc->brief != NULL) && (desc->brief[0] != '\0'))
+        {
+            printf("-- %s --  %s\n", desc->name, desc->brief);
+        }
+        else
+        {
+            printf("-- %s --\n", desc->name);
+        }
         for (size_t i = 0; i < desc->field_count; i++)
         {
             const sj_field_desc *field = &desc->fields[i];
             unsigned char *field_ptr = base + field->offset;
+            const char *brief = "";
+            const char *brief_sep = "";
+
+            if ((field->brief != NULL) && (field->brief[0] != '\0'))
+            {
+                brief_sep = "  ";
+                brief = field->brief;
+            }
 
             if (field->kind == SJ_FIELD_STRUCT)
             {
                 if (field->array_count > 1U)
                 {
-                    printf("  %zu) %s [配列 %zu 件]\n", i + 1U, field->name, field->array_count);
+                    printf("  %zu) %s [配列 %zu 件]%s%s\n", i + 1U, field->name, field->array_count, brief_sep, brief);
                 }
                 else
                 {
-                    printf("  %zu) %s {...}\n", i + 1U, field->name);
+                    printf("  %zu) %s {...}%s%s\n", i + 1U, field->name, brief_sep, brief);
                 }
             }
             else if ((field->kind != SJ_FIELD_CHAR_ARRAY) && (field->array_count > 1U))
             {
-                printf("  %zu) %s [配列 %zu 件]\n", i + 1U, field->name, field->array_count);
+                printf("  %zu) %s [配列 %zu 件]%s%s\n", i + 1U, field->name, field->array_count, brief_sep, brief);
             }
             else
             {
                 char current[64];
                 format_scalar_value(field->kind, field_ptr, current, sizeof(current));
-                printf("  %zu) %s = %s\n", i + 1U, field->name, current);
+                printf("  %zu) %s = %s%s%s\n", i + 1U, field->name, current, brief_sep, brief);
             }
         }
 
