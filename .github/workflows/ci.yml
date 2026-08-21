@@ -17,6 +17,8 @@ permissions:
 env:
   OPENCPPCOVERAGE_VERSION: "0.9.9.0"
   REPORTGENERATOR_VERSION: "5.4.3"
+  WINFLEXBISON_VERSION: "2.5.25"
+  WINFLEXBISON_SHA256: "8D324B62BE33604B2C45AD1DD34AB93D722534448F55A16CA7292DE32B6AC135"
 
 jobs:
   build-and-test-linux:
@@ -103,6 +105,8 @@ jobs:
     runs-on: windows-2025-vs2026
     env:
       TZ: JST-9
+      BISON: win_bison
+      FLEX: win_flex
 
     steps:
       - name: Checkout repository
@@ -116,6 +120,36 @@ jobs:
       - name: Load app environment
         run: bash bin/load-app-env.sh --env-file .vscode/.env.windows --workspace '${{ github.workspace }}' --format github
         shell: bash
+
+      - name: Install WinFlexBison
+        run: |
+          $ErrorActionPreference = "Stop"
+          $archiveName = "win_flex_bison-$env:WINFLEXBISON_VERSION.zip"
+          $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
+          $installPath = Join-Path $env:RUNNER_TEMP "winflexbison-$env:WINFLEXBISON_VERSION"
+          # see: https://github.com/lexxmark/winflexbison/releases/tag/v2.5.25
+          $downloadUrl = "https://github.com/lexxmark/winflexbison/releases/download/v$env:WINFLEXBISON_VERSION/$archiveName"
+
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $archivePath
+          $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archivePath).Hash
+          if ($actualHash -ne $env:WINFLEXBISON_SHA256) {
+              throw "WinFlexBison SHA-256 mismatch: expected $env:WINFLEXBISON_SHA256, actual $actualHash"
+          }
+
+          Expand-Archive -LiteralPath $archivePath -DestinationPath $installPath -Force
+          Add-Content -Path $env:GITHUB_PATH -Value $installPath
+
+          $bisonPath = Join-Path $installPath "win_bison.exe"
+          $flexPath = Join-Path $installPath "win_flex.exe"
+          & $bisonPath --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "win_bison --version failed with exit code $LASTEXITCODE"
+          }
+          & $flexPath --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "win_flex --version failed with exit code $LASTEXITCODE"
+          }
+        shell: pwsh
 
       - name: Restore OpenCppCoverage cache
         uses: actions/cache@v6

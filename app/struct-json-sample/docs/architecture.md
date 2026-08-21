@@ -46,7 +46,9 @@ JSON 入出力向けの拡張として、同じコメントに `@json_name{...}`
 
 `.l`/`.y` を置くだけで `$(GENDIR)` (`gen/`) に中間生成物を配置し自動コンパイルする仕組み (`framework/makefw/makefiles/_flex_bison_compile.mk`) は、flex/bison 由来かどうかを問わない汎用ルールとして makefw 本体に追加しました。一方、「ヘッダーを解析してメタデータ C ソースを生成する」という `structgen` の呼び出し (`STRUCTGEN_HEADERS` の宣言と生成ルール) は、この app に固有のロジックであり、makefw 本体には追加していません。
 
-Windows での flex/bison は win_flex/win_bison を `flex.exe`/`bison.exe` という名前で PATH に用意する前提とし、`PLATFORM_*` 分岐は行っていません (クロスプラットフォームな外部コマンドとして扱う)。
+Windows で WinFlexBison を使う場合は、`BISON=win_bison` と `FLEX=win_flex` を指定します。makefw は Windows で `FLEXFLAGS` の既定値を `--wincompat` とし、MSVC で利用できるコードを生成します。変換対象は `PLATFORM_*` で出し分けず、クロスプラットフォームな外部コマンドとして扱います。
+
+生成ツール `structgen` の実行ファイル名は、Linux の `structgen` と Windows の `structgen.exe` を `PLATFORM_*` で明示的に切り替えます。これにより、生成ルールの前提条件と実際の Windows ビルド成果物を一致させます。
 
 #### 実装時に判明した詳細 (Linux でのリンク組み込み)
 

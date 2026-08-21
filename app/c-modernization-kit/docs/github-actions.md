@@ -35,15 +35,16 @@ Linux ビルド (OL8/OL9/OL10)、Windows ビルド、ドキュメント生成の
 
 ### 共通環境変数
 
-`.github/workflows/ci.yml` では、全ジョブ共通の `env` として framework home 系の環境変数を定義します。
+`.github/workflows/ci.yml` では、全ジョブ共通の `env` として、CI が動的に導入するツールのバージョンと検証値を定義します。
 
 | 変数名 | 値 | 説明 |
 |--------|-----|------|
-| `MAKEFW_HOME` | `${{ github.workspace }}/framework/makefw` | make テンプレート群の場所 (`make` 系ターゲットで必須) |
-| `DOCSFW_HOME` | `${{ github.workspace }}/framework/docsfw` | Markdown 発行フレームワークの場所 |
-| `DOXYFW_HOME` | `${{ github.workspace }}/framework/doxyfw` | Doxygen 生成フレームワークの場所 |
-| `TESTFW_HOME` | `${{ github.workspace }}/framework/testfw` | テスト フレームワークの場所 |
+| `OPENCPPCOVERAGE_VERSION` | `0.9.9.0` | Windows CI で使用する OpenCppCoverage のバージョン |
+| `REPORTGENERATOR_VERSION` | `5.4.3` | Windows CI で使用する ReportGenerator のバージョン |
+| `WINFLEXBISON_VERSION` | `2.5.25` | Windows CI で使用する WinFlexBison のバージョン |
+| `WINFLEXBISON_SHA256` | `8D324B62BE33604B2C45AD1DD34AB93D722534448F55A16CA7292DE32B6AC135` | WinFlexBison 配布 ZIP の SHA-256 |
 
+framework home 系 (`MAKEFW_HOME` / `DOCSFW_HOME` / `DOXYFW_HOME` / `TESTFW_HOME`) と実行時パスは、各ジョブの `Load app environment` ステップが `.vscode/.env.*` から読み込みます。  
 `MAKEFW_HOME` は `make` / `make test` / `make doxy` などで必須です。未設定だと `MAKEFW_HOME is required. Export MAKEFW_HOME before running make` で停止します。  
 `DOCSFW_HOME` は `make docs` と VS Code の Markdown 発行タスクで使います。  
 `DOXYFW_HOME` は `make doxy` が doxyfw を呼び出すときに使います。  
@@ -112,9 +113,13 @@ runs-on: windows-2025-vs2026
 
 Windows 環境では以下のツールを動的にセットアップしています:
 
+- **WinFlexBison** - flex/bison 互換のコード生成ツール (公式リリース ZIP の SHA-256 を検証して展開)
 - **OpenCppCoverage** - C++ コード カバレッジ ツール (Chocolatey 経由でインストール)
 - **ReportGenerator** - カバレッジ レポート生成ツール (.NET ツール)
 - **MSVC 環境** - カスタム スクリプト (`Add-VSBT-Env-x64.ps1`) で環境変数を設定
+
+WinFlexBison の実行ファイル名は `win_bison` / `win_flex` です。  
+Windows ジョブの `BISON` / `FLEX` 環境変数を通じて、makefw のコマンド上書き機構へ渡します。
 
 ## ジョブ実行フロー
 
@@ -208,28 +213,33 @@ end note
 1. **リポジトリのチェックアウト**
     - サブモジュールを含めて再帰的にチェックアウト
 
-2. **OpenCppCoverage のインストール**
+2. **WinFlexBison のインストール**
+    - 公式リリース ZIP をダウンロード
+    - SHA-256 の一致と `win_bison` / `win_flex` の実行を確認
+    - PATH に追加し、makefw の `BISON` / `FLEX` へ実行ファイル名を設定
+
+3. **OpenCppCoverage のインストール**
     - Chocolatey を使用してインストール
     - PATH に追加
 
-3. **ReportGenerator のインストール**
+4. **ReportGenerator のインストール**
     - .NET Global Tool としてインストール
 
-4. **MSVC 環境のセットアップ**
+5. **MSVC 環境のセットアップ**
     - カスタム スクリプト (`Add-VSBT-Env-x64.ps1`) で環境変数を設定
 
-5. **ビルド**
+6. **ビルド**
     - `make` を実行してプロジェクトをビルド
     - ビルド ログを `logs/windows-build.log` に保存
 
-6. **テストの実行**
+7. **テストの実行**
     - `make test` を実行
     - テスト ログを `logs/windows-test.log` に保存
 
-7. **テスト結果アーティファクトのアップロード**
+8. **テスト結果アーティファクトのアップロード**
     - テスト結果 (`app/**/results/`) と `make test` ログを同じ artifact に保存
 
-8. **ビルド ログ アーティファクトのアップロード**
+9. **ビルド ログ アーティファクトのアップロード**
     - ビルド ログのみを保存
 
 ### publish-docs ジョブ

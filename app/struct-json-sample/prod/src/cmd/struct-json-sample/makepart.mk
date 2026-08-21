@@ -4,7 +4,11 @@ LIBS += com_util cjson struct_json
 # structgen (ヘッダー解析ツール) の実行体。
 # prod/src/cmd/makelocal.mk の SUBDIRS 宣言順により、必ずこの makepart.mk の
 # 評価より前に structgen のビルドが完了している。
+ifdef PLATFORM_LINUX
 STRUCTGEN_BIN := $(MYAPP_DIR)/prod/cbin/structgen
+else ifdef PLATFORM_WINDOWS
+STRUCTGEN_BIN := $(MYAPP_DIR)/prod/cbin/structgen.exe
+endif
 
 # 解析対象ヘッダーを静的に宣言する。ヘッダー内の typedef struct をすべて変換する。
 # 生成される .c / .h のパスはこの宣言からパース時点で決定論的に導出できるため、
