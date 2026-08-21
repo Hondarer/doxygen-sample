@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
     if (com_util_condvar_create(&s_stop_cv) != COM_UTIL_OK)
     {
         com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "条件変数の生成に失敗しました。");
-        com_util_local_lock_destroy(s_stop_lock);
+        com_util_local_lock_dispose(s_stop_lock);
         s_stop_lock = NULL;
         tracer_close();
         return EXIT_FAILURE;
@@ -387,9 +387,9 @@ int main(int argc, char *argv[])
         rc = svc_run_lifecycle(&g_service_def);
     }
 
-    com_util_condvar_destroy(s_stop_cv);
+    com_util_condvar_dispose(s_stop_cv);
     s_stop_cv = NULL;
-    com_util_local_lock_destroy(s_stop_lock);
+    com_util_local_lock_dispose(s_stop_lock);
     s_stop_lock = NULL;
 
     tracer_close();
