@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include <testfw.h>
 #include <struct_meta/json/json.h>
 #include <com_util/base/result.h>
 #include <cstddef>
