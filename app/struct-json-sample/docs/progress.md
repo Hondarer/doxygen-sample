@@ -86,3 +86,10 @@
 ## Phase 4: com_util への切り出し検討
 
 - 状態: 未着手
+
+## Windows CI 対応
+
+- 状態: 完了
+- Windows CI に WinFlexBison を導入し、`BISON=win_bison` と `FLEX=win_flex` で makefw へコマンド名を渡す構成にした。
+- makefw は Windows で `win_flex --wincompat` を使い、MSVC へ GCC 専用の警告抑制オプションを渡さないようにした。
+- `struct-json-sample` の生成ルールは Windows の `structgen.exe` を前提条件とするようにした。
