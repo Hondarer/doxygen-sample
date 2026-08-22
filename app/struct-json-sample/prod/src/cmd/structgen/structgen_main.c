@@ -23,6 +23,8 @@
 #include "structgen_ast.h"
 #include "structgen_emit.h"
 
+#include <com_util/crt/stdio.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -64,7 +66,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    yyin = fopen(header_path, "r");
+    yyin = com_util_fopen(header_path, "r", NULL);
     if (yyin == NULL)
     {
         fprintf(stderr, "structgen: ヘッダーを開けません: %s\n", header_path);

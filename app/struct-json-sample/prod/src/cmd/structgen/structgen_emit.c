@@ -20,6 +20,8 @@
 
 #include "structgen_emit.h"
 
+#include <com_util/crt/stdio.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -345,7 +347,7 @@ static void emit_struct(FILE *out, const sg_struct *s, emitted_name **emitted)
 static int emit_catalog_header(const char *header_out, const char *stem, const char *prefix,
                                const sg_struct_list *structs)
 {
-    FILE *out = fopen(header_out, "w");
+    FILE *out = com_util_fopen(header_out, "w", NULL);
     if (out == NULL)
     {
         fprintf(stderr, "structgen: 出力ファイルを作成できません: %s\n", header_out);
@@ -439,7 +441,7 @@ int sg_emit(const sg_struct_list *structs, const char *header_path, const char *
         return 1;
     }
 
-    FILE *out = fopen(out_path, "w");
+    FILE *out = com_util_fopen(out_path, "w", NULL);
     if (out == NULL)
     {
         fprintf(stderr, "structgen: 出力ファイルを作成できません: %s\n", out_path);

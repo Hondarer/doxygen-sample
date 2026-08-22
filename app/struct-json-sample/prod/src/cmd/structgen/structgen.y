@@ -12,9 +12,10 @@
 %{
 #include "structgen_ast.h"
 
+#include <com_util/crt/string.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 extern int g_line;
 int yylex(void);
@@ -122,12 +123,12 @@ field_decl:
     ;
 
 type_spec:
-      T_INT { $$.name = strdup("int"); $$.is_struct = 0; }
-    | T_UNSIGNED { $$.name = strdup("unsigned"); $$.is_struct = 0; }
-    | T_UNSIGNED T_INT { $$.name = strdup("unsigned"); $$.is_struct = 0; }
-    | T_CHAR { $$.name = strdup("char"); $$.is_struct = 0; }
-    | T_FLOAT { $$.name = strdup("float"); $$.is_struct = 0; }
-    | T_DOUBLE { $$.name = strdup("double"); $$.is_struct = 0; }
+      T_INT { $$.name = com_util_strdup("int"); $$.is_struct = 0; }
+    | T_UNSIGNED { $$.name = com_util_strdup("unsigned"); $$.is_struct = 0; }
+    | T_UNSIGNED T_INT { $$.name = com_util_strdup("unsigned"); $$.is_struct = 0; }
+    | T_CHAR { $$.name = com_util_strdup("char"); $$.is_struct = 0; }
+    | T_FLOAT { $$.name = com_util_strdup("float"); $$.is_struct = 0; }
+    | T_DOUBLE { $$.name = com_util_strdup("double"); $$.is_struct = 0; }
     | IDENT { $$.name = $1; $$.is_struct = 1; }
     ;
 
