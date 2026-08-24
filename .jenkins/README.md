@@ -304,11 +304,16 @@ source/app/**/test/**/*.warn
 | `upload-artifact: linux-*-logs` | `linux-${OS_NAME}-logs.zip` (`*-test.log` を除く) |
 | `upload-artifact: linux-*-warns` | `linux-${OS_NAME}-warns.zip` |
 | `Upload documentation warnings` | `docs-warns.zip` (`docs.warn` + `app/**/doxy*.warn`) |
+| `Upload Japanese documentation` (`documentation-ja`) | `pages/ja`、`pages/ja-details`、`pages/artifacts/docs-*-ja*.zip` (分割せず `pages/` に残す) |
+| `Upload English documentation` (`documentation-en`) | `pages/en`、`pages/en-details`、`pages/artifacts/docs-*-en*.zip` (分割せず `pages/` に残す) |
+| `Upload Doxygen documentation` (`documentation-doxygen`) | `pages/doxygen`、`pages/artifacts/docs-html-doxygen.zip` (分割せず `pages/` に残す) |
 | `publish-docs`: `make skills && make doxy && make docs` | `inner-build.sh` の `BUILD_DOCS=1` 時のドキュメント生成 |
 | `deploy-pages`: `index.html` 生成 | `inner-build.sh` の `pages/index.html` 生成 |
 
 `build-and-test-windows` および `deploy-pages` (GitHub Pages デプロイ) に対応する Jenkins スクリプトは存在しません。  
-ただし `pages/index.html` の一覧構成は GitHub Actions の Pages 出力とそろえており、warn ZIP がある場合だけ専用セクションを表示します。
+ただし `pages/index.html` の一覧構成は GitHub Actions の Pages 出力とそろえており、warn ZIP がある場合だけ専用セクションを表示します。  
+GitHub Pages は artifact 上限 1 GB のため、未圧縮の `docx` ディレクトリを Pages artifact から外します。  
+Jenkins の HTML Publisher にはこの上限がないため、`pages/{lang}/docx` は残します。
 
 ## 関連ドキュメント
 

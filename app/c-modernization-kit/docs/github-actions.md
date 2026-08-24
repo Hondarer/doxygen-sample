@@ -276,7 +276,8 @@ end note
     - gh-pages ブランチに公開
 
 7. **アーティファクトのアップロード**
-    - HTML ドキュメント、docx ファイルを保存
+    - 中継用に `documentation-ja`、`documentation-en`、`documentation-doxygen` を分割して保存
+    - HTML と docx を言語・種別ごとの SHA 付き artifact としても保存
 
 ### warnings-summary ジョブ
 
@@ -311,7 +312,7 @@ end note
     - Linux OL9 テスト結果アーティファクト (`linux-ol9-test-results`) をダウンロード
     - Linux OL10 テスト結果アーティファクト (`linux-ol10-test-results`) をダウンロード
     - Windows テスト結果アーティファクト (`windows-test-results`) をダウンロード
-    - ドキュメント アーティファクト (`documentation`) をダウンロード
+    - ドキュメント アーティファクト (`documentation-ja` / `documentation-en` / `documentation-doxygen`) をダウンロードして `pages/` へ結合
     - Linux OL8 ログ アーティファクト (`linux-ol8-logs`) をダウンロード
     - Linux OL9 ログ アーティファクト (`linux-ol9-logs`) をダウンロード
     - Linux OL10 ログ アーティファクト (`linux-ol10-logs`) をダウンロード
@@ -332,7 +333,12 @@ end note
     - `pages/` 配下のドキュメントと統合
 
 3. **GitHub Pages へのデプロイ**
-    - 統合された `pages/` ディレクトリを GitHub Pages artifact として公開
+    - 閲覧用の HTML は `pages/` に残す
+    - 未圧縮の `docx` ディレクトリは Pages artifact から外し、DOCX は `pages/artifacts/docs-docx-*.zip` で配布する
+    - 統合した `pages/` を GitHub Pages artifact として公開する
+
+GitHub Pages の artifact 上限は 1 GB です。  
+日本語と英語を中継 artifact として分け、Pages には未圧縮 DOCX を載せないことで上限を超えないようにします。
 
 **アーティファクト ストレージの役割**:
 
@@ -477,19 +483,22 @@ CI 実行時に生成されるファイルをアーティファクトとして�
 #### ドキュメント
 
 ```yaml
-- name: Upload documentation artifacts
-  uses: actions/upload-artifact@v4
+- name: Upload Japanese documentation
+  uses: actions/upload-artifact@v7
   with:
-    name: documentation
-    path: pages/
+    name: documentation-ja
+    path: staging/documentation-ja/
     if-no-files-found: warn
 ```
 
+`documentation-en` と `documentation-doxygen` も同じ手順でアップロードします。  
+1 つの `documentation` artifact にまとめると、HTML、DOCX、それらの zip が重なり、GitHub Pages の 1 GB 上限を超えます。
+
 含まれるファイル:
 
-- `pages/doxygen` - Doxygen 生成 HTML
-- `pages/**/html` - Pandoc 生成 HTML
-- `pages/artifacts/*.zip` - ドキュメント アーカイブ
+- `documentation-ja` - `pages/ja`、`pages/ja-details`、対応する `pages/artifacts/docs-*-ja*.zip`
+- `documentation-en` - `pages/en`、`pages/en-details`、対応する `pages/artifacts/docs-*-en*.zip`
+- `documentation-doxygen` - `pages/doxygen`、`pages/artifacts/docs-html-doxygen.zip`、存在する場合は `pages/artifacts/docs-warns.zip`
 
 #### ビルド警告
 
