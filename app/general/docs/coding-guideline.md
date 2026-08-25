@@ -1576,8 +1576,9 @@ Windows では `framework/makefw/makefiles/_flags.mk` の `CWARNS ?= /W4` によ
 `-Werror` と `/WX` は設定しません。  
 CI は警告を成果物として収集し公開しますが、警告の有無でビルドを失敗させません。
 
-OSS 由来モジュールは上流ソースを改変しない方針を採用できるため、必要な警告抑制を各モジュールの `makepart.mk` へ限定して指定します。  
-既存の `-Wno-padded` などと同じ扱いです。
+OSS 由来の公開ヘッダーは、提供 app の `appdeps.mk` で `APP_PROD_INCLUDE_CLASS := system` と定義します。  
+利用側では Linux の `-isystem` または MSVC の `/external:I` として扱われるため、外来ヘッダー内部の警告だけを分離できます。  
+上流の一次ソース自体に必要な警告抑制は、そのソースをコンパイルする末端の `makepart.mk` へ限定して指定します。
 
 > [!NOTE]
 > `-Wconversion` が報告しないことは、変換が安全であることを意味しません。  

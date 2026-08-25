@@ -514,7 +514,7 @@ CI 実行時に生成されるファイルをアーティファクトとして�
     if-no-files-found: ignore
 ```
 
-`.warn` は警告が出た場合のみ生成され、警告が無いビルドではアーティファクト自体が作られません。`app/c_cpp_properties.warn` は、`INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。`deploy-pages` では、実行中の workflow run に warn artifact が存在するか確認したうえで、存在するものだけをダウンロードします。
+`.warn` は警告が出た場合のみ生成され、警告が無いビルドではアーティファクト自体が作られません。`app/c_cpp_properties.warn` は、`INCDIR` と `SYSTEM_INCDIR` では `makepart.mk`、`app/makepart.mk`、`app/*/**/makepart.mk`、`DEFINES` では `makepart.mk`、`app/makepart.mk`、`app/*/makepart.mk` の同期結果と `.vscode/c_cpp_properties.json` の不一致を知らせる dry-run 警告です。`deploy-pages` では、実行中の workflow run に warn artifact が存在するか確認したうえで、存在するものだけをダウンロードします。
 
 `warnings-summary` ジョブは同じ artifact 名を検知し、warning annotation と Step Summary で通知します。警告があっても workflow 自体は成功のままです。
 

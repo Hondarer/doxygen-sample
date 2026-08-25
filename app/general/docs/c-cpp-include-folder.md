@@ -5,7 +5,8 @@ C/C++ のヘッダー ファイルについての注意事項を以下に示し�
 ## 正本の置き場所
 
 新しい include フォルダーを追加したとき、最初に更新するのは `.vscode/c_cpp_properties.json` ではありません。  
-`makepart.mk`、`app/makepart.mk`、各 C/C++ app の `app/<name>` 配下にあるすべての `makepart.mk` にある `INCDIR` の合成結果が正本です。
+`makepart.mk`、`app/makepart.mk`、各 C/C++ app の `app/<name>` 配下にあるすべての `makepart.mk` にある `INCDIR` と `SYSTEM_INCDIR` の合成結果が正本です。  
+`SYSTEM_INCDIR` はビルド時に外来ヘッダーの警告を分離しますが、VS Code IntelliSense では `INCDIR` と同じ include パスとして同期します。
 
 ```makefile
 # app/example/makepart.mk
@@ -39,7 +40,7 @@ INCDIR += \
 ## VS Code への反映方法
 
 `.vscode/c_cpp_properties.json` は派生物です。  
-`INCDIR` を更新したら、ワークスペース ルートで次を実行して反映します。  
+`INCDIR` または `SYSTEM_INCDIR` を更新したら、ワークスペース ルートで次を実行して反映します。  
 対象は `makepart.mk`、`app/makepart.mk`、`app/<name>` 配下の任意の `makepart.mk` です。
 
 ```bash
@@ -65,6 +66,6 @@ bash framework/makefw/bin/sync_c_cpp_properties.sh --check
 
 ## 最低限の確認
 
-1. `makepart.mk`、`app/makepart.mk`、または `app/<name>` 配下の `makepart.mk` の `INCDIR` を更新します。
+1. `makepart.mk`、`app/makepart.mk`、または `app/<name>` 配下の `makepart.mk` の `INCDIR` または `SYSTEM_INCDIR` を更新します。
 2. `bash framework/makefw/bin/sync_c_cpp_properties.sh --write` を実行します。
 3. `.vscode/c_cpp_properties.json` の `includePath` と `defines` を確認します。
