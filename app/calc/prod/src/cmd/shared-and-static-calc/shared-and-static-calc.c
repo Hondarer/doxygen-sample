@@ -45,34 +45,34 @@ int main(int argc, char *argv[])
     int arg1 = 0;
     int arg3 = 0;
     const char *operator_value = NULL;
-    com_util_argparser_default_init("動的リンクと静的リンクの計算結果を比較します。");
-    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_default_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
-    com_util_argparser_default_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
+    com_util_argparser_init("動的リンクと静的リンクの計算結果を比較します。");
+    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
+    com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
                                                   &operator_value);
-    com_util_argparser_default_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
-    if (com_util_argparser_default_get_register_error_count() > 0)
+    com_util_argparser_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
+    if (com_util_argparser_get_register_error_count() > 0)
     {
-        com_util_argparser_default_print_register_error_messages(stderr);
+        com_util_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_default_parse(argc, argv);
+    int parse_result = com_util_argparser_parse(argc, argv);
     if (need_help != 0)
     {
-        com_util_argparser_default_print_usage(stdout);
+        com_util_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_default_print_error_messages(stderr);
-        com_util_argparser_default_print_usage(stderr);
+        com_util_argparser_print_error_messages(stderr);
+        com_util_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
     if (operator_value[0] == 0x00 || operator_value[1] != 0x00)
     {
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_default_print_usage(stderr);
+        com_util_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     }
     default:
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_default_print_usage(stderr);
+        com_util_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 

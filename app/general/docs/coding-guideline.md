@@ -2903,7 +2903,7 @@ int sample_context_open(const char *path, sample_context **context_out);
 
 本リポジトリの既存例:
 
-- `char *const *argv` — `com_util_argparser_default_parse` など
+- `char *const *argv` — `com_util_argparser_parse` など
 - `com_util_sym_loader_entry *const *` — `com_util_sym_loader_init` など
 - `const char **storage` — 文字列オプションの出力スロット (`argparser` の register 系)
 

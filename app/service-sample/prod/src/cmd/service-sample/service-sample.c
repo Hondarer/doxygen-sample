@@ -313,29 +313,29 @@ int main(int argc, char *argv[])
     int need_help = 0;
     const char *command = NULL;
 
-    com_util_argparser_default_init("サービスの登録、削除、起動を行います。");
-    com_util_argparser_default_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_default_register_positional_string("command", "install、uninstall、run、console のいずれか。",
+    com_util_argparser_init("サービスの登録、削除、起動を行います。");
+    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    com_util_argparser_register_positional_string("command", "install、uninstall、run、console のいずれか。",
                                                   COM_UTIL_ARGPARSER_REQUIRED, &command);
 
-    if (com_util_argparser_default_get_register_error_count() > 0)
+    if (com_util_argparser_get_register_error_count() > 0)
     {
-        com_util_argparser_default_print_register_error_messages(stderr);
+        com_util_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_default_parse(argc, argv);
+    int parse_result = com_util_argparser_parse(argc, argv);
 
     if (need_help != 0)
     {
-        com_util_argparser_default_print_usage(stdout);
+        com_util_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
 
     if (parse_result != COM_UTIL_OK)
     {
-        com_util_argparser_default_print_error_messages(stderr);
-        com_util_argparser_default_print_usage(stderr);
+        com_util_argparser_print_error_messages(stderr);
+        com_util_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
         strcmp(command, "console") != 0)
     {
         fprintf(stderr, "不明なコマンド '%s'\n\n", command);
-        com_util_argparser_default_print_usage(stderr);
+        com_util_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
