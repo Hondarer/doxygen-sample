@@ -228,3 +228,57 @@ docs :
 	else \
 		echo "INFO: framework/docsfw directory not found, skipping."; \
 	fi
+
+# ---------------------------------------------------------------------------
+# mkdocs 簡易プレビュー
+#
+# docsfw の発行 (make docs) とは独立した、執筆中の確認用ビルドです。
+# 設計は framework/docsfw/docs/mkdocs-preview-design.md を参照してください。
+#
+# PREVIEW_ADDR    mkdocs serve のアドレス (既定 127.0.0.1:8000)
+# PREVIEW_STRICT  1 を指定すると mkdocs build --strict で実行する
+# ---------------------------------------------------------------------------
+PREVIEW_HOME := $(CURDIR)/framework/docsfw/mkdocs
+PREVIEW_VENV := $(PREVIEW_HOME)/.venv
+PREVIEW_PYTHON := $(PREVIEW_VENV)/bin/python
+PREVIEW_MKDOCS := $(PREVIEW_VENV)/bin/mkdocs
+PREVIEW_DIR := $(CURDIR)/pages/preview
+PREVIEW_ADDR ?= 127.0.0.1:8000
+
+# Windows (Git Bash) では venv の実行ファイルが Scripts/ に置かれる。
+ifeq ($(OS),Windows_NT)
+    PREVIEW_PYTHON := $(PREVIEW_VENV)/Scripts/python.exe
+    PREVIEW_MKDOCS := $(PREVIEW_VENV)/Scripts/mkdocs.exe
+endif
+
+.PHONY: preview-venv
+preview-venv :
+	@if [ ! -x "$(PREVIEW_PYTHON)" ]; then \
+		printf 'INFO: Creating preview venv at %s\n' "$(PREVIEW_VENV)"; \
+		python3 -m venv "$(PREVIEW_VENV)"; \
+		"$(PREVIEW_PYTHON)" -m pip install --quiet --upgrade pip; \
+		"$(PREVIEW_PYTHON)" -m pip install --quiet -r "$(PREVIEW_HOME)/requirements.txt"; \
+	fi
+
+.PHONY: preview-stage
+preview-stage : preview-venv
+	@python3 "$(PREVIEW_HOME)/bin/stage_preview_docs.py" --workspaceFolder="$(CURDIR)"
+	@python3 "$(PREVIEW_HOME)/bin/vendor_assets.py" --workspaceFolder="$(CURDIR)"
+
+.PHONY: preview
+preview : preview-stage
+	@printf 'INFO: mkdocs serve on http://%s/\n' "$(PREVIEW_ADDR)"
+	@cd "$(PREVIEW_DIR)" && "$(PREVIEW_MKDOCS)" serve --dev-addr "$(PREVIEW_ADDR)"
+
+.PHONY: preview-build
+preview-build : preview-stage
+	@cd "$(PREVIEW_DIR)" && \
+	if [ "$(PREVIEW_STRICT)" = "1" ]; then \
+		"$(PREVIEW_MKDOCS)" build --strict; \
+	else \
+		"$(PREVIEW_MKDOCS)" build; \
+	fi
+
+.PHONY: cleanpreview
+cleanpreview :
+	rm -rf "$(PREVIEW_DIR)"
