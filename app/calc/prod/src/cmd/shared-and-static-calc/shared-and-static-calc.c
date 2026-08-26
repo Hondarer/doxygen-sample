@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     int arg1 = 0;
     int arg3 = 0;
     const char *operator_value = NULL;
-    com_util_argparser_init("動的リンクと静的リンクの計算結果を比較します。");
+    com_util_argparser_init(argc, argv, "動的リンクと静的リンクの計算結果を比較します。");
     com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
     com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
     com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_parse();
     if (need_help != 0)
     {
         com_util_argparser_print_usage(stdout);

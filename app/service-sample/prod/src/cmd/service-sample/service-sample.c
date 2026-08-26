@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
     int need_help = 0;
     const char *command = NULL;
 
-    com_util_argparser_init("サービスの登録、削除、起動を行います。");
+    com_util_argparser_init(argc, argv, "サービスの登録、削除、起動を行います。");
     com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
     com_util_argparser_register_positional_string("command", "install、uninstall、run、console のいずれか。",
                                                   COM_UTIL_ARGPARSER_REQUIRED, &command);
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse(argc, argv);
+    int parse_result = com_util_argparser_parse();
 
     if (need_help != 0)
     {

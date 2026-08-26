@@ -281,14 +281,14 @@ int main(int argc, char **argv)
     int parse_result;
 
     com_util_console_init();
-    com_util_argparser_init("struct-meta の動作確認コマンドです。起動後は対話コマンドを入力します。");
+    com_util_argparser_init(argc, argv, "struct-meta の動作確認コマンドです。起動後は対話コマンドを入力します。");
     (void)com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
     if (com_util_argparser_get_register_error_count() > 0U)
     {
         (void)com_util_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
-    parse_result = com_util_argparser_parse(argc, argv);
+    parse_result = com_util_argparser_parse();
     if (need_help != 0)
     {
         (void)com_util_argparser_print_usage(stdout);
