@@ -1,0 +1,89 @@
+#include <cplat/base/result.h>
+#include <struct_meta/access/access.h>
+#include <testfw.h>
+
+namespace
+{
+struct Sample
+{
+    int value;
+};
+
+const struct_meta_attribute kAttributes[] = {{"schema.version", "1"}, {"sample.flag", nullptr}};
+const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), nullptr, 0, "サンプルです。", kAttributes, 2};
+} // namespace
+
+TEST(structMetaAccessTest, finds_descriptor_attributes)
+{
+    // Arrange
+    const struct_meta_attribute *version = nullptr;
+    const struct_meta_attribute *flag = nullptr;
+
+    // Pre-Assert
+
+    // Act
+    int version_ret = struct_meta_descriptor_find_attribute(&kDescriptor, "schema.version",
+                                                            &version); // [手順] - 値ありの構造体属性を検索する。
+    int flag_ret = struct_meta_descriptor_find_attribute(&kDescriptor, "sample.flag",
+                                                         &flag); // [手順] - 値なしの構造体属性を検索する。
+
+    // Assert
+    ASSERT_EQ(CPLAT_OK, version_ret);  // [確認_正常系] - schema.version 属性の検索が成功すること。
+    ASSERT_NE(nullptr, version);       // [確認_正常系] - schema.version 属性が取得できること。
+    EXPECT_STREQ("1", version->value); // [確認_正常系] - schema.version 属性の値が 1 であること。
+    ASSERT_EQ(CPLAT_OK, flag_ret);     // [確認_正常系] - sample.flag 属性の検索が成功すること。
+    ASSERT_NE(nullptr, flag);          // [確認_正常系] - sample.flag 属性が取得できること。
+    EXPECT_EQ(nullptr, flag->value);   // [確認_正常系] - sample.flag 属性の値が NULL であること。
+}
+
+TEST(structMetaAccessTest, returns_not_found_for_unknown_key)
+{
+    // Arrange
+    const struct_meta_attribute *attribute = reinterpret_cast<const struct_meta_attribute *>(1);
+
+    // Pre-Assert
+
+    // Act
+    int actual = struct_meta_descriptor_find_attribute(&kDescriptor, "unknown",
+                                                       &attribute); // [手順] - 存在しない構造体属性を検索する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_NOT_FOUND, actual); // [確認_正常系] - 属性検索が CPLAT_ERR_NOT_FOUND を返すこと。
+    EXPECT_EQ(nullptr, attribute);          // [確認_正常系] - 検索結果が NULL に初期化されること。
+}
+
+TEST(structMetaAccessTest, rejects_invalid_arguments)
+{
+    // Arrange
+    const struct_meta_attribute *attribute = nullptr;
+
+    // Pre-Assert
+
+    // Act
+    int descriptor_ret = struct_meta_descriptor_find_attribute(nullptr, "schema.version",
+                                                               &attribute); // [手順] - NULL の記述子を指定する。
+    int key_ret = struct_meta_descriptor_find_attribute(&kDescriptor, nullptr,
+                                                        &attribute); // [手順] - NULL の属性キーを指定する。
+    int output_ret = struct_meta_descriptor_find_attribute(&kDescriptor, "schema.version",
+                                                           nullptr); // [手順] - NULL の出力先を指定する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, descriptor_ret); // [確認_異常系] - NULL の記述子が拒否されること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, key_ret);        // [確認_異常系] - NULL の属性キーが拒否されること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, output_ret);     // [確認_異常系] - NULL の出力先が拒否されること。
+}
+
+TEST(structMetaAccessTest, rejects_duplicate_descriptor_attributes)
+{
+    // Arrange
+    const struct_meta_attribute duplicate_attributes[] = {{"duplicate", "1"}, {"duplicate", "2"}};
+    const struct_meta_descriptor descriptor = {"Sample", sizeof(Sample), nullptr, 0, nullptr, duplicate_attributes, 2};
+
+    // Pre-Assert
+
+    // Act
+    int actual = struct_meta_descriptor_validate(&descriptor); // [手順] - 重複する構造体属性を持つ記述子を検査する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_CORRUPT_DESCRIPTOR, actual); // [確認_異常系] - 重複する構造体属性が拒否されること。
+}

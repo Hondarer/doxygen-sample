@@ -41,14 +41,14 @@ const struct_meta_field kAddressFields[] = {
      nullptr, nullptr, 0},
     {"zip", STRUCT_META_FIELD_INT, 0, offsetof(Address, zip), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
 };
-const struct_meta_descriptor kAddressDescriptor = {"Address", sizeof(Address), kAddressFields, 2, nullptr};
+const struct_meta_descriptor kAddressDescriptor = {"Address", sizeof(Address), kAddressFields, 2, nullptr, nullptr, 0};
 const struct_meta_field kSampleFields[] = {
     {"addresses", STRUCT_META_FIELD_STRUCT, 0, offsetof(Sample, addresses), sizeof(Address), 2, 0, &kAddressDescriptor,
      nullptr, nullptr, 0},
     {"scores", STRUCT_META_FIELD_INT, 0, offsetof(Sample, scores), sizeof(int), 3, 0, nullptr, nullptr, nullptr, 0},
     {"id", STRUCT_META_FIELD_INT, 0, offsetof(Sample, id), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
 };
-const struct_meta_descriptor kSampleDescriptor = {"Sample", sizeof(Sample), kSampleFields, 3, nullptr};
+const struct_meta_descriptor kSampleDescriptor = {"Sample", sizeof(Sample), kSampleFields, 3, nullptr, nullptr, 0};
 
 void copy_line(char *dest, size_t dest_size, const std::string &line)
 {
@@ -76,8 +76,8 @@ class StructMetaPatchTest : public Test
             .WillOnce(Return()); // [Pre-Assert確認_正常系] - 編集終了時にプロンプトを破棄すること。
         EXPECT_CALL(mock_cplat, cplat_prompt_readline_fmt_at(prompt, _, _, _, _, _, _))
             .WillRepeatedly(
-                [this, index, inputs](cplat_prompt *, char *dest, size_t dest_size, const char *, int,
-                                      const char *fmt, va_list args) -> int
+                [this, index, inputs](cplat_prompt *, char *dest, size_t dest_size, const char *, int, const char *fmt,
+                                      va_list args) -> int
                 {
                     char formatted[512];
                     va_list args_copy;
@@ -107,7 +107,7 @@ TEST_F(StructMetaPatchTest, PathSelectsNestedString)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses[0].city");
     // [手順_正常系] - ネストした文字列をパスで指定して編集する。
 
-    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);                 // [確認_正常系] - 編集が成功すること。
     EXPECT_STREQ("Tokyo", sample.addresses[0].city); // [確認_正常系] - 指定した文字列だけが更新されること。
     EXPECT_THAT(prompts, Contains(HasSubstr("addresses[0].city (現在値")));
     // [確認_正常系] - パス指定方式の値入力にも完全パスを表示すること。
@@ -122,7 +122,7 @@ TEST_F(StructMetaPatchTest, PathSelectsArrayElement)
     // [手順_正常系] - 整数配列の要素をパスで指定して編集する。
 
     EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
-    EXPECT_EQ(42, sample.scores[1]);    // [確認_正常系] - 指定した要素だけが更新されること。
+    EXPECT_EQ(42, sample.scores[1]); // [確認_正常系] - 指定した要素だけが更新されること。
 }
 
 TEST_F(StructMetaPatchTest, PathEndingAtStructOpensFieldMenu)
@@ -139,7 +139,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtStructOpensFieldMenu)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses[0]");
     // [手順_正常系] - 構造体要素をパスで指定し、zip を編集して戻る。
 
-    EXPECT_EQ(CPLAT_OK, actual_ret);      // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);         // [確認_正常系] - 編集が成功すること。
     EXPECT_EQ(123, sample.addresses[0].zip); // [確認_正常系] - 選択した構造体の zip が更新されること。
 }
 
@@ -158,7 +158,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtArrayOpensElementMenu)
     // [手順_正常系] - 配列全体をパスで指定し、要素を選択して編集する。
 
     EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
-    EXPECT_EQ(77, sample.scores[1]);    // [確認_正常系] - メニューで選択した要素が更新されること。
+    EXPECT_EQ(77, sample.scores[1]); // [確認_正常系] - メニューで選択した要素が更新されること。
 }
 
 TEST_F(StructMetaPatchTest, PathEndingAtStructArrayOpensElementAndFieldMenus)
@@ -169,7 +169,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtStructArrayOpensElementAndFieldMenus)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses");
     // [手順_正常系] - 構造体配列全体を指定し、要素とフィールドを選択して編集する。
 
-    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);                 // [確認_正常系] - 編集が成功すること。
     EXPECT_STREQ("Osaka", sample.addresses[1].city); // [確認_正常系] - 選択した要素の city が更新されること。
 }
 
@@ -183,7 +183,7 @@ TEST_F(StructMetaPatchTest, EmptyValueKeepsCurrentValue)
     // [手順_正常系] - 値の入力で空行を指定する。
 
     EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 変更なしを正常終了として扱うこと。
-    EXPECT_EQ(12, sample.id);           // [確認_正常系] - 元の値を維持すること。
+    EXPECT_EQ(12, sample.id);        // [確認_正常系] - 元の値を維持すること。
 }
 
 TEST_F(StructMetaPatchTest, DrillDownRemainsAvailable)
@@ -204,7 +204,7 @@ TEST_F(StructMetaPatchTest, DrillDownRemainsAvailable)
     int actual_ret = struct_meta_patch_interactive(&kSampleDescriptor, &sample);
     // [手順_正常系] - 従来のドリルダウン式で addresses[0].city を編集する。
 
-    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 従来の編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);                 // [確認_正常系] - 従来の編集が成功すること。
     EXPECT_STREQ("Tokyo", sample.addresses[0].city); // [確認_正常系] - 選択したフィールドが更新されること。
     EXPECT_THAT(prompts, Contains(HasSubstr("addresses[0].city (現在値")));
     // [確認_正常系] - 値入力にも完全パスを表示すること。
@@ -251,7 +251,7 @@ TEST_F(StructMetaPatchTest, InvalidArgumentsAreRejectedBeforePromptCreation)
 TEST_F(StructMetaPatchTest, CorruptDescriptorIsRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - 不正な記述子の対象インスタンスを用意する。
-    const struct_meta_descriptor corrupt_descriptor = {nullptr, sizeof(Sample), kSampleFields, 3, nullptr};
+    const struct_meta_descriptor corrupt_descriptor = {nullptr, sizeof(Sample), kSampleFields, 3, nullptr, nullptr, 0};
     EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - 記述子検査に失敗した場合はプロンプトを作成しないこと。
 

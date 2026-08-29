@@ -55,28 +55,28 @@ static int push_descriptor(validation_context *context, const struct_meta_descri
     return CPLAT_OK;
 }
 
-static int validate_attributes(const struct_meta_field *field)
+static int validate_attributes(const struct_meta_attribute *attributes, const size_t attribute_count)
 {
-    if ((field->attribute_count > 0U) && (field->attributes == NULL))
+    if ((attribute_count > 0U) && (attributes == NULL))
     {
         return CPLAT_ERR_CORRUPT_DESCRIPTOR;
     }
 
-    for (size_t i = 0; i < field->attribute_count; i++)
+    for (size_t i = 0; i < attribute_count; i++)
     {
-        const struct_meta_attribute *attribute = &field->attributes[i];
+        const struct_meta_attribute *attribute = &attributes[i];
         if ((attribute->key == NULL) || (attribute->key[0] == '\0'))
         {
             return CPLAT_ERR_CORRUPT_DESCRIPTOR;
         }
     }
 
-    for (size_t i = 0; i < field->attribute_count; i++)
+    for (size_t i = 0; i < attribute_count; i++)
     {
-        const struct_meta_attribute *attribute = &field->attributes[i];
-        for (size_t j = i + 1U; j < field->attribute_count; j++)
+        const struct_meta_attribute *attribute = &attributes[i];
+        for (size_t j = i + 1U; j < attribute_count; j++)
         {
-            if (strcmp(attribute->key, field->attributes[j].key) == 0)
+            if (strcmp(attribute->key, attributes[j].key) == 0)
             {
                 return CPLAT_ERR_CORRUPT_DESCRIPTOR;
             }
@@ -99,7 +99,8 @@ static int validate_descriptor(validation_context *context, const struct_meta_de
         return ret;
     }
 
-    for (size_t i = 0; i < descriptor->field_count; i++)
+    ret = validate_attributes(descriptor->attributes, descriptor->attribute_count);
+    for (size_t i = 0; (ret == CPLAT_OK) && (i < descriptor->field_count); i++)
     {
         const struct_meta_field *field = &descriptor->fields[i];
         size_t field_size;
@@ -155,7 +156,7 @@ static int validate_descriptor(validation_context *context, const struct_meta_de
             break;
         }
 
-        ret = validate_attributes(field);
+        ret = validate_attributes(field->attributes, field->attribute_count);
         if (ret != CPLAT_OK)
         {
             break;

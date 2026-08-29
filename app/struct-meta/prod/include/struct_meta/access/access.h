@@ -31,6 +31,19 @@ extern "C"
     STRUCT_META_EXPORT int STRUCT_META_API struct_meta_descriptor_find_field(const struct_meta_descriptor *descriptor,
                                                                              const char *name,
                                                                              const struct_meta_field **field_out);
+    /**
+     *  @brief          構造体記述子の属性を検索します。
+     *  @param[in]      descriptor   構造体記述子です。NULL を渡してはなりません。
+     *  @param[in]      key          属性キーです。NULL を渡してはなりません。
+     *  @param[out]     attribute_out 検索結果です。NULL を渡してはなりません。
+     *  @return         成功時は @c CPLAT_OK、未検出時は @c CPLAT_ERR_NOT_FOUND、引数不正時は
+     *                  @c CPLAT_ERR_INVALID_ARGUMENT、記述子不正時は対応するエラー コードを返します。
+     *
+     *  @par            スレッド セーフ
+     *  本関数はスレッド セーフです。内部に共有状態を持ちません。
+     */
+    STRUCT_META_EXPORT int STRUCT_META_API struct_meta_descriptor_find_attribute(
+        const struct_meta_descriptor *descriptor, const char *key, const struct_meta_attribute **attribute_out);
     /** @brief 属性を検索します。@param[in] field フィールドです。@param[in] key 属性キーです。@param[out] attribute_out 取得結果です。@return 結果コードです。@par スレッド セーフ 共有状態を変更しません。 */
     STRUCT_META_EXPORT int STRUCT_META_API struct_meta_field_find_attribute(
         const struct_meta_field *field, const char *key, const struct_meta_attribute **attribute_out);

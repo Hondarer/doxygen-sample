@@ -62,8 +62,9 @@ doc_prefix:
       /* empty */ { struct_meta_gen_doc_attrs empty = {0}; $$ = empty; }
     | doc_prefix_tokens
         {
-            $$ = struct_meta_gen_doc_attrs_from_raw($1, 0);
+            $$ = struct_meta_gen_doc_attrs_from_raw($1, 0, g_line);
             free($1);
+            if ($$.invalid != 0) { YYABORT; }
         }
     ;
 
@@ -76,24 +77,25 @@ doc_postfix:
       /* empty */ { struct_meta_gen_doc_attrs empty = {0}; $$ = empty; }
     | DOC_POSTFIX
         {
-            $$ = struct_meta_gen_doc_attrs_from_raw($1, 1);
+            $$ = struct_meta_gen_doc_attrs_from_raw($1, 1, g_line);
             free($1);
+            if ($$.invalid != 0) { YYABORT; }
         }
     ;
 
 typedef_struct_decl:
       doc_prefix TYPEDEF STRUCT LBRACE field_decl_list RBRACE IDENT SEMI doc_postfix
         {
-            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $9);
-            $$ = struct_meta_gen_struct_create($7, $5, attrs.brief);
-            free(attrs.json_name);
+            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $9, g_line);
+            if (attrs.invalid != 0) { YYABORT; }
+            $$ = struct_meta_gen_struct_create($7, $5, attrs.brief, attrs.attributes);
         }
     | doc_prefix TYPEDEF STRUCT IDENT LBRACE field_decl_list RBRACE IDENT SEMI doc_postfix
         {
-            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $10);
+            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $10, g_line);
+            if (attrs.invalid != 0) { YYABORT; }
             free($4);
-            $$ = struct_meta_gen_struct_create($8, $6, attrs.brief);
-            free(attrs.json_name);
+            $$ = struct_meta_gen_struct_create($8, $6, attrs.brief, attrs.attributes);
         }
     ;
 
@@ -105,15 +107,15 @@ field_decl_list:
 field_decl:
       doc_prefix type_spec IDENT SEMI doc_postfix
         {
-            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $5);
-            $$ = struct_meta_gen_field_create($3, $2.name, $2.is_struct, 0, g_line, attrs.brief, attrs.json_name, attrs.json_ignore,
-                                 attrs.json_required);
+            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $5, g_line);
+            if (attrs.invalid != 0) { YYABORT; }
+            $$ = struct_meta_gen_field_create($3, $2.name, $2.is_struct, 0, g_line, attrs.brief, attrs.attributes);
         }
     | doc_prefix type_spec IDENT LBRACKET INTEGER RBRACKET SEMI doc_postfix
         {
-            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $8);
-            $$ = struct_meta_gen_field_create($3, $2.name, $2.is_struct, $5, g_line, attrs.brief, attrs.json_name, attrs.json_ignore,
-                                 attrs.json_required);
+            struct_meta_gen_doc_attrs attrs = struct_meta_gen_doc_attrs_choose($1, $8, g_line);
+            if (attrs.invalid != 0) { YYABORT; }
+            $$ = struct_meta_gen_field_create($3, $2.name, $2.is_struct, $5, g_line, attrs.brief, attrs.attributes);
         }
     | doc_prefix type_spec STAR IDENT SEMI doc_postfix
         {

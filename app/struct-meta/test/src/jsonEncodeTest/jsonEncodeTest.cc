@@ -17,7 +17,7 @@ const struct_meta_field kFields[] = {
     {"hidden", STRUCT_META_FIELD_INT, 0, offsetof(Sample, hidden), sizeof(int), 1, 0, nullptr, nullptr,
      kHiddenAttributes, 1},
 };
-const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), kFields, 2, nullptr};
+const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), kFields, 2, nullptr, nullptr, 0};
 } // namespace
 
 TEST(JsonEncodeTest, UsesGenericJsonAttributes)
@@ -34,10 +34,10 @@ TEST(JsonEncodeTest, UsesGenericJsonAttributes)
 
 TEST(JsonEncodeTest, RejectsCorruptDescriptor)
 {
-    const struct_meta_descriptor descriptor = {"Sample", sizeof(Sample), nullptr, 1, nullptr};
+    const struct_meta_descriptor descriptor = {"Sample", sizeof(Sample), nullptr, 1, nullptr, nullptr, 0};
     Sample sample = {}; // [準備_異常系] - フィールド配列が欠けた記述子を用意する。
     cJSON *json = nullptr;
     int actual = struct_meta_json_encode(&descriptor, &sample, &json); // [手順_異常系]
-    EXPECT_EQ(CPLAT_ERR_CORRUPT_DESCRIPTOR, actual);                // [確認_異常系] - 検査エラーになること。
+    EXPECT_EQ(CPLAT_ERR_CORRUPT_DESCRIPTOR, actual);                   // [確認_異常系] - 検査エラーになること。
     EXPECT_EQ(nullptr, json);
 }

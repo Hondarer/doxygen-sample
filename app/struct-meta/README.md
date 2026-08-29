@@ -16,7 +16,8 @@
 | `prod/src/cmd/struct-meta-sample/` | 生成結果とライブラリを使う動作確認コマンド |
 
 生成ファイルは `gen/` に置かれ、Git では管理しません。  
-生成器は JSON 用 Doxygen 属性を解析しますが、`libstruct_meta` の記述子は `json.name`、`json.ignore`、`json.required` に限定されない汎用の key/value 属性を保持します。
+生成器は Doxygen コメントの `@struct_meta{key}` と `@struct_meta{key=value}` を解析し、構造体またはフィールドの汎用 key/value 属性として保持します。  
+属性の記述方法と制約は [アーキテクチャー](docs/architecture.md#doxygen-属性の書式) を参照してください。
 
 ## 実行
 

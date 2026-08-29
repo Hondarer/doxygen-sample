@@ -33,9 +33,29 @@ struct-meta-sample --> generated catalog + json/file + patch + print
 公開 API の入口は、利用前に `struct_meta_descriptor_validate()` で記述子全体を再帰検査します。  
 検査対象には、フィールド範囲、型ごとの制約、ネスト記述子との要素サイズ一致、属性キーの妥当性と重複、記述子の循環が含まれます。
 
-属性は key/value の配列です。  
+属性は構造体またはフィールドに付与できる key/value の配列です。  
 JSON 変換は `json.name`、`json.ignore`、`json.required` を解釈します。  
 属性モデル自体は JSON に依存しないため、別カテゴリが独自の名前空間を追加できます。
+
+### Doxygen 属性の書式
+
+Doxygen コメントには、値を持たない `@struct_meta{key}` または値を持つ `@struct_meta{key=value}` を記載します。  
+属性名には英数字、`.`、`_`、`-` を使用できます。  
+属性値は `=` の後ろから `}` までの 1 行の文字列であり、前後の空白は除去します。  
+空の属性名、空の属性値、改行または波括弧を含む属性値、閉じ波括弧が無い記述は生成エラーです。  
+同一の構造体またはフィールドに同じ属性名を複数回記載した場合も、生成エラーです。
+
+```c
+/**
+ * @brief 利用者情報です。
+ * @struct_meta{schema.version=1}
+ */
+typedef struct person
+{
+    int id;     /**< 識別子です。 @struct_meta{json.name=person_id} @struct_meta{json.required} */
+    int serial; /**< 内部連番です。 @struct_meta{json.ignore} */
+} person;
+```
 
 ## 生成器の境界
 
@@ -47,8 +67,9 @@ JSON 変換は `json.name`、`json.ignore`、`json.required` を解釈します�
 これにより、Linux/GCC と Windows/MSVC の実際のコンパイラがレイアウトを決定します。  
 生成カタログは、型数、列挙 ID による取得、構造体名による検索を提供します。
 
-Doxygen の JSON 属性の解析は生成器だけの例外的責務です。  
-生成器は解析結果を `json.name`、`json.ignore`、`json.required` という汎用属性へ変換し、JSON 実装の構造を記述子へ埋め込みません。
+Doxygen の汎用属性の解析は生成器だけの責務です。  
+生成器と `meta` は属性名の意味を解釈しません。  
+JSON 実装だけが `json.name`、`json.ignore`、`json.required` を解釈します。
 
 ## ビルド
 

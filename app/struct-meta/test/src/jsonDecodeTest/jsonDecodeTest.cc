@@ -15,7 +15,7 @@ const struct_meta_field kFields[] = {
     {"id", STRUCT_META_FIELD_INT, 0, offsetof(Sample, id), sizeof(int), 1, 0, nullptr, nullptr, kIdAttributes, 2},
     {"optional", STRUCT_META_FIELD_INT, 0, offsetof(Sample, optional), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
 };
-const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), kFields, 2, nullptr};
+const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), kFields, 2, nullptr, nullptr, 0};
 } // namespace
 
 TEST(JsonDecodeTest, UsesGenericJsonAttributes)
@@ -36,6 +36,6 @@ TEST(JsonDecodeTest, ReportsMissingRequiredAttribute)
     Sample sample = {}; // [準備_異常系] - 必須キーのない JSON を用意する。
     ASSERT_NE(nullptr, json);
     int actual = struct_meta_json_decode(&kDescriptor, json, &sample); // [手順_異常系]
-    EXPECT_EQ(CPLAT_ERR_MISSING_REQUIRED, actual); // [確認_異常系] - 必須キー欠落を報告すること。
+    EXPECT_EQ(CPLAT_ERR_MISSING_REQUIRED, actual);                     // [確認_異常系] - 必須キー欠落を報告すること。
     cJSON_Delete(json);
 }

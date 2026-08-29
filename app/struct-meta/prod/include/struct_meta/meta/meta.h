@@ -69,11 +69,13 @@ extern "C"
     /** 構造体全体を表す記述子です。 */
     struct struct_meta_descriptor
     {
-        const char *name;                /**< 構造体名です。 */
-        size_t size;                     /**< 構造体全体のバイト数です。 */
-        const struct_meta_field *fields; /**< フィールド記述子の配列です。 */
-        size_t field_count;              /**< @p fields の要素数です。 */
-        const char *brief;               /**< 短い説明です。説明がなければ NULL です。 */
+        const char *name;                        /**< 構造体名です。 */
+        size_t size;                             /**< 構造体全体のバイト数です。 */
+        const struct_meta_field *fields;         /**< フィールド記述子の配列です。 */
+        size_t field_count;                      /**< @p fields の要素数です。 */
+        const char *brief;                       /**< 短い説明です。説明がなければ NULL です。 */
+        const struct_meta_attribute *attributes; /**< 拡張属性の配列です。 */
+        size_t attribute_count;                  /**< @p attributes の要素数です。 */
     };
 
     /**

@@ -262,45 +262,31 @@ static int count_structs(const struct_meta_gen_struct_list *list)
     return count;
 }
 
-static int count_attributes(const struct_meta_gen_field *field)
+static int count_attributes(const struct_meta_gen_attribute *attributes)
 {
     int count = 0;
-    if (field->json_name != NULL)
-    {
-        count++;
-    }
-    if (field->json_ignore != 0)
-    {
-        count++;
-    }
-    if (field->json_required != 0)
+    for (const struct_meta_gen_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
     {
         count++;
     }
     return count;
 }
 
-static void emit_attributes(FILE *out, const struct_meta_gen_struct *structure, const struct_meta_gen_field *field)
+static void emit_attributes(FILE *out, const char *symbol, const struct_meta_gen_attribute *attributes)
 {
-    if (count_attributes(field) == 0)
+    if (attributes == NULL)
     {
         return;
     }
 
-    fprintf(out, "static const struct_meta_attribute g_%s_%s_attributes[] = {\n", structure->name, field->name);
-    if (field->json_name != NULL)
+    fprintf(out, "static const struct_meta_attribute g_%s_attributes[] = {\n", symbol);
+    for (const struct_meta_gen_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
     {
-        fputs("    { \"json.name\", ", out);
-        fprint_c_string(out, field->json_name);
+        fputs("    { ", out);
+        fprint_c_string(out, attribute->key);
+        fputs(", ", out);
+        fprint_c_string(out, attribute->value);
         fputs(" },\n", out);
-    }
-    if (field->json_ignore != 0)
-    {
-        fputs("    { \"json.ignore\", NULL },\n", out);
-    }
-    if (field->json_required != 0)
-    {
-        fputs("    { \"json.required\", NULL },\n", out);
     }
     fputs("};\n\n", out);
 }
@@ -336,8 +322,11 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
 
     for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
     {
-        emit_attributes(out, s, f);
+        char symbol[STRUCT_META_GEN_EMIT_PATH_BYTES];
+        snprintf(symbol, sizeof(symbol), "%s_%s", s->name, f->name);
+        emit_attributes(out, symbol, f->attributes);
     }
+    emit_attributes(out, s->name, s->attributes);
 
     fprintf(out, "static const struct_meta_field g_%s_fields[] = {\n", s->name);
     for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
@@ -370,7 +359,7 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
             snprintf(elem_size_expr, sizeof(elem_size_expr), "%s", elem_sizeof_expr(f->type_name));
         }
 
-        int attribute_count = count_attributes(f);
+        int attribute_count = count_attributes(f->attributes);
         fprintf(out, "    { \"%s\", %s, 0, offsetof(%s, %s), %s, %ld, %s, %s, ", f->name, kind, s->name, f->name,
                 elem_size_expr, array_count_out, char_buf_expr, nested_expr);
         fprint_c_string(out, f->brief);
@@ -388,7 +377,14 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
     fprintf(out, "static const struct_meta_descriptor g_%s_desc = { \"%s\", sizeof(%s), g_%s_fields, %d, ", s->name,
             s->name, s->name, s->name, count_fields(s));
     fprint_c_string(out, s->brief);
-    fprintf(out, " };\n\n");
+    if (s->attributes == NULL)
+    {
+        fprintf(out, ", NULL, 0 };\n\n");
+    }
+    else
+    {
+        fprintf(out, ", g_%s_attributes, %d };\n\n", s->name, count_attributes(s->attributes));
+    }
 
     emitted_name *node = (emitted_name *)calloc(1, sizeof(*node));
     node->name = s->name;

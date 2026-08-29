@@ -69,6 +69,34 @@ int struct_meta_descriptor_find_field(const struct_meta_descriptor *descriptor, 
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
+int struct_meta_descriptor_find_attribute(const struct_meta_descriptor *descriptor, const char *key,
+                                          const struct_meta_attribute **attribute_out)
+{
+    if ((descriptor == NULL) || (key == NULL) || (attribute_out == NULL))
+    {
+        return CPLAT_ERR_INVALID_ARGUMENT;
+    }
+    *attribute_out = NULL;
+
+    int ret = struct_meta_descriptor_validate(descriptor);
+    if (ret != CPLAT_OK)
+    {
+        return ret;
+    }
+
+    for (size_t i = 0; i < descriptor->attribute_count; i++)
+    {
+        if (strcmp(descriptor->attributes[i].key, key) == 0)
+        {
+            *attribute_out = &descriptor->attributes[i];
+            return CPLAT_OK;
+        }
+    }
+    return CPLAT_ERR_NOT_FOUND;
+}
+
+/* Doxygen コメントは、ヘッダーに記載 */
+
 int struct_meta_field_find_attribute(const struct_meta_field *field, const char *key,
                                      const struct_meta_attribute **attribute_out)
 {

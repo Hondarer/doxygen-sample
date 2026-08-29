@@ -11,7 +11,7 @@
 - `access` は `meta` のみに依存し、ポインター演算を集約します。
 - `json`、`patch`、`print` は `meta` と `access` を利用します。
 - JSON ファイル入出力は cJSON 変換を利用します。
-- `struct-meta-gen` は生成時だけ JSON 用 Doxygen 属性を解釈します。
+- `struct-meta-gen` は生成時だけ汎用 Doxygen 属性を解析し、属性名の意味は解釈しません。
 - 公開入口では、構造体の内容へアクセスする前に記述子を検査してください。
 
 生成器はフル C パーサーではありません。  
