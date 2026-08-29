@@ -13,7 +13,10 @@
 
 #include <struct_meta/json/json.h>
 
+#include "json.h"
+
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 
@@ -29,32 +32,46 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
 {
     switch (kind)
     {
-    case STRUCT_META_FIELD_INT:
-        if ((element_size != sizeof(int)) || (!cJSON_IsNumber(item)))
+    case STRUCT_META_FIELD_SIGNED_INTEGER:
+    {
+        if (!cJSON_IsNumber(item))
         {
             return CPLAT_ERR_INVALID_ARGUMENT;
         }
+        double raw = cJSON_GetNumberValue(item);
+        /* 範囲検査を先に行う。範囲外や NaN のまま int64_t へ変換すると未定義動作になる。
+           否定形で書くことで、比較がすべて偽になる NaN もここで弾く。 */
+        if (!((raw >= -(double)STRUCT_META_JSON_INTEGER_LIMIT) &&
+              (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
         {
-            int value = (int)cJSON_GetNumberValue(item);
-            memcpy(field_ptr, &value, sizeof(value));
+            return CPLAT_ERR_OUT_OF_RANGE;
         }
-        break;
+        /* 整数でない値は受け付けない。 */
+        if (raw != (double)(int64_t)raw)
+        {
+            return CPLAT_ERR_OUT_OF_RANGE;
+        }
+        return struct_meta_internal_integer_store_signed(field_ptr, element_size, (int64_t)raw);
+    }
 
-    case STRUCT_META_FIELD_UNSIGNED:
-        if ((element_size != sizeof(unsigned int)) || (!cJSON_IsNumber(item)))
+    case STRUCT_META_FIELD_UNSIGNED_INTEGER:
+    {
+        if (!cJSON_IsNumber(item))
         {
             return CPLAT_ERR_INVALID_ARGUMENT;
         }
+        double raw = cJSON_GetNumberValue(item);
+        /* 範囲検査を先に行う。範囲外や NaN のまま uint64_t へ変換すると未定義動作になる。 */
+        if (!((raw >= 0.0) && (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
         {
-            double raw = cJSON_GetNumberValue(item);
-            if (raw < 0.0)
-            {
-                return CPLAT_ERR_INVALID_ARGUMENT;
-            }
-            unsigned int value = (unsigned int)raw;
-            memcpy(field_ptr, &value, sizeof(value));
+            return CPLAT_ERR_OUT_OF_RANGE;
         }
-        break;
+        if (raw != (double)(uint64_t)raw)
+        {
+            return CPLAT_ERR_OUT_OF_RANGE;
+        }
+        return struct_meta_internal_integer_store_unsigned(field_ptr, element_size, (uint64_t)raw);
+    }
 
     case STRUCT_META_FIELD_FLOAT:
         if ((element_size != sizeof(float)) || (!cJSON_IsNumber(item)))

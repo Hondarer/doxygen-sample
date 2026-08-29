@@ -20,6 +20,7 @@
 extern int g_line;
 int yylex(void);
 static void yyerror(const char *msg);
+static void reject_platform_dependent_type(void);
 
 struct_meta_gen_struct_list *g_struct_meta_gen_structs = NULL;
 %}
@@ -35,7 +36,7 @@ struct_meta_gen_struct_list *g_struct_meta_gen_structs = NULL;
 }
 
 %token TYPEDEF STRUCT
-%token T_INT T_UNSIGNED T_CHAR T_FLOAT T_DOUBLE
+%token T_INT T_UNSIGNED T_CHAR T_FLOAT T_DOUBLE T_LONG
 %token LBRACE RBRACE LBRACKET RBRACKET SEMI COMMA STAR
 %token <str> IDENT
 %token <str> DOC_PREFIX DOC_POSTFIX
@@ -131,10 +132,39 @@ type_spec:
     | T_CHAR { $$.name = cplat_strdup("char"); $$.is_struct = 0; }
     | T_FLOAT { $$.name = cplat_strdup("float"); $$.is_struct = 0; }
     | T_DOUBLE { $$.name = cplat_strdup("double"); $$.is_struct = 0; }
-    | IDENT { $$.name = $1; $$.is_struct = 1; }
+    /* long long は LP64 と LLP64 のどちらでも 8 バイトのため受理する。 */
+    | T_LONG T_LONG { $$.name = cplat_strdup("long long"); $$.is_struct = 0; }
+    | T_LONG T_LONG T_INT { $$.name = cplat_strdup("long long"); $$.is_struct = 0; }
+    | T_UNSIGNED T_LONG T_LONG { $$.name = cplat_strdup("unsigned long long"); $$.is_struct = 0; }
+    | T_UNSIGNED T_LONG T_LONG T_INT { $$.name = cplat_strdup("unsigned long long"); $$.is_struct = 0; }
+    /* long は LP64 で 8 バイト、LLP64 で 4 バイトとなり、生成物の互換性を壊すため拒否する。 */
+    | T_LONG { reject_platform_dependent_type(); }
+    | T_LONG T_INT { reject_platform_dependent_type(); }
+    | T_UNSIGNED T_LONG { reject_platform_dependent_type(); }
+    | T_UNSIGNED T_LONG T_INT { reject_platform_dependent_type(); }
+    /* 固定幅型は表で判定し、表に無ければ同一ヘッダー内の構造体名として扱う。 */
+    | IDENT { $$.name = $1; $$.is_struct = (struct_meta_gen_find_scalar_type($1) == NULL) ? 1 : 0; }
     ;
 
 %%
+
+/**
+ *  @brief          幅がプラットフォームに依存する型を拒否し、生成を打ち切ります。
+ *
+ *  生成物は x86_64 の Linux と Windows の間でバイト互換であることを契約とします。
+ *  `long` と `unsigned long` は LP64 で 8 バイト、LLP64 で 4 バイトとなり、この契約を
+ *  壊すため受け付けません。
+ *  see: app/struct-meta/docs/architecture.md
+ */
+static void reject_platform_dependent_type(void)
+{
+    fprintf(stderr,
+            "struct-meta-gen: %d: long と unsigned long は非対応です。"
+            "LP64 と LLP64 で幅が異なり、生成物のプラットフォーム間互換性を壊します。"
+            "long long または int64_t を使用してください\n",
+            g_line);
+    exit(1);
+}
 
 static void yyerror(const char *msg)
 {

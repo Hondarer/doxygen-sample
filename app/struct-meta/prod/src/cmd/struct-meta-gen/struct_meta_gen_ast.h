@@ -23,11 +23,32 @@
  */
 typedef struct struct_meta_gen_typespec
 {
-    char *name;    /**< 型のスペリングです ("int"/"unsigned"/"char"/"float"/"double"、
-                       *   または他の `typedef struct` の名前 (ネスト メンバー))。 */
+    char *name;    /**< 型のスペリングです (@ref struct_meta_gen_find_scalar_type が扱う型名、
+                       *   "char"、または他の `typedef struct` の名前 (ネスト メンバー))。 */
     int is_struct; /**< 1 なら `name` は同一ヘッダー内の構造体名 (ネスト メンバー) です。 */
     int pad;       /**< 明示的アラインメント (構造体全体を 8 バイト境界へ揃える)。 */
 } struct_meta_gen_typespec;
+
+/**
+ *  @brief          対応するスカラー型 1 個分の、生成に必要な情報です。
+ */
+typedef struct struct_meta_gen_scalar_type
+{
+    const char *name;        /**< 解析対象ヘッダーに書かれる型スペリングです。 */
+    const char *kind_name;   /**< 生成コードへ出力する struct_meta_field_kind の列挙定数名です。 */
+    const char *sizeof_expr; /**< 生成コードへ出力する、要素 1 個分の `sizeof` 式です。 */
+} struct_meta_gen_scalar_type;
+
+/**
+ *  @brief          型スペリングから、対応するスカラー型の情報を求めます。
+ *  @param[in]      name  型スペリング。NULL を渡してはなりません。
+ *  @return         対応する情報。対応しない型名なら NULL を返します。
+ *
+ *  `char` は文字列として扱うため、この表には含めません。\n
+ *  `long` と `unsigned long` は LP64 と LLP64 で幅が異なり、生成物のプラットフォーム間
+ *  互換性を壊すため、この表に含めず文法規則で拒否します。
+ */
+const struct_meta_gen_scalar_type *struct_meta_gen_find_scalar_type(const char *name);
 
 /**
  *  @brief          構造体 1 フィールド分の解析結果です。

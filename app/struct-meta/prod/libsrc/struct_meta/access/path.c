@@ -10,6 +10,8 @@
 
 #include <struct_meta/access/access.h>
 
+#include <struct_meta/meta/index_internal.h>
+
 #include <cplat/base/result.h>
 
 #include <ctype.h>
@@ -19,6 +21,18 @@
 static const struct_meta_field *find_field_segment(const struct_meta_descriptor *descriptor, const char *name,
                                                    size_t name_length)
 {
+    /* 登録済みの記述子は表引きで済む。未登録なら CPLAT_SKIPPED が返り、線形走査へ進む。 */
+    size_t index;
+    int index_ret = struct_meta_internal_index_find_field(descriptor, name, name_length, &index);
+    if (index_ret == CPLAT_OK)
+    {
+        return &descriptor->fields[index];
+    }
+    if (index_ret == CPLAT_ERR_NOT_FOUND)
+    {
+        return NULL;
+    }
+
     for (size_t i = 0; i < descriptor->field_count; i++)
     {
         const struct_meta_field *field = &descriptor->fields[i];

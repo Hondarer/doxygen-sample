@@ -14,9 +14,11 @@
 #include <struct_meta/print/print.h>
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -29,23 +31,31 @@ static void print_indent(FILE *out, int indent)
     }
 }
 
-static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, char *dest,
-                                size_t dest_size)
+static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
+                                char *dest, size_t dest_size)
 {
     switch (kind)
     {
-    case STRUCT_META_FIELD_INT:
+    case STRUCT_META_FIELD_SIGNED_INTEGER:
     {
-        int value;
-        memcpy(&value, field_ptr, sizeof(value));
-        snprintf(dest, dest_size, "%d", value);
+        int64_t value;
+        if (struct_meta_internal_integer_load_signed(field_ptr, element_size, &value) != CPLAT_OK)
+        {
+            snprintf(dest, dest_size, "?");
+            break;
+        }
+        snprintf(dest, dest_size, "%" PRId64, value);
         break;
     }
-    case STRUCT_META_FIELD_UNSIGNED:
+    case STRUCT_META_FIELD_UNSIGNED_INTEGER:
     {
-        unsigned int value;
-        memcpy(&value, field_ptr, sizeof(value));
-        snprintf(dest, dest_size, "%u", value);
+        uint64_t value;
+        if (struct_meta_internal_integer_load_unsigned(field_ptr, element_size, &value) != CPLAT_OK)
+        {
+            snprintf(dest, dest_size, "?");
+            break;
+        }
+        snprintf(dest, dest_size, "%" PRIu64, value);
         break;
     }
     case STRUCT_META_FIELD_FLOAT:
@@ -90,7 +100,7 @@ static int print_element(const struct_meta_field *field, const unsigned char *el
 
     {
         char current[64];
-        format_scalar_value(field->kind, elem_ptr, current, sizeof(current));
+        format_scalar_value(field->kind, elem_ptr, field->element_size, current, sizeof(current));
         print_indent(out, indent);
         fprintf(out, "%s = %s\n", label, current);
     }

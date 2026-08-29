@@ -18,11 +18,13 @@
 #include <struct_meta/patch/patch.h>
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 #include <cplat/prompt/prompt.h>
 
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -91,23 +93,31 @@ static int append_index_path(const char *path, size_t index, char **path_out)
 /**
  *  @brief          フィールド 1 個分の現在値を、一覧表示用に短く整形します。
  */
-static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, char *dest,
-                                size_t dest_size)
+static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
+                                char *dest, size_t dest_size)
 {
     switch (kind)
     {
-    case STRUCT_META_FIELD_INT:
+    case STRUCT_META_FIELD_SIGNED_INTEGER:
     {
-        int value;
-        memcpy(&value, field_ptr, sizeof(value));
-        snprintf(dest, dest_size, "%d", value);
+        int64_t value;
+        if (struct_meta_internal_integer_load_signed(field_ptr, element_size, &value) != CPLAT_OK)
+        {
+            snprintf(dest, dest_size, "?");
+            break;
+        }
+        snprintf(dest, dest_size, "%" PRId64, value);
         break;
     }
-    case STRUCT_META_FIELD_UNSIGNED:
+    case STRUCT_META_FIELD_UNSIGNED_INTEGER:
     {
-        unsigned int value;
-        memcpy(&value, field_ptr, sizeof(value));
-        snprintf(dest, dest_size, "%u", value);
+        uint64_t value;
+        if (struct_meta_internal_integer_load_unsigned(field_ptr, element_size, &value) != CPLAT_OK)
+        {
+            snprintf(dest, dest_size, "?");
+            break;
+        }
+        snprintf(dest, dest_size, "%" PRIu64, value);
         break;
     }
     case STRUCT_META_FIELD_FLOAT:
@@ -154,7 +164,36 @@ static int parse_int(const char *text, int *value_out)
     return CPLAT_OK;
 }
 
-static int parse_unsigned(const char *text, unsigned int *value_out)
+/**
+ *  @brief          符号付き整数フィールド用に、入力行を @c int64_t として解釈します。
+ *
+ *  幅ごとの範囲検査は @ref struct_meta_internal_integer_store_signed が行うため、
+ *  ここでは @c int64_t に収まるかだけを判定します。
+ */
+static int parse_signed_integer(const char *text, int64_t *value_out)
+{
+    if (text[0] == '\0')
+    {
+        return CPLAT_ERR_EOF;
+    }
+    char *end = NULL;
+    errno = 0;
+    long long value = strtoll(text, &end, 10);
+    if ((end == text) || (*end != '\0') || (errno != 0))
+    {
+        return CPLAT_ERR_INVALID_INTEGER;
+    }
+    *value_out = (int64_t)value;
+    return CPLAT_OK;
+}
+
+/**
+ *  @brief          符号なし整数フィールド用に、入力行を @c uint64_t として解釈します。
+ *
+ *  幅ごとの範囲検査は @ref struct_meta_internal_integer_store_unsigned が行うため、
+ *  ここでは @c uint64_t に収まるかだけを判定します。
+ */
+static int parse_unsigned_integer(const char *text, uint64_t *value_out)
 {
     if (text[0] == '\0')
     {
@@ -166,12 +205,12 @@ static int parse_unsigned(const char *text, unsigned int *value_out)
     }
     char *end = NULL;
     errno = 0;
-    unsigned long value = strtoul(text, &end, 10);
-    if ((end == text) || (*end != '\0') || (errno != 0) || (value > UINT_MAX))
+    unsigned long long value = strtoull(text, &end, 10);
+    if ((end == text) || (*end != '\0') || (errno != 0))
     {
         return CPLAT_ERR_INVALID_INTEGER;
     }
-    *value_out = (unsigned int)value;
+    *value_out = (uint64_t)value;
     return CPLAT_OK;
 }
 
@@ -203,7 +242,7 @@ static int patch_scalar(cplat_prompt *prompt, const struct_meta_field *field, un
     char line[STRUCT_META_PATCH_LINE_BYTES];
     char current[64];
 
-    format_scalar_value(field->kind, field_ptr, current, sizeof(current));
+    format_scalar_value(field->kind, field_ptr, field->element_size, current, sizeof(current));
 
     for (;;)
     {
@@ -221,28 +260,38 @@ static int patch_scalar(cplat_prompt *prompt, const struct_meta_field *field, un
 
         switch (field->kind)
         {
-        case STRUCT_META_FIELD_INT:
+        case STRUCT_META_FIELD_SIGNED_INTEGER:
         {
-            int value;
-            int parse_ret = parse_int(line, &value);
+            int64_t value;
+            int parse_ret = parse_signed_integer(line, &value);
+            if (parse_ret != CPLAT_OK)
+            {
+                printf("整数として解釈できません: %s\n", line);
+                break;
+            }
+            parse_ret = struct_meta_internal_integer_store_signed(field_ptr, field->element_size, value);
             if (parse_ret == CPLAT_OK)
             {
-                memcpy(field_ptr, &value, sizeof(value));
                 return CPLAT_OK;
             }
-            printf("整数として解釈できません: %s\n", line);
+            printf("%zu バイトの符号付き整数で表せません: %s\n", field->element_size, line);
             break;
         }
-        case STRUCT_META_FIELD_UNSIGNED:
+        case STRUCT_META_FIELD_UNSIGNED_INTEGER:
         {
-            unsigned int value;
-            int parse_ret = parse_unsigned(line, &value);
+            uint64_t value;
+            int parse_ret = parse_unsigned_integer(line, &value);
+            if (parse_ret != CPLAT_OK)
+            {
+                printf("符号なし整数として解釈できません: %s\n", line);
+                break;
+            }
+            parse_ret = struct_meta_internal_integer_store_unsigned(field_ptr, field->element_size, value);
             if (parse_ret == CPLAT_OK)
             {
-                memcpy(field_ptr, &value, sizeof(value));
                 return CPLAT_OK;
             }
-            printf("符号なし整数として解釈できません: %s\n", line);
+            printf("%zu バイトの符号なし整数で表せません: %s\n", field->element_size, line);
             break;
         }
         case STRUCT_META_FIELD_FLOAT:
@@ -425,7 +474,7 @@ static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc
             else
             {
                 char current[64];
-                format_scalar_value(field->kind, field_ptr, current, sizeof(current));
+                format_scalar_value(field->kind, field_ptr, field->element_size, current, sizeof(current));
                 printf("  %zu) %s = %s%s%s\n", i + 1U, field_path, current, brief_sep, brief);
             }
             free(field_path);

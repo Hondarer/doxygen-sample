@@ -64,6 +64,7 @@ int g_line = 1;
 "struct"                        { return STRUCT; }
 "int"                           { return T_INT; }
 "unsigned"                      { return T_UNSIGNED; }
+"long"                          { return T_LONG; }
 "char"                          { return T_CHAR; }
 "float"                         { return T_FLOAT; }
 "double"                        { return T_DOUBLE; }

@@ -39,14 +39,14 @@ struct Sample
 const struct_meta_field kAddressFields[] = {
     {"city", STRUCT_META_FIELD_CHAR_ARRAY, 0, offsetof(Address, city), sizeof(char), 1, sizeof(Address::city), nullptr,
      nullptr, nullptr, 0},
-    {"zip", STRUCT_META_FIELD_INT, 0, offsetof(Address, zip), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
+    {"zip", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Address, zip), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
 };
 const struct_meta_descriptor kAddressDescriptor = {"Address", sizeof(Address), kAddressFields, 2, nullptr, nullptr, 0};
 const struct_meta_field kSampleFields[] = {
     {"addresses", STRUCT_META_FIELD_STRUCT, 0, offsetof(Sample, addresses), sizeof(Address), 2, 0, &kAddressDescriptor,
      nullptr, nullptr, 0},
-    {"scores", STRUCT_META_FIELD_INT, 0, offsetof(Sample, scores), sizeof(int), 3, 0, nullptr, nullptr, nullptr, 0},
-    {"id", STRUCT_META_FIELD_INT, 0, offsetof(Sample, id), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
+    {"scores", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Sample, scores), sizeof(int), 3, 0, nullptr, nullptr, nullptr, 0},
+    {"id", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Sample, id), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
 };
 const struct_meta_descriptor kSampleDescriptor = {"Sample", sizeof(Sample), kSampleFields, 3, nullptr, nullptr, 0};
 

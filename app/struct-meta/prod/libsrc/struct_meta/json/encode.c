@@ -13,7 +13,10 @@
 
 #include <struct_meta/json/json.h>
 
+#include "json.h"
+
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 
@@ -31,29 +34,39 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
 
     switch (kind)
     {
-    case STRUCT_META_FIELD_INT:
-        if (element_size != sizeof(int))
+    case STRUCT_META_FIELD_SIGNED_INTEGER:
+    {
+        int64_t value;
+        int ret = struct_meta_internal_integer_load_signed(field_ptr, element_size, &value);
+        if (ret != CPLAT_OK)
         {
-            return CPLAT_ERR_UNSUPPORTED;
+            return ret;
         }
+        /* cJSON の数値は double のため、正確に表せない値は黙って丸めずに拒否する。 */
+        if ((value > (int64_t)STRUCT_META_JSON_INTEGER_LIMIT) ||
+            (value < -(int64_t)STRUCT_META_JSON_INTEGER_LIMIT))
         {
-            int value;
-            memcpy(&value, field_ptr, sizeof(value));
-            item = cJSON_CreateNumber((double)value);
+            return CPLAT_ERR_OUT_OF_RANGE;
         }
+        item = cJSON_CreateNumber((double)value);
         break;
+    }
 
-    case STRUCT_META_FIELD_UNSIGNED:
-        if (element_size != sizeof(unsigned int))
+    case STRUCT_META_FIELD_UNSIGNED_INTEGER:
+    {
+        uint64_t value;
+        int ret = struct_meta_internal_integer_load_unsigned(field_ptr, element_size, &value);
+        if (ret != CPLAT_OK)
         {
-            return CPLAT_ERR_UNSUPPORTED;
+            return ret;
         }
+        if (value > (uint64_t)STRUCT_META_JSON_INTEGER_LIMIT)
         {
-            unsigned int value;
-            memcpy(&value, field_ptr, sizeof(value));
-            item = cJSON_CreateNumber((double)value);
+            return CPLAT_ERR_OUT_OF_RANGE;
         }
+        item = cJSON_CreateNumber((double)value);
         break;
+    }
 
     case STRUCT_META_FIELD_FLOAT:
         if (element_size != sizeof(float))

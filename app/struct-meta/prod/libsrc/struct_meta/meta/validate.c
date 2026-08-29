@@ -10,6 +10,9 @@
 
 #include <struct_meta/meta/meta.h>
 
+#include <struct_meta/meta/index_internal.h>
+#include <struct_meta/meta/integer.h>
+
 #include <cplat/base/result.h>
 
 #include <stdint.h>
@@ -105,8 +108,18 @@ static int validate_descriptor(validation_context *context, const struct_meta_de
         const struct_meta_field *field = &descriptor->fields[i];
         size_t field_size;
 
-        if ((field->name == NULL) || (field->name[0] == '\0') || (field->kind < STRUCT_META_FIELD_INT) ||
-            (field->kind > STRUCT_META_FIELD_STRUCT) || (field->element_size == 0U) || (field->element_count == 0U))
+        if ((field->name == NULL) || (field->name[0] == '\0') ||
+            (field->kind < STRUCT_META_FIELD_SIGNED_INTEGER) || (field->kind > STRUCT_META_FIELD_STRUCT) ||
+            (field->element_size == 0U) || (field->element_count == 0U))
+        {
+            ret = CPLAT_ERR_CORRUPT_DESCRIPTOR;
+            break;
+        }
+
+        /* 整数は幅を element_size が表すため、扱える幅であることをここで確かめる。 */
+        if (((field->kind == STRUCT_META_FIELD_SIGNED_INTEGER) ||
+             (field->kind == STRUCT_META_FIELD_UNSIGNED_INTEGER)) &&
+            (struct_meta_internal_integer_is_supported_size(field->element_size) == 0))
         {
             ret = CPLAT_ERR_CORRUPT_DESCRIPTOR;
             break;
@@ -174,6 +187,14 @@ int struct_meta_descriptor_validate(const struct_meta_descriptor *descriptor)
     if (descriptor == NULL)
     {
         return CPLAT_ERR_INVALID_ARGUMENT;
+    }
+
+    /* 登録済みの記述子は、登録時に求めた結果を控えている。公開入口が呼ばれるたびに
+       記述子全体を再帰走査し直す費用を避ける。未登録なら控えが無く、以降で検査する。 */
+    int cached;
+    if (struct_meta_internal_index_find_validation(descriptor, &cached) == CPLAT_OK)
+    {
+        return cached;
     }
 
     validation_context context = {0};

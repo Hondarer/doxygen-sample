@@ -18,6 +18,48 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ *  対応するスカラー型の表です。
+ *
+ *  幅が LP64 と LLP64 で一致する型だけを載せます。`long` と `unsigned long` は
+ *  幅が異なるため載せず、文法規則で明示的に拒否します。
+ *  see: app/struct-meta/docs/architecture.md
+ */
+static const struct_meta_gen_scalar_type g_scalar_types[] = {
+    {"int", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int)"},
+    {"unsigned", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned int)"},
+    {"long long", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(long long)"},
+    {"unsigned long long", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned long long)"},
+    {"int8_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int8_t)"},
+    {"int16_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int16_t)"},
+    {"int32_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int32_t)"},
+    {"int64_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int64_t)"},
+    {"uint8_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint8_t)"},
+    {"uint16_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint16_t)"},
+    {"uint32_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint32_t)"},
+    {"uint64_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint64_t)"},
+    {"float", "STRUCT_META_FIELD_FLOAT", "sizeof(float)"},
+    {"double", "STRUCT_META_FIELD_DOUBLE", "sizeof(double)"},
+};
+
+/* Doxygen コメントは、ヘッダーに記載 */
+
+const struct_meta_gen_scalar_type *struct_meta_gen_find_scalar_type(const char *name)
+{
+    if (name == NULL)
+    {
+        return NULL;
+    }
+    for (size_t i = 0; i < (sizeof(g_scalar_types) / sizeof(g_scalar_types[0])); i++)
+    {
+        if (strcmp(g_scalar_types[i].name, name) == 0)
+        {
+            return &g_scalar_types[i];
+        }
+    }
+    return NULL;
+}
+
 struct_meta_gen_field *struct_meta_gen_field_create(char *name, char *type_name, int is_struct_type, long array_count,
                                                     int line, char *brief, struct_meta_gen_attribute *attributes)
 {

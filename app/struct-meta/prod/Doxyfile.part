@@ -3,6 +3,8 @@ EXCLUDE_PATTERNS      += */libsrc/struct_meta/access.c \
                          */libsrc/struct_meta/decode.c \
                          */libsrc/struct_meta/encode.c \
                          */libsrc/struct_meta/file.c \
+                         */libsrc/struct_meta/index.c \
+                         */libsrc/struct_meta/integer.c \
                          */libsrc/struct_meta/patch.c \
                          */libsrc/struct_meta/path.c \
                          */libsrc/struct_meta/print.c \

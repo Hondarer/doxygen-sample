@@ -20,9 +20,13 @@
 
 #include "struct_meta_gen_emit.h"
 
+#include <cplat/base/result.h>
 #include <cplat/crt/stdio.h>
+#include <cplat/hashtable/hashtable.h>
 
 #include <ctype.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +35,9 @@ extern struct_meta_gen_struct_list *g_struct_meta_gen_structs;
 
 /** 生成パス・識別子を組み立てる作業バッファーのバイト数です。 */
 #define STRUCT_META_GEN_EMIT_PATH_BYTES 512
+
+/** 埋め込みイメージを出力する 1 行あたりのワード数です。 */
+#define STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE 4U
 
 /**
  *  @brief          記述子をすでに出力した構造体名を記録する連結リストです。
@@ -55,6 +62,8 @@ static int is_emitted(const emitted_name *list, const char *name)
 
 /**
  *  @brief          フィールドの型スペリングから @ref struct_meta_field_kind の列挙定数名を求めます。
+ *
+ *  型名と列挙定数名の対応は @ref struct_meta_gen_find_scalar_type が持つ表を正本とします。
  */
 static const char *field_kind_name(const char *type_name, int is_char_array)
 {
@@ -62,19 +71,14 @@ static const char *field_kind_name(const char *type_name, int is_char_array)
     {
         return "STRUCT_META_FIELD_CHAR_ARRAY";
     }
-    if (strcmp(type_name, "int") == 0)
+
+    const struct_meta_gen_scalar_type *scalar = struct_meta_gen_find_scalar_type(type_name);
+    if (scalar != NULL)
     {
-        return "STRUCT_META_FIELD_INT";
+        return scalar->kind_name;
     }
-    if (strcmp(type_name, "unsigned") == 0)
-    {
-        return "STRUCT_META_FIELD_UNSIGNED";
-    }
-    if (strcmp(type_name, "float") == 0)
-    {
-        return "STRUCT_META_FIELD_FLOAT";
-    }
-    return "STRUCT_META_FIELD_DOUBLE";
+    /* 文法規則が受理する非構造体型は、char か表にある型に限られる。 */
+    return "STRUCT_META_FIELD_CHAR_ARRAY";
 }
 
 /**
@@ -82,21 +86,10 @@ static const char *field_kind_name(const char *type_name, int is_char_array)
  */
 static const char *elem_sizeof_expr(const char *type_name)
 {
-    if (strcmp(type_name, "int") == 0)
+    const struct_meta_gen_scalar_type *scalar = struct_meta_gen_find_scalar_type(type_name);
+    if (scalar != NULL)
     {
-        return "sizeof(int)";
-    }
-    if (strcmp(type_name, "unsigned") == 0)
-    {
-        return "sizeof(unsigned int)";
-    }
-    if (strcmp(type_name, "float") == 0)
-    {
-        return "sizeof(float)";
-    }
-    if (strcmp(type_name, "double") == 0)
-    {
-        return "sizeof(double)";
+        return scalar->sizeof_expr;
     }
     return "sizeof(char)";
 }
@@ -430,8 +423,40 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
     }
     fprintf(out, "    %s_META_COUNT = %d,\n", prefix, count);
     fprintf(out, "} %s_meta_id;\n\n", stem);
-    fprintf(out, "size_t %s_meta_count(void);\n", stem);
-    fprintf(out, "const struct_meta_descriptor *%s_meta_get(%s_meta_id id);\n", stem, stem);
+    fprintf(out, "/**\n");
+    fprintf(out, " *  @brief          カタログが持つ型の数を返します。\n");
+    fprintf(out, " *  @return         型の数です。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  @par            スレッド セーフ\n");
+    fprintf(out, " *  本関数はスレッド セーフです。内部に共有状態を持ちません。\n");
+    fprintf(out, " */\n");
+    fprintf(out, "size_t %s_meta_count(void);\n\n", stem);
+
+    fprintf(out, "/**\n");
+    fprintf(out, " *  @brief          列挙 ID で記述子を取得します。\n");
+    fprintf(out, " *  @param[in]      id 取得する型の ID です。\n");
+    fprintf(out, " *  @return         記述子です。範囲外の ID では NULL を返します。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  @par            スレッド セーフ\n");
+    fprintf(out, " *  本関数はスレッド セーフです。内部に共有状態を持ちません。\n");
+    fprintf(out, " */\n");
+    fprintf(out, "const struct_meta_descriptor *%s_meta_get(%s_meta_id id);\n\n", stem, stem);
+
+    fprintf(out, "/**\n");
+    fprintf(out, " *  @brief          構造体名で記述子を検索します。\n");
+    fprintf(out, " *  @param[in]      name 検索する構造体名です。NULL を渡せます。\n");
+    fprintf(out, " *  @return         記述子です。NULL または未知の名前では NULL を返します。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  検索には、生成時に構築した索引の埋め込みイメージを使います。\n");
+    fprintf(out, " *  イメージへの接続は初回呼び出し時に 1 回だけ行います。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  @attention      埋め込みイメージへ接続できない場合、本関数はプロセスを終了させます。\n");
+    fprintf(out, " *                  同一ビルドで生成したイメージが読めないという不変条件の破れであり、\n");
+    fprintf(out, " *                  検索を続けても記述子を返せないためです。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  @par            スレッド セーフ\n");
+    fprintf(out, " *  本関数はスレッド セーフです。初回の接続は 1 回だけ実行されます。\n");
+    fprintf(out, " */\n");
     fprintf(out, "const struct_meta_descriptor *%s_meta_find(const char *name);\n\n", stem);
     fprintf(out, "#ifdef __cplusplus\n");
     fprintf(out, "}\n");
@@ -443,13 +468,145 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
 }
 
 /**
+ *  @brief          構造体名の最大バイト数 (NUL を含む) を求めます。
+ */
+static size_t max_struct_name_bytes(const struct_meta_gen_struct_list *structs)
+{
+    size_t longest = 0;
+    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    {
+        size_t length = strlen(s->name);
+        if (length > longest)
+        {
+            longest = length;
+        }
+    }
+    return longest + 1U;
+}
+
+/**
+ *  @brief          永続化イメージを @c uint64_t の配列リテラルとして書き出します。
+ *
+ *  @c uint64_t 配列にするのは、`cplat_hashtable_attach()` が管理領域とデータ領域に
+ *  8 バイト境界を要求するためです。末尾は 0 で埋めます。
+ */
+static void emit_image_array(FILE *out, const char *array_name, const void *image, size_t image_size)
+{
+    size_t words = (image_size + 7U) / 8U;
+
+    fprintf(out, "static const uint64_t %s[%zu] = {\n", array_name, words);
+    for (size_t i = 0; i < words; i++)
+    {
+        uint64_t word = 0;
+        size_t offset = i * 8U;
+        size_t remain = image_size - offset;
+        size_t copy_size = (remain < 8U) ? remain : 8U;
+
+        memcpy(&word, (const unsigned char *)image + offset, copy_size);
+
+        if ((i % STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE) == 0U)
+        {
+            fprintf(out, "    ");
+        }
+        fprintf(out, "UINT64_C(0x%016" PRIx64 ")", word);
+        if ((i + 1U) < words)
+        {
+            fprintf(out, ",");
+        }
+        if ((((i + 1U) % STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE) == 0U) || ((i + 1U) == words))
+        {
+            fprintf(out, "\n");
+        }
+        else
+        {
+            fprintf(out, " ");
+        }
+    }
+    fprintf(out, "};\n\n");
+}
+
+/**
+ *  @brief          構造体名から添字を引くハッシュ表を構築し、永続化イメージを書き出します。
+ *  @return         成功なら 0、失敗なら 1 です。
+ *
+ *  レコード数もキーの最大長も生成時に確定するため、実行時に構築せず、ここで構築した
+ *  テーブルの永続化イメージを生成コードへ埋め込みます。実行時は接続するだけになります。
+ */
+static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_meta_gen_struct_list *structs)
+{
+    cplat_hashtable_config config = {0};
+    cplat_hashtable *table = NULL;
+    size_t name_bytes = max_struct_name_bytes(structs);
+    size_t count = (size_t)count_structs(structs);
+
+    config.capacity = count * 2U;
+    config.key_type = CPLAT_HASHTABLE_FIELD_FIXED_STRING;
+    config.key_size = name_bytes;
+    config.value_type = CPLAT_HASHTABLE_FIELD_FIXED_BINARY;
+    config.value_size = sizeof(size_t);
+    config.value_align = sizeof(size_t);
+    config.lifetime = CPLAT_HASHTABLE_LIFETIME_INFINITE;
+
+    if (cplat_hashtable_create(&config, NULL, 0, NULL, 0, &table) != CPLAT_OK)
+    {
+        fprintf(stderr, "struct-meta-gen: 索引テーブルを構築できません\n");
+        return 1;
+    }
+
+    size_t index = 0;
+    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    {
+        if (cplat_hashtable_add(table, s->name, &index, CPLAT_HASHTABLE_ADD_DELETED_OVERWRITE) != CPLAT_OK)
+        {
+            fprintf(stderr, "struct-meta-gen: 索引へ型名を登録できません: %s\n", s->name);
+            cplat_hashtable_dispose(table);
+            return 1;
+        }
+        index++;
+    }
+
+    size_t mgmt_size = 0;
+    size_t data_size = 0;
+    const void *mgmt = NULL;
+    const void *data = NULL;
+
+    if ((cplat_hashtable_buffer_size(table, &mgmt_size, &data_size) != CPLAT_OK) ||
+        (cplat_hashtable_buffer_ref(table, &mgmt, &data) != CPLAT_OK))
+    {
+        fprintf(stderr, "struct-meta-gen: 索引の永続化イメージを取得できません\n");
+        cplat_hashtable_dispose(table);
+        return 1;
+    }
+
+    fprintf(out, "/* struct-meta-gen が構築済みの索引を永続化したイメージです。手編集しないでください。 */\n");
+    emit_image_array(out, "s_index_mgmt", mgmt, mgmt_size);
+    emit_image_array(out, "s_index_data", data, data_size);
+
+    /* 埋め込みイメージが前提とする ABI を、生成先のコンパイル時に検査する。
+       生成器が動作した環境での実測値を出力する。 */
+    fprintf(out, "/* 埋め込みイメージが前提とする ABI。破れた場合はコンパイル時に落とす。 */\n");
+    fprintf(out, "_Static_assert(sizeof(size_t) == %zu, \"%s: 埋め込み索引は size_t %zu バイトを前提とします\");\n",
+            sizeof(size_t), prefix, sizeof(size_t));
+    fprintf(out, "_Static_assert(sizeof(time_t) == %zu, \"%s: 埋め込み索引は time_t %zu バイトを前提とします\");\n",
+            sizeof(time_t), prefix, sizeof(time_t));
+    fprintf(out,
+            "_Static_assert(sizeof(cplat_hashtable_config) == %zu,\n"
+            "               \"%s: 埋め込み索引は生成時と同じ cplat_hashtable_config 配置を前提とします\");\n\n",
+            sizeof(cplat_hashtable_config), prefix);
+
+    cplat_hashtable_dispose(table);
+    return 0;
+}
+
+/**
  *  @brief          型一覧テーブルと取得関数を C ソースへ書き出します。
+ *  @return         成功なら 0、失敗なら 1 です。
  *
  *  テーブルの並びはヘッダーの宣言順 (enum と同じ) です。記述子の出力順
  *  (依存順) とは独立です。
  */
-static void emit_catalog_source(FILE *out, const char *stem, const char *prefix,
-                                const struct_meta_gen_struct_list *structs)
+static int emit_catalog_source(FILE *out, const char *stem, const char *prefix,
+                               const struct_meta_gen_struct_list *structs)
 {
     fprintf(out, "static const struct_meta_descriptor *const s_descriptors[%s_META_COUNT] = {\n", prefix);
     for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
@@ -457,6 +614,56 @@ static void emit_catalog_source(FILE *out, const char *stem, const char *prefix,
         fprintf(out, "    &g_%s_desc,\n", s->name);
     }
     fprintf(out, "};\n\n");
+
+    if (emit_catalog_index_image(out, prefix, structs) != 0)
+    {
+        return 1;
+    }
+
+    fprintf(out, "static cplat_once_flag s_index_once;\n");
+    fprintf(out, "static cplat_hashtable *s_index;\n\n");
+
+    fprintf(out, "static void detach_index(const cplat_shutdown_event *event, void *context)\n");
+    fprintf(out, "{\n");
+    fprintf(out, "    (void)event;\n");
+    fprintf(out, "    (void)context;\n");
+    fprintf(out, "    for (size_t i = 0; i < %s_META_COUNT; i++)\n", prefix);
+    fprintf(out, "    {\n");
+    fprintf(out, "        (void)struct_meta_index_unregister(s_descriptors[i]);\n");
+    fprintf(out, "    }\n");
+    fprintf(out, "    /* ハンドルだけを解放する。イメージは静的領域であり解放しない。 */\n");
+    fprintf(out, "    cplat_hashtable_dispose(s_index);\n");
+    fprintf(out, "    s_index = NULL;\n");
+    fprintf(out, "}\n\n");
+
+    fprintf(out, "static void attach_index(void)\n");
+    fprintf(out, "{\n");
+    fprintf(out, "    /* イメージは読み取り専用。cplat_hashtable_attach() は領域へ書き込まず、\n");
+    fprintf(out, "       この表へ書き込み API を呼ぶこともないため、const を外して渡す。\n");
+    fprintf(out, "       uintptr_t を経由するのは cplat と同じ書き方に揃えるため。\n");
+    fprintf(out, "       see: app/c-platform/prod/libsrc/cplat/hashtable/hashtable_create.c の\n");
+    fprintf(out, "            cplat_hashtable_attach() */\n");
+    fprintf(out, "    if (cplat_hashtable_attach((void *)(uintptr_t)s_index_mgmt, sizeof(s_index_mgmt),\n");
+    fprintf(out, "                               (void *)(uintptr_t)s_index_data, sizeof(s_index_data),\n");
+    fprintf(out, "                               &s_index) != CPLAT_OK)\n");
+    fprintf(out, "    {\n");
+    fprintf(out, "        /* 同一ビルドで作ったイメージが読めないという不変条件の破れ。\n");
+    fprintf(out, "           線形走査へ縮退させず、その場で落とす。 */\n");
+    fprintf(out, "        (void)fprintf(stderr, \"%s: 埋め込み索引へ接続できません\\n\");\n", stem);
+    fprintf(out, "        abort();\n");
+    fprintf(out, "    }\n");
+    fprintf(out, "    for (size_t i = 0; i < %s_META_COUNT; i++)\n", prefix);
+    fprintf(out, "    {\n");
+    fprintf(out, "        /* 登録は検索を速くするだけで、失敗しても未登録の記述子として\n");
+    fprintf(out, "           正しく動作する。確保失敗で異常終了はさせず、原因だけ残す。 */\n");
+    fprintf(out, "        if (struct_meta_index_register(s_descriptors[i]) != CPLAT_OK)\n");
+    fprintf(out, "        {\n");
+    fprintf(out, "            (void)fprintf(stderr, \"%s: 記述子を索引へ登録できません: %%s\\n\",\n", stem);
+    fprintf(out, "                          s_descriptors[i]->name);\n");
+    fprintf(out, "        }\n");
+    fprintf(out, "    }\n");
+    fprintf(out, "    (void)cplat_shutdown_register(detach_index, NULL);\n");
+    fprintf(out, "}\n\n");
 
     fprintf(out, "size_t %s_meta_count(void)\n", stem);
     fprintf(out, "{\n");
@@ -478,15 +685,16 @@ static void emit_catalog_source(FILE *out, const char *stem, const char *prefix,
     fprintf(out, "    {\n");
     fprintf(out, "        return NULL;\n");
     fprintf(out, "    }\n");
-    fprintf(out, "    for (size_t i = 0; i < %s_META_COUNT; i++)\n", prefix);
+    fprintf(out, "    cplat_call_once(&s_index_once, attach_index);\n\n");
+    fprintf(out, "    const void *value = NULL;\n");
+    fprintf(out, "    if (cplat_hashtable_find_value_ref(s_index, name, &value) != CPLAT_OK)\n");
     fprintf(out, "    {\n");
-    fprintf(out, "        if (strcmp(s_descriptors[i]->name, name) == 0)\n");
-    fprintf(out, "        {\n");
-    fprintf(out, "            return s_descriptors[i];\n");
-    fprintf(out, "        }\n");
+    fprintf(out, "        return NULL;\n");
     fprintf(out, "    }\n");
-    fprintf(out, "    return NULL;\n");
+    fprintf(out, "    /* value_align に sizeof(size_t) を指定しているため、型付きで参照できる。 */\n");
+    fprintf(out, "    return s_descriptors[*(const size_t *)value];\n");
     fprintf(out, "}\n");
+    return 0;
 }
 
 int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char *header_path, const char *out_path)
@@ -525,17 +733,29 @@ int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char 
 
     fprintf(out, "/* このファイルは struct-meta-gen が自動生成しました。手編集しないでください。 */\n");
     fprintf(out, "#include \"../%s\"\n", header_path);
-    fprintf(out, "#include \"%s\"\n", generated_header_include(header_out));
+    fprintf(out, "#include \"%s\"\n\n", generated_header_include(header_out));
+    fprintf(out, "#include <struct_meta/meta/index.h>\n\n");
+    fprintf(out, "#include <cplat/base/result.h>\n");
+    fprintf(out, "#include <cplat/hashtable/hashtable.h>\n");
+    fprintf(out, "#include <cplat/runtime/shutdown.h>\n");
+    fprintf(out, "#include <cplat/sync/sync.h>\n\n");
     fprintf(out, "#include <stddef.h>\n");
-    fprintf(out, "#include <string.h>\n\n");
+    fprintf(out, "#include <stdint.h>\n");
+    fprintf(out, "#include <stdio.h>\n");
+    fprintf(out, "#include <stdlib.h>\n");
+    fprintf(out, "#include <time.h>\n\n");
 
     emitted_name *emitted = NULL;
     for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
     {
         emit_struct(out, s, &emitted);
     }
-    emit_catalog_source(out, stem, prefix, structs);
+    int catalog_ret = emit_catalog_source(out, stem, prefix, structs);
     fclose(out);
+    if (catalog_ret != 0)
+    {
+        return 1;
+    }
 
     return emit_catalog_header(header_out, stem, prefix, structs);
 }

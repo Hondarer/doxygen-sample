@@ -20,6 +20,8 @@
 #ifndef SAMPLE_TYPES_PRIVATE_H
 #define SAMPLE_TYPES_PRIVATE_H
 
+#include <stdint.h>
+
 /**
  *  @brief          住所を表す、`person` のネスト メンバーです。
  *  @struct_meta{sample.category=location}
@@ -43,6 +45,12 @@ typedef struct person
     address home;         /**< 自宅です。 */
     address addresses[2]; /**< 追加の住所です。 */
     int scores[3];        /**< 得点の配列です。 */
+    int64_t balance;      /**< 残高です。64 ビット符号付きの動作確認を兼ねます。 */
+    long long counter;    /**< 通算回数です。`long long` の動作確認を兼ねます。 */
+    uint32_t flags;       /**< 属性ビットです。32 ビット符号なしの動作確認を兼ねます。 */
+    int16_t offset;       /**< 補正値です。16 ビット符号付きの動作確認を兼ねます。 */
+    uint8_t rank;         /**< 等級です。8 ビット符号なしの動作確認を兼ねます。 */
+    uint8_t reserved;     /**< 明示的アラインメントです。 @struct_meta{json.ignore} */
     int serial;           /**< 内部連番です。 @struct_meta{json.ignore} */
     int pad;              /**< 明示的アラインメントです。 @struct_meta{json.ignore} */
 } person;

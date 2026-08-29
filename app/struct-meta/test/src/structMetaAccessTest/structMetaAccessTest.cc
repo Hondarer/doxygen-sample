@@ -11,7 +11,79 @@ struct Sample
 
 const struct_meta_attribute kAttributes[] = {{"schema.version", "1"}, {"sample.flag", nullptr}};
 const struct_meta_descriptor kDescriptor = {"Sample", sizeof(Sample), nullptr, 0, "サンプルです。", kAttributes, 2};
+
+struct Fields
+{
+    int first;
+    unsigned int second;
+};
+
+const struct_meta_field kFields[] = {
+    {"first", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Fields, first), sizeof(int), 1, 0, nullptr, nullptr,
+     nullptr, 0},
+    {"second", STRUCT_META_FIELD_UNSIGNED_INTEGER, 0, offsetof(Fields, second), sizeof(unsigned int), 1, 0, nullptr,
+     nullptr, nullptr, 0},
+};
+const struct_meta_descriptor kFieldsDescriptor = {"Fields", sizeof(Fields), kFields, 2, nullptr, nullptr, 0};
 } // namespace
+
+TEST(structMetaAccessTest, finds_field_by_name)
+{
+    // Arrange
+    const struct_meta_field *first = nullptr;
+    const struct_meta_field *second = nullptr;
+
+    // Pre-Assert
+
+    // Act
+    int first_ret = struct_meta_descriptor_find_field(&kFieldsDescriptor, "first",
+                                                      &first); // [手順] - 先頭のフィールドを名前で検索する。
+    int second_ret = struct_meta_descriptor_find_field(&kFieldsDescriptor, "second",
+                                                       &second); // [手順] - 末尾のフィールドを名前で検索する。
+
+    // Assert
+    ASSERT_EQ(CPLAT_OK, first_ret);            // [確認_正常系] - 先頭フィールドの検索が成功すること。
+    EXPECT_EQ(&kFields[0], first);             // [確認_正常系] - 先頭フィールドの記述子が返ること。
+    ASSERT_EQ(CPLAT_OK, second_ret);           // [確認_正常系] - 末尾フィールドの検索が成功すること。
+    EXPECT_EQ(&kFields[1], second);            // [確認_正常系] - 末尾フィールドの記述子が返ること。
+}
+
+TEST(structMetaAccessTest, returns_not_found_for_unknown_field)
+{
+    // Arrange
+    const struct_meta_field *field = reinterpret_cast<const struct_meta_field *>(1);
+
+    // Pre-Assert
+
+    // Act
+    int actual = struct_meta_descriptor_find_field(&kFieldsDescriptor, "unknown",
+                                                   &field); // [手順] - 存在しないフィールドを検索する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_NOT_FOUND, actual); // [確認_正常系] - フィールド検索が CPLAT_ERR_NOT_FOUND を返すこと。
+    EXPECT_EQ(nullptr, field);              // [確認_正常系] - 検索結果が NULL に初期化されること。
+}
+
+TEST(structMetaAccessTest, rejects_invalid_arguments_for_find_field)
+{
+    // Arrange
+    const struct_meta_field *field = nullptr;
+
+    // Pre-Assert
+
+    // Act
+    int descriptor_ret = struct_meta_descriptor_find_field(nullptr, "first",
+                                                           &field); // [手順] - NULL の記述子を指定する。
+    int name_ret = struct_meta_descriptor_find_field(&kFieldsDescriptor, nullptr,
+                                                     &field); // [手順] - NULL のフィールド名を指定する。
+    int output_ret = struct_meta_descriptor_find_field(&kFieldsDescriptor, "first",
+                                                       nullptr); // [手順] - NULL の出力先を指定する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, descriptor_ret); // [確認_異常系] - NULL の記述子が拒否されること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, name_ret);       // [確認_異常系] - NULL のフィールド名が拒否されること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, output_ret);     // [確認_異常系] - NULL の出力先が拒否されること。
+}
 
 TEST(structMetaAccessTest, finds_descriptor_attributes)
 {

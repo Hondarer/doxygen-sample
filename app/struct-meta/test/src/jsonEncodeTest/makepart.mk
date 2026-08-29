@@ -4,7 +4,14 @@ TEST_SRCS := \
 
 ADD_SRCS += \
 	$(MYAPP_DIR)/prod/libsrc/struct_meta/access/access.c \
+	$(MYAPP_DIR)/prod/libsrc/struct_meta/meta/index.c \
+	$(MYAPP_DIR)/prod/libsrc/struct_meta/meta/integer.c \
 	$(MYAPP_DIR)/prod/libsrc/struct_meta/meta/validate.c
 
 # cJSON API を直接使用するため実体をリンクする (モック不要)。
 LIBS += cjson cplat
+
+# json のモジュール私有ヘッダーを参照する。
+# see: app/general/docs/coding-guideline.md の「モジュール私有ヘッダー」
+INCDIR += \
+	$(MYAPP_DIR)/prod/libsrc/struct_meta/json
