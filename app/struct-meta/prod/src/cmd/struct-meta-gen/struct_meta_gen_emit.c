@@ -19,14 +19,13 @@
  */
 
 #include "struct_meta_gen_emit.h"
+#include "struct_meta_gen_emit_array.h"
 
 #include <cplat/base/result.h>
 #include <cplat/crt/stdio.h>
 #include <cplat/hashtable/hashtable.h>
 
 #include <ctype.h>
-#include <inttypes.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,9 +34,6 @@ extern struct_meta_gen_struct_list *g_struct_meta_gen_structs;
 
 /** 生成パス・識別子を組み立てる作業バッファーのバイト数です。 */
 #define STRUCT_META_GEN_EMIT_PATH_BYTES 512
-
-/** 埋め込みイメージを出力する 1 行あたりのワード数です。 */
-#define STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE 4U
 
 /**
  *  @brief          記述子をすでに出力した構造体名を記録する連結リストです。
@@ -485,47 +481,6 @@ static size_t max_struct_name_bytes(const struct_meta_gen_struct_list *structs)
 }
 
 /**
- *  @brief          永続化イメージを @c uint64_t の配列リテラルとして書き出します。
- *
- *  @c uint64_t 配列にするのは、`cplat_hashtable_attach()` が管理領域とデータ領域に
- *  8 バイト境界を要求するためです。末尾は 0 で埋めます。
- */
-static void emit_image_array(FILE *out, const char *array_name, const void *image, size_t image_size)
-{
-    size_t words = (image_size + 7U) / 8U;
-
-    fprintf(out, "static const uint64_t %s[%zu] = {\n", array_name, words);
-    for (size_t i = 0; i < words; i++)
-    {
-        uint64_t word = 0;
-        size_t offset = i * 8U;
-        size_t remain = image_size - offset;
-        size_t copy_size = (remain < 8U) ? remain : 8U;
-
-        memcpy(&word, (const unsigned char *)image + offset, copy_size);
-
-        if ((i % STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE) == 0U)
-        {
-            fprintf(out, "    ");
-        }
-        fprintf(out, "UINT64_C(0x%016" PRIx64 ")", word);
-        if ((i + 1U) < words)
-        {
-            fprintf(out, ",");
-        }
-        if ((((i + 1U) % STRUCT_META_GEN_EMIT_IMAGE_WORDS_PER_LINE) == 0U) || ((i + 1U) == words))
-        {
-            fprintf(out, "\n");
-        }
-        else
-        {
-            fprintf(out, " ");
-        }
-    }
-    fprintf(out, "};\n\n");
-}
-
-/**
  *  @brief          構造体名から添字を引くハッシュ表を構築し、永続化イメージを書き出します。
  *  @return         成功なら 0、失敗なら 1 です。
  *
@@ -579,8 +534,8 @@ static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_
     }
 
     fprintf(out, "/* struct-meta-gen が構築済みの索引を永続化したイメージです。手編集しないでください。 */\n");
-    emit_image_array(out, "s_index_mgmt", mgmt, mgmt_size);
-    emit_image_array(out, "s_index_data", data, data_size);
+    struct_meta_gen_emit_uint64_array(out, "s_index_mgmt", mgmt, mgmt_size);
+    struct_meta_gen_emit_uint64_array(out, "s_index_data", data, data_size);
 
     /* 埋め込みイメージが前提とする ABI を、生成先のコンパイル時に検査する。
        生成器が動作した環境での実測値を出力する。 */
