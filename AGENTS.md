@@ -64,5 +64,6 @@
 
 - 管理対象の末端 make ファイルは小文字の `makefile` とします。
 - `app/<name>` の C ライブラリは、公開ヘッダーを `prod/include/`、内部共有ヘッダーを `prod/include_internal/`、ソースを `prod/libsrc/` に配置します。
+- ライブラリのソースを責務別サブディレクトリへ分ける場合は、各サブディレクトリに makefw のテンプレート `makefile` を置くサブディレクトリ走査方式を使います。`prod/libsrc/` 配下の `makepart.mk` で `ADD_SRCS` へ相対パスを列挙しないでください。`ADD_SRCS` はディレクトリ外のソースを引き込む機能であり、ライブラリ ルート直下へシンボリック リンクを作ります。詳細は [サブフォルダー コンパイル](framework/makefw/docs/subfolder-compilation.md) を参照してください。
 - Linux/GCC と Windows/MSVC の双方で動作する構成を維持してください。
 - 非自明な OS 仕様や回避策をコードへ反映する場合は、根拠 URL を `see: <URL>` 形式でソース内に残してください。

@@ -13,6 +13,8 @@
 - JSON ファイル入出力は cJSON 変換を利用します。
 - `struct-meta-gen` は生成時だけ汎用 Doxygen 属性を解析し、属性名の意味は解釈しません。
 - 公開入口では、構造体の内容へアクセスする前に記述子を検査してください。
+- Doxygen は公開 API 用と内部用の 2 系統で生成します。`prod/Doxyfile.part.public` は `prod/include/` だけを、`prod/Doxyfile.part.internal` は `prod/` 全体を対象とします。
+- `docs/doxybook2_public/` と `docs/doxybook2_internal/` は自動生成物です。手作業で変更せず、Doxygen コメントを変更してから `make doxy` で再生成してください。
 
 生成器はフル C パーサーではありません。  
 対応範囲を変更するときは [アーキテクチャー](docs/architecture.md) も更新してください。  

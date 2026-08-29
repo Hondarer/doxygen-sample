@@ -41,6 +41,25 @@ find . -type f -name '*.warn' -size +0 -print0 | xargs -0 -r sed -n '1,200p'
 `.warn` ファイルは結果であり、直接編集しません。  
 警告原因を修正し、同じビルドを再実行します。
 
+## ライブラリ構成の確認
+
+`prod/libsrc/` 配下のソースをサブディレクトリへ分ける場合は、各サブディレクトリに makefw のテンプレート `makefile` を置くサブディレクトリ走査方式を使います。  
+`makepart.mk` の `ADD_SRCS` へ相対パスを列挙すると、ライブラリ ルート直下へシンボリック リンクが作られ、`.gitignore` の自動生成、Doxygen の重複読み込み、モジュール私有ヘッダーの探索失敗を招きます。
+
+構成の誤りは次の 3 本で検出します。いずれも 0 件である必要があります。
+
+```bash
+find app -path '*/prod/libsrc/*' -type l -not -path '*/obj/*'
+grep -rln 'ADD_SRCS' app --include=makepart.mk | grep '/prod/libsrc/'
+grep -rln 'EXCLUDE_PATTERNS' app --include='Doxyfile.part*'
+```
+
+`.gitignore` の有無は検出条件に使いません。  
+外部 OSS を扱う app が、zip から展開した生成物を除外する目的で手書きしており、誤検知するためです。
+
+ビルド機構の回避策を足す前に、他の app が同じ回避策を必要としているかを確認します。  
+自分だけが特別な回避策を要する状態は、フレームワークの制約ではなく構成の誤りを示します。
+
 ## 文書の変更
 
 Markdown を変更した場合は、対象ごとに次の順で確認します。

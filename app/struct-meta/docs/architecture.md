@@ -188,6 +188,16 @@ x86_64 では LP64 と LLP64 の差は `long` だけです。
 
 ## ビルド
 
+`libstruct_meta` のソースは、責務ごとのサブディレクトリ (`meta`、`access`、`json`、`patch`、`print`) に置きます。  
+各サブディレクトリは makefw のテンプレート `makefile` を持ち、コンパイルだけを行います。  
+リンクはライブラリ ルートの `prod/libsrc/struct_meta/` で行い、`makechild.mk` の `NO_LINK = 1` が子階層のリンクを止めます。  
+ルート直下にソースを置かないため、`makelocal.mk` で `MAKEFW_BUILD := 1` を明示します。
+
+`SUBDIRS` は宣言しません。  
+makefw が `makefile` を持つサブディレクトリを自動検出し、オブジェクトを再帰的に収集します。  
+責務を増やすときは、サブディレクトリを作ってテンプレート `makefile` とソースを置くだけで済みます。  
+`makepart.mk` の `ADD_SRCS` へ相対パスを列挙してはいけません。ライブラリ ルート直下へシンボリック リンクが作られ、Doxygen の重複読み込みとモジュール私有ヘッダーの探索失敗を招きます。
+
 解析対象ヘッダーは `struct-meta-sample/makepart.mk` の `STRUCT_META_GEN_HEADERS` で静的に宣言します。  
 `struct-meta-gen` を先にビルドする必要があるため、`prod/src/cmd/makelocal.mk` が再帰 make の順序を明示します。  
 flex/bison と `gen/*.c` の汎用コンパイル規則は makefw を利用し、ヘッダーからメタデータを作る規則はこの app 内に保持します。
