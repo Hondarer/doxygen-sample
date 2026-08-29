@@ -17,8 +17,8 @@
  *******************************************************************************
  */
 
-#ifndef SERVICE_SAMPLE_LINUX_EVENTS_H
-#define SERVICE_SAMPLE_LINUX_EVENTS_H
+#ifndef SERVICE_SAMPLE_LINUX_EVENTS_PRIVATE_H
+#define SERVICE_SAMPLE_LINUX_EVENTS_PRIVATE_H
 
 #include "service-sample.h"
 
@@ -60,4 +60,4 @@ extern "C"
 }
 #endif /* __cplusplus */
 
-#endif /* SERVICE_SAMPLE_LINUX_EVENTS_H */
+#endif /* SERVICE_SAMPLE_LINUX_EVENTS_PRIVATE_H */

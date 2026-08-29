@@ -14,8 +14,8 @@
  *******************************************************************************
  */
 
-#ifndef SYM_LOADER_LIBBASE_H
-#define SYM_LOADER_LIBBASE_H
+#ifndef SYM_LOADER_LIBBASE_PRIVATE_H
+#define SYM_LOADER_LIBBASE_PRIVATE_H
 
 #include <base/base_spec.h>
 #include <cplat/crt/path.h>
@@ -53,4 +53,4 @@ extern "C"
 }
 #endif /* __cplusplus */
 
-#endif /* SYM_LOADER_LIBBASE_H */
+#endif /* SYM_LOADER_LIBBASE_PRIVATE_H */

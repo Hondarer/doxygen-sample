@@ -37,8 +37,8 @@
  *******************************************************************************
  */
 
-#ifndef SERVICE_SAMPLE_H
-#define SERVICE_SAMPLE_H
+#ifndef SERVICE_SAMPLE_PRIVATE_H
+#define SERVICE_SAMPLE_PRIVATE_H
 
 #include <cplat/base/platform.h>
 #include <cplat/trace/tracer.h>
@@ -434,4 +434,4 @@ extern "C"
 
 /** @} */
 
-#endif /* SERVICE_SAMPLE_H */
+#endif /* SERVICE_SAMPLE_PRIVATE_H */

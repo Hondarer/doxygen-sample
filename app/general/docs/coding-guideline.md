@@ -60,11 +60,16 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 |---|---|---|
 | 1 | 公開 | `prod/include/` 配下のヘッダーで宣言されている |
 | 2 | ライブラリ内共有 | `prod/include_internal/` 配下のヘッダーで宣言されている |
-| 3 | ファイル内 | どのヘッダーでも宣言されず、`static` が付いている |
-| 4 | 関数内ローカル | 関数本体の内側で宣言されている |
+| 3 | モジュール内共有 | 実装と同じディレクトリに置いたモジュール私有ヘッダーで宣言されている |
+| 4 | ファイル内 | どのヘッダーでも宣言されず、`static` が付いている |
+| 5 | 関数内ローカル | 関数本体の内側で宣言されている |
 
 スコープはヘッダーの配置と `static` の有無で判定します。  
 ライブラリ内共有の関数・型・外部リンケージ変数は、名前にも公開境界のマーカー (`_internal_`) を含め、公開シンボルと区別します。
+
+モジュール内共有は、1 つのディレクトリに置いた複数の `.c` だけが共有するスコープです。  
+`include_internal/` に置かないため他モジュールからは参照できず、公開境界のマーカーは付けません。  
+詳細は [モジュール私有ヘッダー](#モジュール私有ヘッダー) を参照してください。
 
 > [!IMPORTANT]
 > ヘッダー **ファイル名** の `_internal` サフィックスは、同名の公開ヘッダーが存在するときに限り付けます。  
@@ -81,6 +86,8 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 | ファイル内共有変数 | 内部 | `.c` のファイル スコープ | snake_case | `s_` | `s_instance_count` |
 | ライブラリ内共有関数 | 外部 | `include_internal/` | snake_case | `<lib>_internal_` | `sample_internal_registry_add` |
 | ライブラリ内共有変数 | 外部 | `include_internal/` の `extern` | snake_case | `g_<lib>_internal_` | `g_sample_internal_default_config` |
+| モジュール内共有関数 | 外部 | モジュール私有ヘッダー | snake_case | `<module>_` | `trace_cli_process_line` |
+| モジュール内共有変数 | 外部 | モジュール私有ヘッダーの `extern` | snake_case | `g_<module>_` | `g_trace_cli_default_session` (必要最低限に厳選) |
 | 公開関数 | 外部 | `include/` | snake_case | `<lib>_` | `sample_file_get_size` |
 | 公開共有変数 | 外部 | `include/` の `extern` | snake_case | `g_<lib>_` | `g_sample_default_limits` (必要最低限に厳選) |
 | 型 (struct / enum / union / 関数ポインター) | - | 宣言場所に従う | snake_case | 公開は `<lib>_`、ライブラリ内共有は `<lib>_internal_` | `sample_context`、`sample_internal_registry`、`sample_hook_fn` |
@@ -93,6 +100,7 @@ admonition の記法と対応する Doxygen タグは [`framework/docsfw/docs/sa
 > - 変数の `s_` / `g_` は **リンケージ** と「これは変数である」ことを表します。`static` なら `s_`、外部リンケージなら `g_` です。
 > - ライブラリ接頭辞は **リンカー名前空間** を表します。外部リンケージを持つシンボルにのみ付け、`static` 関数・`s_` 変数には付けません。
 > - `_internal_` は **公開境界** を表します。`include_internal/` で宣言する関数・型には `<lib>_internal_`、外部リンケージ変数には `g_<lib>_internal_` の形で付けます。公開ヘッダーで宣言するシンボルと `static` には付けません。
+> - モジュール私有ヘッダーで宣言するシンボルは、リンカー名前空間を共有するため接頭辞を必要としますが、公開境界を越えないため `_internal_` は付けません。接頭辞にはモジュール名を使います。
 
 ### 出力引数
 
@@ -455,6 +463,25 @@ static volatile sig_atomic_t g_stop_requested;
 
 関数内で宣言する `static` 変数は、ファイル内共有変数ではないため `s_` を付けません。  
 関数内ローカル変数の規則に従います。
+
+### モジュール内共有関数
+
+モジュール名を接頭辞とし、続きを snake_case とします。  
+`<lib>_internal_` は付けません。公開境界を越えず、`include_internal/` にも置かないためです。
+
+```c
+/* libsrc/cplat/hashtable/hashtable.h (モジュール私有ヘッダー) */
+size_t hashtable_hash_key(const cplat_hashtable *ht, const void *key);
+
+/* 望ましくない (公開境界を越えないのに internal マーカーが付いている) */
+size_t cplat_internal_hashtable_hash_key(const cplat_hashtable *ht, const void *key);
+
+/* 望ましくない (接頭辞がなく、ライブラリ内の他モジュールと衝突しうる) */
+size_t hash_key(const cplat_hashtable *ht, const void *key);
+```
+
+同一ディレクトリ内で閉じる関数は `static` のままとし、私有ヘッダーへ宣言しません。  
+配置とインクルード ガードの規則は [モジュール私有ヘッダー](#モジュール私有ヘッダー) を参照してください。
 
 ### ライブラリ内共有関数
 
@@ -824,19 +851,93 @@ grep -rnE '^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\(' \
 
 ヘッダー **ファイル名** の `_internal` サフィックスは、次の条件のときだけ付けます。
 
-- 同名の公開ヘッダーが `prod/include/` に存在する (例: 公開 `console.h` に対する `console_internal.h`)
+- `prod/include_internal/` 配下のヘッダーである
+- かつ、同名の公開ヘッダーが `prod/include/` に存在する (例: 公開 `console.h` に対する `console_internal.h`)
 - 対応する公開ヘッダーが存在しない場合はサフィックスなし (例: `path_format.h`、`trace_common.h`)
+- 実装と同じディレクトリに置くモジュール私有ヘッダーには付けません (例: `hashtable/hashtable.h`)
 
 > [!IMPORTANT]
 > この規則はシンボル名の `<lib>_internal_` とは付与条件が異なります。
 
 | 対象 | 付与条件 | 例 |
 |---|---|---|
-| ヘッダー ファイル名 | 同名の公開ヘッダーがあるときだけ | `console_internal.h` / `path_format.h` |
+| ヘッダー ファイル名 | `include_internal/` にあり、同名の公開ヘッダーがあるときだけ | `console_internal.h` / `path_format.h` |
 | ライブラリ内共有の関数・型 | `include_internal/` で宣言するすべて | `sample_internal_console_flush` / `sample_internal_registry` |
 | ライブラリ内共有の外部リンケージ変数 | `include_internal/` で `extern` するすべて | `g_sample_internal_default_registry` |
+| モジュール私有ヘッダーとその宣言 | 付けない | `hashtable.h` / `hashtable_entry_status` |
 
 ファイル名に `_internal` が無くても、`include_internal/` 配下で宣言する関数・型・外部リンケージ変数には公開境界のマーカーを付けます。
+
+### モジュール私有ヘッダー
+
+1 つのディレクトリに置いた複数の `.c` だけが共有する宣言は、実装と同じディレクトリへ置くモジュール私有ヘッダーにまとめます。
+
+`prod/include_internal/` は「ライブラリ内のどのモジュールからでも参照してよい」ことを表す配置です。  
+参照範囲が 1 ディレクトリで閉じる宣言をここへ置くと、公開範囲を実態より広く見せます。  
+実装と同じディレクトリへ置けば、参照範囲がディレクトリの境界と一致します。
+
+#### 配置とファイル名
+
+- 実装ファイルと同じディレクトリへ置きます。`prod/include/` と `prod/include_internal/` には置きません。
+- ディレクトリの中心となる私有ヘッダーは、ディレクトリ名と同じ名前にします (例: `hashtable/hashtable.h`、`trace-cli/trace-cli.h`)。
+- 1 つのディレクトリに複数置く場合は、モジュール接頭辞を付けて役割を表します (例: `bench-io/bench_case.h`、`bench-io/bench_timer.h`)。
+- `_internal` サフィックスは付けません。これは `include_internal/` 配下のヘッダーのための規則です。
+
+公開ヘッダーと同名になっても構いません。  
+私有ヘッダーは引用符形式で取り込み、引用符形式は includer 自身のディレクトリを最初に探すため、同一ディレクトリの私有ヘッダーへ解決されます。  
+公開ヘッダーは山かっこ形式のままとし、インクルード パスの直下に同名ファイルを置かないことで、両者が取り違えられないようにします。
+
+```c
+/* prod/libsrc/cplat/hashtable/hashtable_arena.c */
+#include "hashtable.h"                  /* 同一ディレクトリの私有ヘッダー */
+```
+
+```c
+/* 私有ヘッダー自身は、公開ヘッダーを山かっこ形式で取り込む */
+/* prod/libsrc/cplat/hashtable/hashtable.h */
+#include <cplat/hashtable/hashtable.h>  /* 公開ヘッダー */
+```
+
+> [!IMPORTANT]
+> 私有ヘッダーを持つディレクトリのソースを、テストへシンボリック リンクやコピーで引き込む場合は、テスト側の `makepart.mk` で `INCDIR` へ元ディレクトリを追加します。  
+> 引用符形式の探索起点が引き込み先のディレクトリになり、元ディレクトリ基準では解決されないためです。
+
+#### インクルード ガード
+
+モジュール名を全大文字にしたものへ `_PRIVATE_H` を付けます。  
+ライブラリや app の接頭辞は付けません。私有ヘッダーは 1 ディレクトリ内でしか取り込まれず、リンカー名前空間にも現れないためです。
+
+| ヘッダー | インクルード ガード |
+|---|---|
+| `libsrc/cplat/hashtable/hashtable.h` | `HASHTABLE_PRIVATE_H` |
+| `src/cmd/trace-cli/trace-cli.h` | `TRACE_CLI_PRIVATE_H` |
+| `src/cmd/bench-io/bench_case.h` | `BENCH_CASE_PRIVATE_H` |
+
+モジュール名にハイフンやキャメルケースが含まれる場合は、アンダースコア区切りの全大文字へ直します (例: `tcpServer.h` は `TCP_SERVER_PRIVATE_H`)。
+
+`_PRIVATE_H` は、同名の公開ヘッダーとガード名が衝突しないことと、私有ヘッダーであることの両方を表します。  
+公開ヘッダーのガードは配置パス全体に由来するため (例: `CPLAT_HASHTABLE_HASHTABLE_H`)、同名でも衝突しません。
+
+#### 宣言するシンボル
+
+- 関数・型にはモジュール名を接頭辞として付けます (`hashtable_entry_status`、`trace_cli_process_line`)。
+- 公開境界を越えないため、`_internal_` マーカーは付けません。
+- 外部リンケージ変数は `g_<module>_` とし、必要最低限に厳選します。
+- マクロと列挙定数は、`.c` の内部だけで使うマクロと同じ扱いとし、接頭辞を省略できます。
+
+ほかの `.c` から呼ばない関数は、`static` のまま実装ファイルに残します。  
+私有ヘッダーへ宣言するのは、別の `.c` から呼ぶ関数だけです。
+
+#### NULL 検査
+
+モジュール私有ヘッダーで宣言する関数は、NULL を検査しません。  
+呼び出し元がすべて同一ディレクトリ内にあり、前提条件を呼び出し側で保証できるためです。  
+`static` 関数と同じ扱いとし、前提条件は Doxygen コメントへ記載します。
+
+#### static inline
+
+短い補助関数や領域アクセサーは、`static inline` として私有ヘッダーで定義できます。  
+適用範囲の考え方は [inline 関数](#inline-関数) と同じです。
 
 ### 既存コードへの適用と例外条件
 
@@ -894,6 +995,16 @@ grep -rnE '\b<lib>_internal_' app/*/prod/include --include=*.h | grep -vE "$EXCL
 # 公開ヘッダーの extern 変数 (件数は最小であること。新規追加時は必要性をレビューする)
 grep -rnE '^[[:space:]]*extern[[:space:]]' app/*/prod/include --include=*.h \
   | grep -vE "$EXCL" | grep -vE '\('
+
+# モジュール私有ヘッダーのインクルード ガード (すべて _PRIVATE_H で終わること)
+# prod 配下で include/ と include_internal/ のどちらにも属さず、生成物でもないヘッダーを対象とする
+PRIV="find app/*/prod -name *.h -not -path */prod/include/* -not -path */prod/include_internal/* -not -path */gen/*"
+$PRIV | grep -vE "$EXCL" | while read -r h; do
+    printf '%s\t%s\n' "$h" "$(grep -m1 '^#ifndef' "$h")"
+  done | grep -v '_PRIVATE_H$'
+
+# モジュール私有ヘッダーに internal マーカーが出ていないこと (0 件であること。<lib> は対象ライブラリの接頭辞)
+$PRIV | grep -vE "$EXCL" | xargs grep -nE '\b<lib>_internal_'
 ```
 
 > [!IMPORTANT]
@@ -1629,6 +1740,7 @@ NULL 検査の義務は、その関数が **宣言されているヘッダーの
 |---|---|---|
 | 公開 | `prod/include/` 配下のヘッダーで宣言されている | **必須** |
 | ライブラリ内共有 | `prod/include_internal/` 配下のヘッダーで宣言されている | **必須** |
+| モジュール内共有 | 実装と同じディレクトリのモジュール私有ヘッダーで宣言されている | 呼び出し側の責務 (検査しない) |
 | ファイル内 | どのヘッダーでも宣言されず `static` が付いている | 呼び出し側の責務 (検査しない) |
 
 検査必須の層では、ポインター引数を受けるすべての関数が、本体の先頭で NULL を検査します。  
@@ -1641,6 +1753,10 @@ NULL が渡された場合の挙動は、[関数引数の異常入力対応](#�
 `static` 関数は NULL を検査しません。  
 呼び出し元がすべて同一ファイル内にあり、前提条件を呼び出し側で保証できるためです。  
 `static` 関数で NULL を検査してよいのは、その関数が NULL を正常な入力として扱う場合に限ります。
+
+モジュール私有ヘッダーで宣言する関数も同じ扱いです。  
+呼び出し元がすべて同一ディレクトリ内にあり、前提条件を呼び出し側で保証できるためです。  
+前提条件は Doxygen コメントへ記載します。
 
 > [!IMPORTANT]
 > 層の判定は **ヘッダーの配置** で行い、名前に `_internal_` が付いているかでは判定しません。  
@@ -2724,7 +2840,7 @@ static volatile int s_worker_stopped;
 `inline` はインライン展開を保証しません。  
 外部リンケージを持つ inline 定義は外部定義の配置規則を必要とするため、本リポジトリでは使用しません。
 
-`static inline` 関数は `prod/include_internal/` のヘッダーだけで定義します。  
+`static inline` 関数は `prod/include_internal/` のヘッダーと、モジュール私有ヘッダーだけで定義します。  
 複数の `.c` ファイルで共有する短い補助処理であり、通常関数にすると目的に対して呼び出しの負担が大きい場合に使用します。  
 `prod/include/` の公開ヘッダーへ新しい `static inline` 関数を追加しません。  
 `.c` ファイルでは `inline` を指定せず、コンパイラの最適化へ任せます。
@@ -2739,6 +2855,14 @@ static volatile int s_worker_stopped;
 static inline int sample_internal_is_valid(const int value)
 {
     return value >= 0;
+}
+```
+
+```c
+/* 望ましい: モジュール私有ヘッダーの領域アクセサー (接頭辞はモジュール名) */
+static inline unsigned char *hashtable_entry_status(const cplat_hashtable *ht, size_t rec)
+{
+    return hashtable_entries(ht) + rec * ht->entry_stride + sizeof(uint64_t);
 }
 ```
 

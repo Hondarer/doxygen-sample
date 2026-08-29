@@ -3,8 +3,8 @@
  * @brief サブフォルダーを含む make ビルドの検証に使用する共通 API を宣言します。
  */
 
-#ifndef SAMPLE_APP_H
-#define SAMPLE_APP_H
+#ifndef SAMPLE_APP_PRIVATE_H
+#define SAMPLE_APP_PRIVATE_H
 
 #ifdef __cplusplus
 extern "C"
@@ -29,4 +29,4 @@ extern "C"
 }
 #endif /* __cplusplus */
 
-#endif /* SAMPLE_APP_H */
+#endif /* SAMPLE_APP_PRIVATE_H */

@@ -11,8 +11,8 @@
  *******************************************************************************
  */
 
-#ifndef STRUCT_META_GEN_EMIT_H
-#define STRUCT_META_GEN_EMIT_H
+#ifndef STRUCT_META_GEN_EMIT_PRIVATE_H
+#define STRUCT_META_GEN_EMIT_PRIVATE_H
 
 #include "struct_meta_gen_ast.h"
 
@@ -32,4 +32,4 @@
  */
 int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char *header_path, const char *out_path);
 
-#endif /* STRUCT_META_GEN_EMIT_H */
+#endif /* STRUCT_META_GEN_EMIT_PRIVATE_H */

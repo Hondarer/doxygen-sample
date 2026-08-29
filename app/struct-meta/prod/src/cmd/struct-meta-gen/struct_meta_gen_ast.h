@@ -15,8 +15,8 @@
  *******************************************************************************
  */
 
-#ifndef STRUCT_META_GEN_AST_H
-#define STRUCT_META_GEN_AST_H
+#ifndef STRUCT_META_GEN_AST_PRIVATE_H
+#define STRUCT_META_GEN_AST_PRIVATE_H
 
 /**
  *  @brief          型指定 1 個分の解析結果です (bison の型付き値として使用)。
@@ -145,4 +145,4 @@ struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_from_raw(const char *raw, in
 struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_choose(struct_meta_gen_doc_attrs prefix,
                                                            struct_meta_gen_doc_attrs postfix, int line);
 
-#endif /* STRUCT_META_GEN_AST_H */
+#endif /* STRUCT_META_GEN_AST_PRIVATE_H */

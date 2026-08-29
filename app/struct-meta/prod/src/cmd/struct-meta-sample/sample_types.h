@@ -17,8 +17,8 @@
  *******************************************************************************
  */
 
-#ifndef SAMPLE_TYPES_H
-#define SAMPLE_TYPES_H
+#ifndef SAMPLE_TYPES_PRIVATE_H
+#define SAMPLE_TYPES_PRIVATE_H
 
 /**
  *  @brief          住所を表す、`person` のネスト メンバーです。
@@ -47,4 +47,4 @@ typedef struct person
     int pad;              /**< 明示的アラインメントです。 @struct_meta{json.ignore} */
 } person;
 
-#endif /* SAMPLE_TYPES_H */
+#endif /* SAMPLE_TYPES_PRIVATE_H */
