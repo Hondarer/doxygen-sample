@@ -11,8 +11,8 @@
  *******************************************************************************
  */
 
-#include <com_util/argparser/argparser.h>
-#include <com_util/console/console.h>
+#include <cplat/argparser/argparser.h>
+#include <cplat/console/console.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -25,31 +25,31 @@
  */
 int main(int argc, char *argv[])
 {
-    com_util_console_init();
+    cplat_console_init();
 
     int need_help = 0;
 
-    com_util_argparser_init(argc, argv, "メッセージを表示します。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    cplat_argparser_init(argc, argv, "メッセージを表示します。");
+    cplat_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
 
-    if (com_util_argparser_get_register_error_count() > 0)
+    if (cplat_argparser_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        cplat_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse();
+    int parse_result = cplat_argparser_parse();
 
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        cplat_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
 
-    if (parse_result != COM_UTIL_OK)
+    if (parse_result != CPLAT_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        cplat_argparser_print_error_messages(stderr);
+        cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 

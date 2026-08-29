@@ -23,7 +23,7 @@
 #include "struct_meta_gen_ast.h"
 #include "struct_meta_gen_emit.h"
 
-#include <com_util/crt/stdio.h>
+#include <cplat/crt/stdio.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    yyin = com_util_fopen(header_path, "r", NULL);
+    yyin = cplat_fopen(header_path, "r", NULL);
     if (yyin == NULL)
     {
         fprintf(stderr, "struct-meta-gen: ヘッダーを開けません: %s\n", header_path);

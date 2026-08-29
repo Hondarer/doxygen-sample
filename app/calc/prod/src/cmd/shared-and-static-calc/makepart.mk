@@ -1,3 +1,3 @@
 # ライブラリの指定
-# libcalcbase.a と libcalc.so の両方と com_util 
-LIBS += calcbase calc com_util
+# libcalcbase.a と libcalc.so の両方と cplat
+LIBS += calcbase calc cplat

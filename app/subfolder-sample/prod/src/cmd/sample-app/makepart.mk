@@ -1,2 +1,2 @@
 # 依存ライブラリ
-LIBS += com_util
+LIBS += cplat

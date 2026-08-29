@@ -15,7 +15,7 @@
 
 #include <struct_meta/access/access.h>
 
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 
 #include <string.h>
 
@@ -32,7 +32,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_INT:
         if ((element_size != sizeof(int)) || (!cJSON_IsNumber(item)))
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         {
             int value = (int)cJSON_GetNumberValue(item);
@@ -43,13 +43,13 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_UNSIGNED:
         if ((element_size != sizeof(unsigned int)) || (!cJSON_IsNumber(item)))
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         {
             double raw = cJSON_GetNumberValue(item);
             if (raw < 0.0)
             {
-                return COM_UTIL_ERR_INVALID_ARGUMENT;
+                return CPLAT_ERR_INVALID_ARGUMENT;
             }
             unsigned int value = (unsigned int)raw;
             memcpy(field_ptr, &value, sizeof(value));
@@ -59,7 +59,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_FLOAT:
         if ((element_size != sizeof(float)) || (!cJSON_IsNumber(item)))
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         {
             float value = (float)cJSON_GetNumberValue(item);
@@ -70,7 +70,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_DOUBLE:
         if ((element_size != sizeof(double)) || (!cJSON_IsNumber(item)))
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         {
             double value = cJSON_GetNumberValue(item);
@@ -81,7 +81,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_CHAR_ARRAY:
         if (!cJSON_IsString(item))
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         {
             const char *text = cJSON_GetStringValue(item);
@@ -89,7 +89,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
 
             if ((char_buffer_size == 0U) || (text_len >= char_buffer_size))
             {
-                return COM_UTIL_ERR_BUFFER_TOO_SMALL;
+                return CPLAT_ERR_BUFFER_TOO_SMALL;
             }
             memcpy(field_ptr, text, text_len + 1U);
         }
@@ -98,10 +98,10 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
     case STRUCT_META_FIELD_STRUCT:
     default:
         /* STRUCT_META_FIELD_STRUCT は element_from_json() が先に振り分けるため、ここには到達しない。 */
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
@@ -123,7 +123,7 @@ static const char *json_key(const struct_meta_field *field)
 {
     const struct_meta_attribute *attribute = NULL;
     int ret = struct_meta_field_find_attribute(field, "json.name", &attribute);
-    if ((ret == COM_UTIL_OK) && (attribute->value != NULL) && (attribute->value[0] != '\0'))
+    if ((ret == CPLAT_OK) && (attribute->value != NULL) && (attribute->value[0] != '\0'))
     {
         return attribute->value;
     }
@@ -135,26 +135,26 @@ static int field_from_json(const struct_meta_field *field, const cJSON *json, un
     const cJSON *item;
 
     const struct_meta_attribute *attribute = NULL;
-    if (struct_meta_field_find_attribute(field, "json.ignore", &attribute) == COM_UTIL_OK)
+    if (struct_meta_field_find_attribute(field, "json.ignore", &attribute) == CPLAT_OK)
     {
-        return COM_UTIL_OK;
+        return CPLAT_OK;
     }
 
     item = cJSON_GetObjectItemCaseSensitive(json, json_key(field));
     if (item == NULL)
     {
-        if (struct_meta_field_find_attribute(field, "json.required", &attribute) == COM_UTIL_OK)
+        if (struct_meta_field_find_attribute(field, "json.required", &attribute) == CPLAT_OK)
         {
-            return COM_UTIL_ERR_MISSING_REQUIRED;
+            return CPLAT_ERR_MISSING_REQUIRED;
         }
-        return COM_UTIL_OK;
+        return CPLAT_OK;
     }
 
     if ((field->kind == STRUCT_META_FIELD_CHAR_ARRAY) || (field->element_count <= 1U))
     {
         void *element;
         int ret = struct_meta_field_get_element(field, base, 0U, &element);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -163,13 +163,13 @@ static int field_from_json(const struct_meta_field *field, const cJSON *json, un
 
     if (!cJSON_IsArray(item))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     int array_size = cJSON_GetArraySize(item);
     if ((array_size < 0) || ((size_t)array_size != field->element_count))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     for (size_t i = 0; i < field->element_count; i++)
@@ -177,17 +177,17 @@ static int field_from_json(const struct_meta_field *field, const cJSON *json, un
         const cJSON *elem = cJSON_GetArrayItem(item, (int)i);
         void *element;
         int ret = struct_meta_field_get_element(field, base, i, &element);
-        if (ret == COM_UTIL_OK)
+        if (ret == CPLAT_OK)
         {
             ret = element_from_json(field, elem, (unsigned char *)element);
         }
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
     }
 
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
@@ -197,19 +197,19 @@ static int struct_from_json(const struct_meta_descriptor *desc, const cJSON *jso
 {
     if (!cJSON_IsObject(json))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     for (size_t i = 0; i < desc->field_count; i++)
     {
         int ret = field_from_json(&desc->fields[i], json, base);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
     }
 
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -218,11 +218,11 @@ int struct_meta_json_decode(const struct_meta_descriptor *desc, const cJSON *jso
 {
     if ((desc == NULL) || (json == NULL) || (instance == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     int ret = struct_meta_descriptor_validate(desc);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }

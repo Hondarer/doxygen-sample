@@ -40,8 +40,8 @@
 #ifndef SERVICE_SAMPLE_H
 #define SERVICE_SAMPLE_H
 
-#include <com_util/base/platform.h>
-#include <com_util/trace/tracer.h>
+#include <cplat/base/platform.h>
+#include <cplat/trace/tracer.h>
 
 /**
  *  @defgroup       SERVICE_SAMPLE_PUBLIC_API 公開 API (service-sample)
@@ -426,7 +426,7 @@ extern "C"
      *  本関数は条件付きスレッド セーフです。\n
      *  起動完了後の参照は安全です。生成と破棄は main スレッドのみが行います。
      */
-    com_util_tracer *svc_get_tracer(void);
+    cplat_tracer *svc_get_tracer(void);
 
 #ifdef __cplusplus
 }

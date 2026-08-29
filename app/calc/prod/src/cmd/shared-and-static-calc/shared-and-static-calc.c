@@ -17,8 +17,8 @@
 
 #include <calc.h>
 #include <calcbase.h>
-#include <com_util/argparser/argparser.h>
-#include <com_util/console/console.h>
+#include <cplat/argparser/argparser.h>
+#include <cplat/console/console.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,40 +39,40 @@
  */
 int main(int argc, char *argv[])
 {
-    com_util_console_init();
+    cplat_console_init();
 
     int need_help = 0;
     int arg1 = 0;
     int arg3 = 0;
     const char *operator_value = NULL;
-    com_util_argparser_init(argc, argv, "動的リンクと静的リンクの計算結果を比較します。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    com_util_argparser_register_positional_int("num1", "第一オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg1);
-    com_util_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", COM_UTIL_ARGPARSER_REQUIRED,
+    cplat_argparser_init(argc, argv, "動的リンクと静的リンクの計算結果を比較します。");
+    cplat_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    cplat_argparser_register_positional_int("num1", "第一オペランド。", CPLAT_ARGPARSER_REQUIRED, &arg1);
+    cplat_argparser_register_positional_string("operator", "+、-、x、/ のいずれか。", CPLAT_ARGPARSER_REQUIRED,
                                                   &operator_value);
-    com_util_argparser_register_positional_int("num2", "第二オペランド。", COM_UTIL_ARGPARSER_REQUIRED, &arg3);
-    if (com_util_argparser_get_register_error_count() > 0)
+    cplat_argparser_register_positional_int("num2", "第二オペランド。", CPLAT_ARGPARSER_REQUIRED, &arg3);
+    if (cplat_argparser_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        cplat_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse();
+    int parse_result = cplat_argparser_parse();
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        cplat_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
-    if (parse_result != COM_UTIL_OK)
+    if (parse_result != CPLAT_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        cplat_argparser_print_error_messages(stderr);
+        cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
     if (operator_value[0] == 0x00 || operator_value[1] != 0x00)
     {
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     }
     default:
         fprintf(stderr, "Error: operator must be one of +, -, x, /.\n\n");
-        com_util_argparser_print_usage(stderr);
+        cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 

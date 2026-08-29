@@ -15,7 +15,7 @@
  */
 
 #include "sym_loader_libbase.h"
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 #include <stdio.h>
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -26,20 +26,20 @@ char sym_loader_configpath[SYM_LOADER_CONFIG_PATH_MAX] = {0};
 /* --- 対応関数を追加した場合、以下に追加が必要です。                         --- */
 
 /** sample_func 用の sym_loader エントリ実体。 */
-static com_util_sym_loader_entry sfo_sample_func = COM_UTIL_SYM_LOADER_ENTRY_INIT("sample_func", sample_func_fn);
+static cplat_sym_loader_entry sfo_sample_func = CPLAT_SYM_LOADER_ENTRY_INIT("sample_func", sample_func_fn);
 /* Doxygen コメントは、ヘッダーに記載 */
 
-com_util_sym_loader_entry *const pfo_sample_func = &sfo_sample_func;
+cplat_sym_loader_entry *const pfo_sample_func = &sfo_sample_func;
 
-/* static com_util_sym_loader_entry sfo_func_name = COM_UTIL_SYM_LOADER_ENTRY_INIT("func_name", func_name_fn); */ /* 将来追加 */
-/* com_util_sym_loader_entry *const pfo_func_name = &sfo_func_name; */ /* 将来追加 */
+/* static cplat_sym_loader_entry sfo_func_name = CPLAT_SYM_LOADER_ENTRY_INIT("func_name", func_name_fn); */ /* 将来追加 */
+/* cplat_sym_loader_entry *const pfo_func_name = &sfo_func_name; */ /* 将来追加 */
 
 /* --- sym_loader に渡すポインター配列                --- */
 /* --- 対応関数を追加した場合、以下に追加が必要です。 --- */
 
 /* Doxygen コメントは、ヘッダーに記載 */
 
-com_util_sym_loader_entry *const fobj_array_libbase[] = {
+cplat_sym_loader_entry *const fobj_array_libbase[] = {
     &sfo_sample_func,
     /* &sfo_func_name, */ /* 将来追加 */
 };
@@ -55,8 +55,8 @@ int base_sym_loader_info(void)
     int ret;
 
     printf("- congigpath: %s\n", sym_loader_configpath);
-    ret = com_util_sym_loader_info(fobj_array_libbase, fobj_length_libbase);
-    if (ret != COM_UTIL_OK)
+    ret = cplat_sym_loader_info(fobj_array_libbase, fobj_length_libbase);
+    if (ret != CPLAT_OK)
     {
         return BASE_ERR_UNKNOWN;
     }

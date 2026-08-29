@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <com_util/base/platform.h>
+#include <cplat/base/platform.h>
 #include <calc/calc_spec.h>
 
 // libcalc が公開エクスポートすべき関数の一覧。

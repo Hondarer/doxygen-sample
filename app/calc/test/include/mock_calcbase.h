@@ -1,7 +1,7 @@
 #ifndef MOCK_CALCBASE_H
 #define MOCK_CALCBASE_H
 
-#include <com_util/base/compiler.h>
+#include <cplat/base/compiler.h>
 #include <testfw.h>
 #include <calcbase.h>
 

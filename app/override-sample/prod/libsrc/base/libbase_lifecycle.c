@@ -17,50 +17,50 @@
  */
 
 #include "sym_loader_libbase.h"
-#include <com_util/base/error.h>
-#include <com_util/base/shared_lib_lifecycle.h>
-#include <com_util/crt/path.h>
-#include <com_util/runtime/module.h>
+#include <cplat/base/error.h>
+#include <cplat/base/shared_lib_lifecycle.h>
+#include <cplat/crt/path.h>
+#include <cplat/runtime/module.h>
 
 /**
  *  @brief          ライブラリ ロード時に呼び出されます。
  */
 void onLoad(void)
 {
-    char basename[COM_UTIL_SYM_LOADER_NAME_MAX] = {0};
-    char leafname[COM_UTIL_SYM_LOADER_NAME_MAX + sizeof("_extdef.json")] = {0};
-    com_util_error error;
+    char basename[CPLAT_SYM_LOADER_NAME_MAX] = {0};
+    char leafname[CPLAT_SYM_LOADER_NAME_MAX + sizeof("_extdef.json")] = {0};
+    cplat_error error;
 
-    DLLMAIN_COM_UTIL_INFO_MSG("base: onLoad called");
+    DLLMAIN_CPLAT_INFO_MSG("base: onLoad called");
 
-    if (com_util_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == COM_UTIL_OK)
+    if (cplat_module_get_basename(basename, sizeof(basename), (const void *)onLoad) == CPLAT_OK)
     {
-        if (com_util_path_concat(leafname, sizeof(leafname), &error, basename, "_extdef.json") != COM_UTIL_OK)
+        if (cplat_path_concat(leafname, sizeof(leafname), &error, basename, "_extdef.json") != CPLAT_OK)
         {
             sym_loader_configpath[0] = '\0';
-            DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
+            DLLMAIN_CPLAT_INFO_MSG("base: config path too long; override disabled");
         }
         else
         {
             char tmpdir[PLATFORM_PATH_MAX];
-            if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == COM_UTIL_OK)
+            if (cplat_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == CPLAT_OK)
             {
-                if (com_util_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &error, tmpdir,
-                                         PLATFORM_PATH_SEP, leafname) != COM_UTIL_OK)
+                if (cplat_path_concat(sym_loader_configpath, sizeof(sym_loader_configpath), &error, tmpdir,
+                                         PLATFORM_PATH_SEP, leafname) != CPLAT_OK)
                 {
                     sym_loader_configpath[0] = '\0';
-                    DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
+                    DLLMAIN_CPLAT_INFO_MSG("base: config path too long; override disabled");
                 }
             }
-            else if (com_util_error_is(&error, COM_UTIL_CAUSE_NAME_TOO_LONG) != 0)
+            else if (cplat_error_is(&error, CPLAT_CAUSE_NAME_TOO_LONG) != 0)
             {
                 sym_loader_configpath[0] = '\0';
-                DLLMAIN_COM_UTIL_INFO_MSG("base: config path too long; override disabled");
+                DLLMAIN_CPLAT_INFO_MSG("base: config path too long; override disabled");
             }
         }
     }
 
-    com_util_sym_loader_init(fobj_array_libbase, fobj_length_libbase, sym_loader_configpath);
+    cplat_sym_loader_init(fobj_array_libbase, fobj_length_libbase, sym_loader_configpath);
 }
 
 /**
@@ -70,6 +70,6 @@ void onLoad(void)
 void onUnload(int process_terminating)
 {
     (void)process_terminating;
-    DLLMAIN_COM_UTIL_INFO_MSG("base: onUnload called");
-    com_util_sym_loader_dispose(fobj_array_libbase, fobj_length_libbase);
+    DLLMAIN_CPLAT_INFO_MSG("base: onUnload called");
+    cplat_sym_loader_dispose(fobj_array_libbase, fobj_length_libbase);
 }

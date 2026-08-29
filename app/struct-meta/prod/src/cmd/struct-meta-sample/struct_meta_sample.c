@@ -29,12 +29,12 @@
 #include <struct_meta/patch/patch.h>
 #include <struct_meta/print/print.h>
 
-#include <com_util/base/result.h>
-#include <com_util/base/error.h>
-#include <com_util/argparser/argparser.h>
-#include <com_util/console/console.h>
-#include <com_util/crt/stdio.h>
-#include <com_util/prompt/prompt.h>
+#include <cplat/base/result.h>
+#include <cplat/base/error.h>
+#include <cplat/argparser/argparser.h>
+#include <cplat/console/console.h>
+#include <cplat/crt/stdio.h>
+#include <cplat/prompt/prompt.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -131,7 +131,7 @@ static void cmd_init(const struct_meta_descriptor *desc, void *instance, int *ha
 static void cmd_load(const struct_meta_descriptor *desc, void *instance, const char *path, int *has_data)
 {
     int ret = struct_meta_json_file_load(desc, path, instance);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         fprintf(stderr, "struct-meta-sample: 読み込みに失敗しました (結果コード %d): %s\n", ret, path);
         return;
@@ -148,7 +148,7 @@ static void cmd_save(const struct_meta_descriptor *desc, const void *instance, c
         return;
     }
     ret = struct_meta_json_file_save(desc, instance, path);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         fprintf(stderr, "struct-meta-sample: 保存に失敗しました (結果コード %d): %s\n", ret, path);
     }
@@ -162,36 +162,36 @@ static void cmd_cat(const char *path)
     unsigned char buffer[SAMPLE_CAT_BUFFER_BYTES];
     unsigned char last_byte = 0U;
     int has_output = 0;
-    com_util_error error;
-    FILE *stream = com_util_fopen(path, "rb", &error);
+    cplat_error error;
+    FILE *stream = cplat_fopen(path, "rb", &error);
     if (stream == NULL)
     {
         fprintf(stderr, "struct-meta-sample: cat の入力ファイルを開けません (結果コード %d): %s\n",
-                com_util_error_to_result(&error), path);
+                cplat_error_to_result(&error), path);
         return;
     }
 
     for (;;)
     {
-        size_t read_count = com_util_fread(buffer, 1U, sizeof(buffer), stream, &error);
+        size_t read_count = cplat_fread(buffer, 1U, sizeof(buffer), stream, &error);
         if (read_count == 0U)
         {
-            if (com_util_error_is_set(&error) != 0)
+            if (cplat_error_is_set(&error) != 0)
             {
                 fprintf(stderr, "struct-meta-sample: cat の入力ファイルを読み取れません (結果コード %d): %s\n",
-                        com_util_error_to_result(&error), path);
+                        cplat_error_to_result(&error), path);
             }
             break;
         }
 
         /* 要求サイズ未満の最終ブロックも、EOF 判定より先に必ず出力します。 */
         {
-            size_t written_count = com_util_fwrite(buffer, 1U, read_count, stdout, &error);
+            size_t written_count = cplat_fwrite(buffer, 1U, read_count, stdout, &error);
             if (written_count != read_count)
             {
                 fprintf(stderr, "struct-meta-sample: cat の標準出力へ書き込めません (結果コード %d): %s\n",
-                        com_util_error_to_result(&error), path);
-                (void)com_util_fclose(stream, NULL);
+                        cplat_error_to_result(&error), path);
+                (void)cplat_fclose(stream, NULL);
                 return;
             }
             last_byte = buffer[read_count - 1U];
@@ -208,20 +208,20 @@ static void cmd_cat(const char *path)
     if ((has_output != 0) && (last_byte != (unsigned char)'\n'))
     {
         static const unsigned char newline[] = {'\n'};
-        if (com_util_fwrite(newline, 1U, sizeof(newline), stdout, &error) != sizeof(newline))
+        if (cplat_fwrite(newline, 1U, sizeof(newline), stdout, &error) != sizeof(newline))
         {
             fprintf(stderr, "struct-meta-sample: cat の最終改行を出力できません (結果コード %d): %s\n",
-                    com_util_error_to_result(&error), path);
-            (void)com_util_fclose(stream, NULL);
+                    cplat_error_to_result(&error), path);
+            (void)cplat_fclose(stream, NULL);
             return;
         }
     }
-    (void)com_util_fflush(stdout, NULL);
+    (void)cplat_fflush(stdout, NULL);
 
-    if (com_util_fclose(stream, &error) != 0)
+    if (cplat_fclose(stream, &error) != 0)
     {
         fprintf(stderr, "struct-meta-sample: cat の入力ファイルを閉じられません (結果コード %d): %s\n",
-                com_util_error_to_result(&error), path);
+                cplat_error_to_result(&error), path);
     }
 }
 
@@ -241,7 +241,7 @@ static void cmd_patch(const struct_meta_descriptor *desc, void *instance, const 
     {
         ret = struct_meta_patch_path_interactive(desc, instance, path);
     }
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         if (path[0] == '\0')
         {
@@ -263,7 +263,7 @@ static void cmd_dump(const struct_meta_descriptor *desc, const void *instance, i
         return;
     }
     ret = struct_meta_print_write(desc, instance, stdout);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         fprintf(stderr, "struct-meta-sample: 表示に失敗しました (結果コード %d)\n", ret);
     }
@@ -275,29 +275,29 @@ int main(int argc, char **argv)
     void *instance = NULL;
     int has_data = 0;
     int exit_code = 0;
-    com_util_prompt *prompt = NULL;
+    cplat_prompt *prompt = NULL;
     char line[SAMPLE_CMD_LINE_BYTES];
     int need_help = 0;
     int parse_result;
 
-    com_util_console_init();
-    com_util_argparser_init(argc, argv, "struct-meta の動作確認コマンドです。起動後は対話コマンドを入力します。");
-    (void)com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
-    if (com_util_argparser_get_register_error_count() > 0U)
+    cplat_console_init();
+    cplat_argparser_init(argc, argv, "struct-meta の動作確認コマンドです。起動後は対話コマンドを入力します。");
+    (void)cplat_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    if (cplat_argparser_get_register_error_count() > 0U)
     {
-        (void)com_util_argparser_print_register_error_messages(stderr);
+        (void)cplat_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
-    parse_result = com_util_argparser_parse();
+    parse_result = cplat_argparser_parse();
     if (need_help != 0)
     {
-        (void)com_util_argparser_print_usage(stdout);
+        (void)cplat_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
-    if (parse_result != COM_UTIL_OK)
+    if (parse_result != CPLAT_OK)
     {
-        (void)com_util_argparser_print_error_messages(stderr);
-        (void)com_util_argparser_print_usage(stderr);
+        (void)cplat_argparser_print_error_messages(stderr);
+        (void)cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    prompt = com_util_prompt_create(NULL);
+    prompt = cplat_prompt_create(NULL);
     if (prompt == NULL)
     {
         fprintf(stderr, "struct-meta-sample: プロンプトを作成できません\n");
@@ -327,13 +327,13 @@ int main(int argc, char **argv)
     for (;;)
     {
         const char *args = NULL;
-        int ret = com_util_prompt_readline(prompt, line, sizeof(line), "struct-meta-sample> ");
-        if ((ret == COM_UTIL_ERR_EOF) || (ret == COM_UTIL_ERR_CANCELED))
+        int ret = cplat_prompt_readline(prompt, line, sizeof(line), "struct-meta-sample> ");
+        if ((ret == CPLAT_ERR_EOF) || (ret == CPLAT_ERR_CANCELED))
         {
-            exit_code = (ret == COM_UTIL_ERR_EOF) ? 0 : 1;
+            exit_code = (ret == CPLAT_ERR_EOF) ? 0 : 1;
             break;
         }
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             fprintf(stderr, "struct-meta-sample: 入力に失敗しました (結果コード %d)\n", ret);
             exit_code = 1;
@@ -416,7 +416,7 @@ int main(int argc, char **argv)
         }
     }
 
-    com_util_prompt_dispose(prompt);
+    cplat_prompt_dispose(prompt);
     free(instance);
     return exit_code;
 }

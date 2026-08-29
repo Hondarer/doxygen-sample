@@ -21,7 +21,7 @@ description: Hondarer 配下の対象リポジトリ群へ日付ベースのタ�
 | googletest-c-framework | framework/testfw の submodule |
 | doxygen-framework | framework/doxyfw の submodule |
 | pub_markdown | framework/docsfw の submodule |
-| app_com_util | app/com_util の submodule |
+| app_c-platform | app/c-platform の submodule |
 | app_cjson | app/cjson の submodule |
 | app_porter | app/porter の submodule |
 | app_sqlite | app/sqlite の submodule |
@@ -68,7 +68,7 @@ REPOS=(
   googletest-c-framework
   doxygen-framework
   pub_markdown
-  app_com_util
+  app_c-platform
   app_cjson
   app_porter
   app_sqlite

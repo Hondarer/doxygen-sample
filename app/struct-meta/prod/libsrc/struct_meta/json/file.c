@@ -6,10 +6,10 @@
  *  @date           2026/08/16
  *  @version        1.0.0
  *
- *  ファイル I/O は `com_util/crt/stdio.h` の stdio ラッパーを使用します。\n
+ *  ファイル I/O は `cplat/crt/stdio.h` の stdio ラッパーを使用します。\n
  *  JSON 設定ファイルの読み書きは単発の逐次アクセスが支配的な用途であるため、
- *  `com_util_file_*` (低レベル API) や mmap ではなく stdio ラッパーを選択します
- *  (`app/com_util/docs/fileio-api-selection-guideline.md` の結論 4)。
+ *  `cplat_file_*` (低レベル API) や mmap ではなく stdio ラッパーを選択します
+ *  (`app/c-platform/docs/fileio-api-selection-guideline.md` の結論 4)。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
  *
@@ -19,8 +19,8 @@
 #include <struct_meta/json/file.h>
 #include <struct_meta/json/json.h>
 
-#include <com_util/base/result.h>
-#include <com_util/crt/stdio.h>
+#include <cplat/base/result.h>
+#include <cplat/crt/stdio.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -32,12 +32,12 @@ int struct_meta_json_file_save(const struct_meta_descriptor *desc, const void *i
 {
     if ((desc == NULL) || (instance == NULL) || (path == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     cJSON *json = NULL;
     int ret = struct_meta_json_encode(desc, instance, &json);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }
@@ -46,43 +46,43 @@ int struct_meta_json_file_save(const struct_meta_descriptor *desc, const void *i
     cJSON_Delete(json);
     if (text == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
-    FILE *stream = com_util_fopen(path, "wb", NULL);
+    FILE *stream = cplat_fopen(path, "wb", NULL);
     if (stream == NULL)
     {
         cJSON_free(text);
-        return COM_UTIL_ERR_NOT_FOUND;
+        return CPLAT_ERR_NOT_FOUND;
     }
 
     size_t text_len = strlen(text);
     int needs_newline = (text_len == 0U) || (text[text_len - 1U] != '\n');
     if ((needs_newline != 0) && (text_len == SIZE_MAX))
     {
-        (void)com_util_fclose(stream, NULL);
+        (void)cplat_fclose(stream, NULL);
         cJSON_free(text);
-        return COM_UTIL_ERR_OUT_OF_RANGE;
+        return CPLAT_ERR_OUT_OF_RANGE;
     }
 
     size_t expected_len = text_len + ((needs_newline != 0) ? 1U : 0U);
-    size_t written = com_util_fwrite(text, 1, text_len, stream, NULL);
+    size_t written = cplat_fwrite(text, 1, text_len, stream, NULL);
     if ((written == text_len) && (needs_newline != 0))
     {
         static const char newline[] = "\n";
-        if (com_util_fwrite(newline, 1U, 1U, stream, NULL) == 1U)
+        if (cplat_fwrite(newline, 1U, 1U, stream, NULL) == 1U)
         {
             written++;
         }
     }
-    com_util_fclose(stream, NULL);
+    cplat_fclose(stream, NULL);
     cJSON_free(text);
 
     if (written != expected_len)
     {
-        return COM_UTIL_ERR_UNKNOWN;
+        return CPLAT_ERR_UNKNOWN;
     }
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -91,41 +91,41 @@ int struct_meta_json_file_load(const struct_meta_descriptor *desc, const char *p
 {
     if ((desc == NULL) || (instance == NULL) || (path == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
-    FILE *stream = com_util_fopen(path, "rb", NULL);
+    FILE *stream = cplat_fopen(path, "rb", NULL);
     if (stream == NULL)
     {
-        return COM_UTIL_ERR_NOT_FOUND;
+        return CPLAT_ERR_NOT_FOUND;
     }
 
-    if (com_util_fseek(stream, 0, SEEK_END) != 0)
+    if (cplat_fseek(stream, 0, SEEK_END) != 0)
     {
-        com_util_fclose(stream, NULL);
-        return COM_UTIL_ERR_UNKNOWN;
+        cplat_fclose(stream, NULL);
+        return CPLAT_ERR_UNKNOWN;
     }
-    int64_t file_size = com_util_ftell(stream);
-    if ((file_size < 0) || (com_util_fseek(stream, 0, SEEK_SET) != 0))
+    int64_t file_size = cplat_ftell(stream);
+    if ((file_size < 0) || (cplat_fseek(stream, 0, SEEK_SET) != 0))
     {
-        com_util_fclose(stream, NULL);
-        return COM_UTIL_ERR_UNKNOWN;
+        cplat_fclose(stream, NULL);
+        return CPLAT_ERR_UNKNOWN;
     }
 
     /* JSON テキストのバイト列バッファー。要素型に対応しない生バイト確保のため sizeof(*p) は使わない。 */
     char *text = (char *)malloc((size_t)file_size + 1U);
     if (text == NULL)
     {
-        com_util_fclose(stream, NULL);
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        cplat_fclose(stream, NULL);
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
-    size_t read_count = com_util_fread(text, 1, (size_t)file_size, stream, NULL);
-    com_util_fclose(stream, NULL);
+    size_t read_count = cplat_fread(text, 1, (size_t)file_size, stream, NULL);
+    cplat_fclose(stream, NULL);
     if (read_count != (size_t)file_size)
     {
         free(text);
-        return COM_UTIL_ERR_UNKNOWN;
+        return CPLAT_ERR_UNKNOWN;
     }
     text[file_size] = '\0';
 
@@ -133,7 +133,7 @@ int struct_meta_json_file_load(const struct_meta_descriptor *desc, const char *p
     free(text);
     if (json == NULL)
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     int ret = struct_meta_json_decode(desc, json, instance);

@@ -1,5 +1,5 @@
 # ライブラリの指定
-LIBS += com_util cjson
+LIBS += cplat cjson
 
 # 責務別のサブディレクトリに置いた実装を、1 個の共有ライブラリへまとめる。
 ADD_SRCS += \

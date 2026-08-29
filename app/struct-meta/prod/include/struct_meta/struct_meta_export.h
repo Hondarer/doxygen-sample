@@ -58,9 +58,9 @@
     #ifndef STRUCT_META_EXPORTS
         #define STRUCT_META_EXPORTS 0
     #endif /* STRUCT_META_EXPORTS */
-    #include <com_util/base/dll_exports.h>
-    #define STRUCT_META_EXPORT COM_UTIL_DLL_EXPORT(STRUCT_META)
-    #define STRUCT_META_API    COM_UTIL_DLL_API(STRUCT_META)
+    #include <cplat/base/dll_exports.h>
+    #define STRUCT_META_EXPORT CPLAT_DLL_EXPORT(STRUCT_META)
+    #define STRUCT_META_API    CPLAT_DLL_API(STRUCT_META)
 
 #endif /* DOXYGEN */
 

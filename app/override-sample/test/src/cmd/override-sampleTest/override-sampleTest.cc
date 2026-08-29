@@ -8,7 +8,7 @@
 #define _STRINGIFY(x) #x
 #define TOSTRING(x)   _STRINGIFY(x)
 
-#include <com_util/crt/path.h>
+#include <cplat/crt/path.h>
 
 #if defined(PLATFORM_LINUX)
     #include <unistd.h>
@@ -30,14 +30,14 @@ class override_sampleTest : public Test
         ASSERT_FALSE(workspace_root.empty()) << "ワークスペースルートが見つかりません";
 #if defined(PLATFORM_LINUX)
         binary_path = workspace_root + "/app/override-sample/prod/cbin/override-sample";
-        lib_path = workspace_root + "/app/override-sample/prod/lib" + ":" + workspace_root + "/app/com_util/prod/lib" +
+        lib_path = workspace_root + "/app/override-sample/prod/lib" + ":" + workspace_root + "/app/c-platform/prod/lib" +
                    ":" + workspace_root + "/app/cjson/prod/lib";
         mock_lib_path = workspace_root + "/framework/testfw/lib/" TOSTRING(TARGET_ARCH) "/libmock_syslog.so";
         config_path = "/tmp/libbase_extdef.json";
 #elif defined(PLATFORM_WINDOWS)
         binary_path = workspace_root + "\\app\\override-sample\\prod\\cbin\\override-sample.exe";
         lib_path = workspace_root + "\\app\\override-sample\\prod\\lib" + ";" + workspace_root +
-                   "\\app\\com_util\\prod\\lib" + ";" + workspace_root + "\\app\\cjson\\prod\\lib";
+                   "\\app\\cplat\\prod\\lib" + ";" + workspace_root + "\\app\\cjson\\prod\\lib";
         {
             wchar_t tmpw[PLATFORM_PATH_MAX] = L"";
             char tmpu8[PLATFORM_PATH_MAX * 4] = {0};
@@ -177,7 +177,7 @@ TEST_F(override_sampleTest, onUnload_syslog)
     // Arrange
     removeConfigFile(); // [手順] - 定義ファイルを削除してデフォルト状態を保証する。
     ProcessOptions opts = makeOpts();
-    opts.env_set["ENABLE_DLLMAIN_COM_UTIL_INFO_MSG"] = "1"; // [手順] - DLLMain 診断ログ出力を有効化する。
+    opts.env_set["ENABLE_DLLMAIN_C_PLATFORM_INFO_MSG"] = "1"; // [手順] - DLLMain 診断ログ出力を有効化する。
 #if defined(PLATFORM_LINUX)
     opts.preload_lib = mock_lib_path; // [手順] - LD_PRELOAD で syslog_mock.so を挿入する。
 #endif                                /* PLATFORM_LINUX */
@@ -222,7 +222,7 @@ TEST_F(override_sampleTest, too_long_tmpdir_causes_exit_code_1)
     removeConfigFile(); // [手順] - 定義ファイルを削除して他要因を除く。
     ProcessOptions opts = makeOpts();
     opts.preload_lib = mock_lib_path; // [手順] - debug_log を取得するため syslog_mock.so を挿入する。
-    opts.env_set["ENABLE_DLLMAIN_COM_UTIL_INFO_MSG"] = "1";  // [手順] - DLLMain 診断ログ出力を有効化する。
+    opts.env_set["ENABLE_DLLMAIN_C_PLATFORM_INFO_MSG"] = "1"; // [手順] - DLLMain 診断ログ出力を有効化する。
     opts.env_set["TMPDIR"] = string(PLATFORM_PATH_MAX, 'a'); // [手順] - 一時ディレクトリを上限超過長にする。
 
     // Act

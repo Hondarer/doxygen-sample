@@ -18,7 +18,7 @@
 #define SYM_LOADER_LIBBASE_H
 
 #include <base/base_spec.h>
-#include <com_util/crt/path.h>
+#include <cplat/crt/path.h>
 
 /* --- 拡張可能な各関数のポインター型とアクセス用のオブジェクトへのポインター --- */
 /* --- 対応関数を追加した場合、以下に追加が必要です。                         --- */
@@ -32,13 +32,13 @@ extern "C"
 #endif /* __cplusplus */
 
     /** sample_func に対応する sym_loader エントリへのポインター。 */
-    extern com_util_sym_loader_entry *const pfo_sample_func;
+    extern cplat_sym_loader_entry *const pfo_sample_func;
 
     /* typedef any (*func_name_fn)(...); */                      /* 将来追加 */
-    /* extern com_util_sym_loader_entry *const pfo_func_name; */ /* 将来追加 */
+    /* extern cplat_sym_loader_entry *const pfo_func_name; */ /* 将来追加 */
 
     /** sym_loader に設定するポインター配列。 */
-    extern com_util_sym_loader_entry *const fobj_array_libbase[];
+    extern cplat_sym_loader_entry *const fobj_array_libbase[];
 
     /** sym_loader に設定するポインター配列の要素数 */
     extern const size_t fobj_length_libbase;

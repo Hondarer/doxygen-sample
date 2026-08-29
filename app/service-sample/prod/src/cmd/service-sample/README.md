@@ -84,7 +84,7 @@ on_run の実装は `svc_wait_for_stop()` だけを見れば停止を検知で�
 @enduml
 ```
 
-内部では `com_util/sync` の condvar + lock を使って待機します。  
+内部では `cplat/sync` の condvar + lock を使って待機します。  
 SCM の停止通知はシグナルではないため、condvar が 3 経路すべてに対応できる唯一の共通手段です。
 
 ## プラットフォームごとの動作
@@ -131,8 +131,8 @@ make
 |---|---|
 | `prod/cbin/service-sample` | 実行ファイル (Linux) |
 | `prod/cbin/service-sample.exe` | 実行ファイル (Windows) |
-| `prod/cbin/libcom_util.so` / `prod/cbin/libcom_util.dll` | com_util の実行時ライブラリ |
-| `prod/cbin/libcjson.so` / `prod/cbin/libcjson.dll` | com_util が利用する cJSON の実行時ライブラリ |
+| `prod/cbin/libcplat.so` / `prod/cbin/libcplat.dll` | cplat の実行時ライブラリ |
+| `prod/cbin/libcjson.so` / `prod/cbin/libcjson.dll` | cplat が利用する cJSON の実行時ライブラリ |
 
 Linux は `$ORIGIN` の RUNPATH、Windows は実行ファイルと同じディレクトリの DLL 探索により、これらのライブラリを解決します。
 
@@ -187,4 +187,4 @@ sc.exe stop service-sample
   本サンプルでは ExecStart/binPath に絶対パスを焼き込むことでこの問題を回避しています。  
   設定ファイルなどを読む場合は絶対パスを使用してください。
 - **Windows サービスのログ出力**: SCM サービスにはコンソールがなく、printf の出力は失われます。  
-  恒久的なログ出力には `com_util/trace` (Linux=syslog backend、Windows=ETW backend) を使用してください。
+  恒久的なログ出力には `cplat/trace` (Linux=syslog backend、Windows=ETW backend) を使用してください。

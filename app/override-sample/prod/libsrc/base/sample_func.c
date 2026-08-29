@@ -23,7 +23,7 @@ int sample_func(const int a, const int b, int *result)
         return BASE_ERR_INVALID_ARGUMENT;
     }
 
-    sample_func_fn fp = com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_fn);
+    sample_func_fn fp = cplat_sym_loader_resolve_as(pfo_sample_func, sample_func_fn);
     if (fp != NULL)
     {
         /* 拡張 (オーバーライド) 処理 */

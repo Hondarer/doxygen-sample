@@ -1,5 +1,5 @@
 #include <testfw.h>
-#include <mock_com_util.h>
+#include <mock_cplat.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -148,8 +148,8 @@ extern "C"
 class service_sampleTest : public Test
 {
   protected:
-    NiceMock<Mock_com_util> mock_com_util_;
-    com_util_tracer *tracer_handle_ = reinterpret_cast<com_util_tracer *>(static_cast<uintptr_t>(0x1234));
+    NiceMock<Mock_cplat> mock_cplat_;
+    cplat_tracer *tracer_handle_ = reinterpret_cast<cplat_tracer *>(static_cast<uintptr_t>(0x1234));
 
     void SetUp() override
     {
@@ -161,17 +161,17 @@ class service_sampleTest : public Test
         g_on_run_rc = 0;
         g_on_stop_rc = 0;
 
-        ON_CALL(mock_com_util_, com_util_tracer_create(COM_UTIL_TRACER_CONCURRENCY_TRACER_MANAGED))
+        ON_CALL(mock_cplat_, cplat_tracer_create(CPLAT_TRACER_CONCURRENCY_TRACER_MANAGED))
             .WillByDefault(Return(tracer_handle_));
-        ON_CALL(mock_com_util_, com_util_tracer_set_name(_, _, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_set_os_level(_, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_set_file_level(_, _, _, _, _, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_set_stderr_level(_, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_start(_)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_stop(_)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_dispose(_)).WillByDefault(Return());
-        ON_CALL(mock_com_util_, com_util_tracer_write_at(_, _, _, _)).WillByDefault(Return(0));
-        ON_CALL(mock_com_util_, com_util_tracer_writef_at(_, _, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_set_name(_, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_set_os_level(_, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_set_file_level(_, _, _, _, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_set_stderr_level(_, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_start(_)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_stop(_)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_dispose(_)).WillByDefault(Return());
+        ON_CALL(mock_cplat_, cplat_tracer_write_at(_, _, _, _)).WillByDefault(Return(0));
+        ON_CALL(mock_cplat_, cplat_tracer_writef_at(_, _, _, _)).WillByDefault(Return(0));
     }
 };
 
@@ -255,11 +255,11 @@ TEST_F(service_sampleTest, tracer_uses_default_file_path_with_shared_mode)
     const char *argv[] = {"service-sampleTest", "install"}; // [状態] - tracer 初期化を通る代表コマンドを与える。
 
     // Pre-Assert
-    EXPECT_CALL(mock_com_util_,
-                com_util_tracer_set_file_level(tracer_handle_, NULL, COM_UTIL_TRACE_LEVEL_VERBOSE, 0U, 0,
-                                               COM_UTIL_TRACE_FILE_SINK_SHARED))
+    EXPECT_CALL(mock_cplat_,
+                cplat_tracer_set_file_level(tracer_handle_, NULL, CPLAT_TRACE_LEVEL_VERBOSE, 0U, 0,
+                                               CPLAT_TRACE_FILE_SINK_SHARED))
         .WillOnce(
-            Return(0)); // [Pre-Assert確認_正常系] - パスは com_util 既定値へ委譲し、既存の共有モードを維持すること。
+            Return(0)); // [Pre-Assert確認_正常系] - パスは cplat 既定値へ委譲し、既存の共有モードを維持すること。
 
     // Act
     int actual_ret = __real_main(argc, (char **)&argv); // [手順] - main() に引数を与えて呼び出す。

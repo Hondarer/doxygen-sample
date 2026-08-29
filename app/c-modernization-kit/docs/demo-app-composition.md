@@ -14,10 +14,10 @@
 |---|---|
 | `general` | フレームワークの一般規範、設計、運用手順 |
 | `c-modernization-kit` | このリポジトリの app 構成と CI/CD の説明 |
-| `com_util` | 複数の C app が利用する共通ユーティリティ ライブラリ |
+| `cplat` | 複数の C app が利用する共通ユーティリティ ライブラリ |
 | `calc` | 静的ライブラリ、共有ライブラリ、コマンド、Google Test の組み合わせ例 |
 | `calc.net` | `calc` の共有ライブラリを P/Invoke で利用する .NET 実装例 |
-| `porter` | `com_util` を利用する通信ライブラリ |
+| `porter` | `cplat` を利用する通信ライブラリ |
 | `cjson`、`lua`、`sqlite` | 外部 OSS を makefw の規約でビルドする例 |
 | `doxygen-sample` | Doxygen 文書生成の例 |
 | `empty-lib` | ソースが空のライブラリを扱う例 |
@@ -31,8 +31,8 @@
 各 app の `appdeps.mk` がビルド順序の正本です。  
 現在の依存関係は次のとおりです。
 
-- `calc`、`porter`、`empty-lib`、`override-sample`、`service-sample`、`subfolder-sample`、`tutorial` は `com_util` に依存します。
-- `calc.net` は `calc` に依存し、推移的に `com_util` も利用します。
+- `calc`、`porter`、`empty-lib`、`override-sample`、`service-sample`、`subfolder-sample`、`tutorial` は `cplat` に依存します。
+- `calc.net` は `calc` に依存し、推移的に `cplat` も利用します。
 - `cjson`、`lua`、`sqlite`、`doxygen-sample` は、ほかの app に依存しません。
 - `general` と `c-modernization-kit` は文書だけを持つため、ビルド依存関係を定義しません。
 
@@ -47,15 +47,15 @@ makefw はこの依存グラフから app の実行順序を決定します。
 `calc.net` は `calc` の共有ライブラリを P/Invoke で呼び出します。  
 Linux と Windows で同じ .NET API を提供し、ネイティブ ライブラリの探索パスはワークスペースの生成設定から取得します。
 
-## com_util のリンク方式
+## cplat のリンク方式
 
-`com_util` は動的ライブラリだけを生成し、すべての製品利用者が同じライブラリを共有します。  
+`cplat` は動的ライブラリだけを生成し、すべての製品利用者が同じライブラリを共有します。  
 これにより、トレース レジストリや既定パーサーなどのプロセス グローバルな状態がプロセス内で一つになります。
 
-同梱 CLI、`service-sample`、`tutorial` には `libcom_util` と `libcjson` を実行ファイルと同じ `prod/cbin` へコピーします。  
+同梱 CLI、`service-sample`、`tutorial` には `libcplat` と `libcjson` を実行ファイルと同じ `prod/cbin` へコピーします。  
 Linux では `$ORIGIN` の RUNPATH、Windows では実行ファイルと同じディレクトリの DLL 探索を使うため、開発環境のライブラリ探索パスに依存せず実行できます。
 
-記述方法と配布時の要件は、[リンク方式の規約](../../com_util/docs/link-policy.md) に従います。
+記述方法と配布時の要件は、[リンク方式の規約](../../cplat/docs/link-policy.md) に従います。
 
 ## 関連資料
 

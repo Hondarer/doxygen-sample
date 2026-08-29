@@ -15,7 +15,7 @@
 
 #include <struct_meta/access/access.h>
 
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -81,7 +81,7 @@ static int print_element(const struct_meta_field *field, const unsigned char *el
     {
         if (field->nested == NULL)
         {
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         print_indent(out, indent);
         fprintf(out, "%s:\n", label);
@@ -94,7 +94,7 @@ static int print_element(const struct_meta_field *field, const unsigned char *el
         print_indent(out, indent);
         fprintf(out, "%s = %s\n", label, current);
     }
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 static int print_field(const struct_meta_field *field, const unsigned char *base, FILE *out, int indent)
@@ -103,7 +103,7 @@ static int print_field(const struct_meta_field *field, const unsigned char *base
     {
         const void *element;
         int ret = struct_meta_field_get_const_element(field, base, 0U, &element);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -119,17 +119,17 @@ static int print_field(const struct_meta_field *field, const unsigned char *base
             snprintf(label, sizeof(label), "%s[%zu]", field->name, i);
             const void *element;
             ret = struct_meta_field_get_const_element(field, base, i, &element);
-            if (ret == COM_UTIL_OK)
+            if (ret == CPLAT_OK)
             {
                 ret = print_element(field, (const unsigned char *)element, out, indent, label);
             }
-            if (ret != COM_UTIL_OK)
+            if (ret != CPLAT_OK)
             {
                 return ret;
             }
         }
     }
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 static int print_struct(const struct_meta_descriptor *desc, const unsigned char *base, FILE *out, int indent)
@@ -138,12 +138,12 @@ static int print_struct(const struct_meta_descriptor *desc, const unsigned char 
     for (i = 0; i < desc->field_count; i++)
     {
         int ret = print_field(&desc->fields[i], base, out, indent);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
     }
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -152,11 +152,11 @@ int struct_meta_print_write(const struct_meta_descriptor *desc, const void *inst
 {
     if ((desc == NULL) || (instance == NULL) || (out == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     int ret = struct_meta_descriptor_validate(desc);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }

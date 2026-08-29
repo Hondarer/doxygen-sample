@@ -1,10 +1,10 @@
 #include <testfw.h>
-#include <mock_com_util.h>
+#include <mock_cplat.h>
 #include <mock_stdio.h>
 
 #include <struct_meta/patch/patch.h>
 
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -60,9 +60,9 @@ void copy_line(char *dest, size_t dest_size, const std::string &line)
 class StructMetaPatchTest : public Test
 {
   protected:
-    NiceMock<Mock_com_util> mock_com_util;
+    NiceMock<Mock_cplat> mock_cplat;
     NiceMock<Mock_stdio> mock_stdio;
-    com_util_prompt *prompt = reinterpret_cast<com_util_prompt *>(static_cast<uintptr_t>(1U));
+    cplat_prompt *prompt = reinterpret_cast<cplat_prompt *>(static_cast<uintptr_t>(1U));
     std::vector<std::string> prompts;
 
     void expect_inputs(const std::vector<std::string> &lines)
@@ -70,13 +70,13 @@ class StructMetaPatchTest : public Test
         auto index = std::make_shared<size_t>(0U);
         auto inputs = std::make_shared<std::vector<std::string>>(lines);
 
-        EXPECT_CALL(mock_com_util, com_util_prompt_create(nullptr))
+        EXPECT_CALL(mock_cplat, cplat_prompt_create(nullptr))
             .WillOnce(Return(prompt)); // [Pre-Assert確認_正常系] - 編集開始時にプロンプトを作成すること。
-        EXPECT_CALL(mock_com_util, com_util_prompt_dispose(prompt))
+        EXPECT_CALL(mock_cplat, cplat_prompt_dispose(prompt))
             .WillOnce(Return()); // [Pre-Assert確認_正常系] - 編集終了時にプロンプトを破棄すること。
-        EXPECT_CALL(mock_com_util, com_util_prompt_readline_fmt_at(prompt, _, _, _, _, _, _))
+        EXPECT_CALL(mock_cplat, cplat_prompt_readline_fmt_at(prompt, _, _, _, _, _, _))
             .WillRepeatedly(
-                [this, index, inputs](com_util_prompt *, char *dest, size_t dest_size, const char *, int,
+                [this, index, inputs](cplat_prompt *, char *dest, size_t dest_size, const char *, int,
                                       const char *fmt, va_list args) -> int
                 {
                     char formatted[512];
@@ -90,11 +90,11 @@ class StructMetaPatchTest : public Test
                     }
                     if (*index >= inputs->size())
                     {
-                        return COM_UTIL_ERR_EOF;
+                        return CPLAT_ERR_EOF;
                     }
                     copy_line(dest, dest_size, (*inputs)[*index]);
                     (*index)++;
-                    return COM_UTIL_OK;
+                    return CPLAT_OK;
                 }); // [Pre-Assert手順] - 指定した入力列を順番に返す。
     }
 };
@@ -107,7 +107,7 @@ TEST_F(StructMetaPatchTest, PathSelectsNestedString)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses[0].city");
     // [手順_正常系] - ネストした文字列をパスで指定して編集する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
     EXPECT_STREQ("Tokyo", sample.addresses[0].city); // [確認_正常系] - 指定した文字列だけが更新されること。
     EXPECT_THAT(prompts, Contains(HasSubstr("addresses[0].city (現在値")));
     // [確認_正常系] - パス指定方式の値入力にも完全パスを表示すること。
@@ -121,7 +121,7 @@ TEST_F(StructMetaPatchTest, PathSelectsArrayElement)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "scores[1]");
     // [手順_正常系] - 整数配列の要素をパスで指定して編集する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
     EXPECT_EQ(42, sample.scores[1]);    // [確認_正常系] - 指定した要素だけが更新されること。
 }
 
@@ -139,7 +139,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtStructOpensFieldMenu)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses[0]");
     // [手順_正常系] - 構造体要素をパスで指定し、zip を編集して戻る。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret);      // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);      // [確認_正常系] - 編集が成功すること。
     EXPECT_EQ(123, sample.addresses[0].zip); // [確認_正常系] - 選択した構造体の zip が更新されること。
 }
 
@@ -157,7 +157,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtArrayOpensElementMenu)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "scores");
     // [手順_正常系] - 配列全体をパスで指定し、要素を選択して編集する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
     EXPECT_EQ(77, sample.scores[1]);    // [確認_正常系] - メニューで選択した要素が更新されること。
 }
 
@@ -169,7 +169,7 @@ TEST_F(StructMetaPatchTest, PathEndingAtStructArrayOpensElementAndFieldMenus)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses");
     // [手順_正常系] - 構造体配列全体を指定し、要素とフィールドを選択して編集する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 編集が成功すること。
     EXPECT_STREQ("Osaka", sample.addresses[1].city); // [確認_正常系] - 選択した要素の city が更新されること。
 }
 
@@ -182,7 +182,7 @@ TEST_F(StructMetaPatchTest, EmptyValueKeepsCurrentValue)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "id");
     // [手順_正常系] - 値の入力で空行を指定する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret); // [確認_正常系] - 変更なしを正常終了として扱うこと。
+    EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 変更なしを正常終了として扱うこと。
     EXPECT_EQ(12, sample.id);           // [確認_正常系] - 元の値を維持すること。
 }
 
@@ -204,7 +204,7 @@ TEST_F(StructMetaPatchTest, DrillDownRemainsAvailable)
     int actual_ret = struct_meta_patch_interactive(&kSampleDescriptor, &sample);
     // [手順_正常系] - 従来のドリルダウン式で addresses[0].city を編集する。
 
-    EXPECT_EQ(COM_UTIL_OK, actual_ret);              // [確認_正常系] - 従来の編集が成功すること。
+    EXPECT_EQ(CPLAT_OK, actual_ret);              // [確認_正常系] - 従来の編集が成功すること。
     EXPECT_STREQ("Tokyo", sample.addresses[0].city); // [確認_正常系] - 選択したフィールドが更新されること。
     EXPECT_THAT(prompts, Contains(HasSubstr("addresses[0].city (現在値")));
     // [確認_正常系] - 値入力にも完全パスを表示すること。
@@ -213,77 +213,77 @@ TEST_F(StructMetaPatchTest, DrillDownRemainsAvailable)
 TEST_F(StructMetaPatchTest, InvalidPathIsRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - パス解決対象の構造体を用意する。
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(_)).Times(0);
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - パス解決に失敗した場合はプロンプトを作成しないこと。
 
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "addresses[2].city");
     // [手順_異常系] - 範囲外の配列添字を指定する。
 
-    EXPECT_EQ(COM_UTIL_ERR_OUT_OF_RANGE, actual_ret); // [確認_異常系] - 範囲外エラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, actual_ret); // [確認_異常系] - 範囲外エラーを返すこと。
 }
 
 TEST_F(StructMetaPatchTest, UnknownFieldIsRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - パス解決対象の構造体を用意する。
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(_)).Times(0);
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - 未知フィールドの場合はプロンプトを作成しないこと。
 
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "unknown");
     // [手順_異常系] - 存在しないフィールドを指定する。
 
-    EXPECT_EQ(COM_UTIL_ERR_NOT_FOUND, actual_ret); // [確認_異常系] - 未検出エラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_NOT_FOUND, actual_ret); // [確認_異常系] - 未検出エラーを返すこと。
 }
 
 TEST_F(StructMetaPatchTest, InvalidArgumentsAreRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - 引数検査に使う構造体を用意する。
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(_)).Times(0);
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - 引数が不正な場合はプロンプトを作成しないこと。
 
     int null_path_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, nullptr);
     int empty_path_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "");
     // [手順_異常系] - NULL と空文字列のパスを指定する。
 
-    EXPECT_EQ(COM_UTIL_ERR_INVALID_ARGUMENT, null_path_ret);  // [確認_異常系] - NULL を拒否すること。
-    EXPECT_EQ(COM_UTIL_ERR_INVALID_ARGUMENT, empty_path_ret); // [確認_異常系] - 空文字列を拒否すること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, null_path_ret);  // [確認_異常系] - NULL を拒否すること。
+    EXPECT_EQ(CPLAT_ERR_INVALID_ARGUMENT, empty_path_ret); // [確認_異常系] - 空文字列を拒否すること。
 }
 
 TEST_F(StructMetaPatchTest, CorruptDescriptorIsRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - 不正な記述子の対象インスタンスを用意する。
     const struct_meta_descriptor corrupt_descriptor = {nullptr, sizeof(Sample), kSampleFields, 3, nullptr};
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(_)).Times(0);
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - 記述子検査に失敗した場合はプロンプトを作成しないこと。
 
     int actual_ret = struct_meta_patch_path_interactive(&corrupt_descriptor, &sample, "id");
     // [手順_異常系] - 名前のない壊れた記述子を指定する。
 
-    EXPECT_EQ(COM_UTIL_ERR_CORRUPT_DESCRIPTOR, actual_ret); // [確認_異常系] - 記述子破損エラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_CORRUPT_DESCRIPTOR, actual_ret); // [確認_異常系] - 記述子破損エラーを返すこと。
 }
 
 TEST_F(StructMetaPatchTest, PromptCreationFailureIsReturned)
 {
     Sample sample = {}; // [準備_異常系] - 編集対象の構造体を用意する。
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(nullptr))
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(nullptr))
         .WillOnce(Return(nullptr)); // [Pre-Assert確認_異常系] - プロンプト生成失敗を発生させる。
 
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "id");
     // [手順_異常系] - プロンプトを生成して編集を開始する。
 
-    EXPECT_EQ(COM_UTIL_ERR_OUT_OF_MEMORY, actual_ret); // [確認_異常系] - メモリー不足エラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_MEMORY, actual_ret); // [確認_異常系] - メモリー不足エラーを返すこと。
 }
 
 TEST_F(StructMetaPatchTest, PromptInputFailureIsReturnedAfterDisposal)
 {
     Sample sample = {}; // [準備_異常系] - 編集対象の構造体を用意する。
-    EXPECT_CALL(mock_com_util, com_util_prompt_create(nullptr)).WillOnce(Return(prompt));
-    EXPECT_CALL(mock_com_util, com_util_prompt_readline_fmt_at(prompt, _, _, _, _, _, _))
-        .WillOnce(Return(COM_UTIL_ERR_CANCELED)); // [Pre-Assert確認_異常系] - 入力キャンセルを発生させる。
-    EXPECT_CALL(mock_com_util, com_util_prompt_dispose(prompt))
+    EXPECT_CALL(mock_cplat, cplat_prompt_create(nullptr)).WillOnce(Return(prompt));
+    EXPECT_CALL(mock_cplat, cplat_prompt_readline_fmt_at(prompt, _, _, _, _, _, _))
+        .WillOnce(Return(CPLAT_ERR_CANCELED)); // [Pre-Assert確認_異常系] - 入力キャンセルを発生させる。
+    EXPECT_CALL(mock_cplat, cplat_prompt_dispose(prompt))
         .WillOnce(Return()); // [Pre-Assert確認_異常系] - 失敗時にもプロンプトを破棄すること。
 
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "id");
     // [手順_異常系] - 対話入力中にキャンセルする。
 
-    EXPECT_EQ(COM_UTIL_ERR_CANCELED, actual_ret); // [確認_異常系] - 入力元のエラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_CANCELED, actual_ret); // [確認_異常系] - 入力元のエラーを返すこと。
 }

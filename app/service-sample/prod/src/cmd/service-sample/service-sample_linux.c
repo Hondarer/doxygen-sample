@@ -23,7 +23,7 @@
  *******************************************************************************
  */
 
-#include <com_util/base/platform.h>
+#include <cplat/base/platform.h>
 
 #if defined(PLATFORM_LINUX)
 
@@ -35,9 +35,9 @@
 
     #include <systemd/sd-daemon.h>
 
-    #include <com_util/crt/stdio.h>
-    #include <com_util/runtime/elevated_process.h>
-    #include <com_util/runtime/process.h>
+    #include <cplat/crt/stdio.h>
+    #include <cplat/runtime/elevated_process.h>
+    #include <cplat/runtime/process.h>
 
     #include "service-sample.h"
     #include "service-sample_linux_events.h"
@@ -69,15 +69,15 @@
 static int run_command(char *const argv[])
 {
     int exit_code;
-    com_util_process_options options = {0};
+    cplat_process_options options = {0};
     int result;
 
     options.argv = argv;
 
-    result = com_util_process_run_sync(&options, COM_UTIL_PROCESS_WAIT_FOREVER, &exit_code);
-    if (result != COM_UTIL_OK)
+    result = cplat_process_run_sync(&options, CPLAT_PROCESS_WAIT_FOREVER, &exit_code);
+    if (result != CPLAT_OK)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                                "外部コマンドの実行に失敗しました: %s", argv[0]);
         return -1;
     }
@@ -175,10 +175,10 @@ static int ensure_elevated_for_operation(const char *command, const char *operat
     }
 
     exit_code = EXIT_FAILURE;
-    ret = com_util_elevated_process_run_if_needed(command, &exit_code, handled);
+    ret = cplat_elevated_process_run_if_needed(command, &exit_code, handled);
     if (ret != 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                                "%s には root 権限 (sudo) が必要です。", operation_name);
         return EXIT_FAILURE;
     }
@@ -210,7 +210,7 @@ static void sd_notify_send(const char *message)
     rc = sd_notify(0, message);
     if (rc < 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_WARNING, NULL,
                                "sd_notify: 送信に失敗しました: %s", strerror(-rc));
     }
     /* rc == 0 は NOTIFY_SOCKET 未設定 (コンソール モードなどでは通常の状態) */
@@ -245,7 +245,7 @@ void svc_os_notify_status(const char *text)
     {
         return;
     }
-    /* 長すぎる場合は切り詰めを許容する。com_util_snprintf は切り詰めで空文字にするため使わない。 */
+    /* 長すぎる場合は切り詰めを許容する。cplat_snprintf は切り詰めで空文字にするため使わない。 */
     snprintf(message, sizeof(message), "STATUS=%s", text); /* 置換対象外: 通知文の意図的な切り詰め */
     sd_notify_send(message);
 }
@@ -286,9 +286,9 @@ int svc_os_install(const svc_definition *def)
     int handled;
     int systemd_major_version;
 
-    if (com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != COM_UTIL_OK)
+    if (cplat_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "サービス名が長すぎます。");
         return EXIT_FAILURE;
     }
@@ -303,9 +303,9 @@ int svc_os_install(const svc_definition *def)
         return rc;
     }
 
-    if (com_util_process_get_executable_path(exec_path, sizeof(exec_path)) != COM_UTIL_OK)
+    if (cplat_process_get_executable_path(exec_path, sizeof(exec_path)) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "実行ファイルのパスを取得できませんでした。");
         return EXIT_FAILURE;
     }
@@ -318,27 +318,27 @@ int svc_os_install(const svc_definition *def)
     }
     else if (systemd_major_version < 0)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_WARNING, NULL,
                               "systemd のバージョンを取得できないため ManagedOOMPreference=omit は設定しません。");
     }
     else
     {
-        com_util_tracer_writef(
-            svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL,
+        cplat_tracer_writef(
+            svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL,
             "systemd %d は ManagedOOMPreference= に未対応のため ManagedOOMPreference=omit は設定しません。",
             systemd_major_version);
     }
 
     /* ユニット ファイルのパスを生成する */
-    if (com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != COM_UTIL_OK)
+    if (cplat_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルのパスが長すぎます。");
         return EXIT_FAILURE;
     }
 
     /* ユニット ファイルの内容を生成する */
-    if (com_util_snprintf(unit_content, sizeof(unit_content),
+    if (cplat_snprintf(unit_content, sizeof(unit_content),
                        "[Unit]\n"
                        "Description=%s\n"
                        "After=network.target\n"
@@ -355,9 +355,9 @@ int svc_os_install(const svc_definition *def)
                        "\n"
                        "[Install]\n"
                        "WantedBy=multi-user.target\n",
-                       def->description, exec_path, managed_oom_preference_line) != COM_UTIL_OK)
+                       def->description, exec_path, managed_oom_preference_line) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルの内容が長すぎます。");
         return EXIT_FAILURE;
     }
@@ -366,26 +366,26 @@ int svc_os_install(const svc_definition *def)
     fp = fopen(unit_path, "w");
     if (fp == NULL)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "%s を開けませんでした: %s",
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL, "%s を開けませんでした: %s",
                                unit_path, strerror(errno));
         return EXIT_FAILURE;
     }
     if (fputs(unit_content, fp) == EOF)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "%s への書き込みに失敗しました: %s",
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL, "%s への書き込みに失敗しました: %s",
                                unit_path, strerror(errno));
         fclose(fp);
         return EXIT_FAILURE;
     }
     fclose(fp);
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "ユニット ファイルを書き込みました: %s",
+    cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL, "ユニット ファイルを書き込みました: %s",
                            unit_path);
 
     /* systemctl daemon-reload を実行する */
     rc = run_command(argv_daemon_reload);
     if (rc != 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                                "systemctl daemon-reload が失敗しました (終了コード %d)。", rc);
         return EXIT_FAILURE;
     }
@@ -394,14 +394,14 @@ int svc_os_install(const svc_definition *def)
     rc = run_command(argv_enable);
     if (rc != 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                                "systemctl enable %s が失敗しました (終了コード %d)。", def->name, rc);
         return EXIT_FAILURE;
     }
 
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "サービス '%s' を登録しました。",
+    cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL, "サービス '%s' を登録しました。",
                            def->name);
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "開始するには: sudo systemctl start %s",
+    cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL, "開始するには: sudo systemctl start %s",
                            def->name);
 
     return EXIT_SUCCESS;
@@ -418,9 +418,9 @@ int svc_os_uninstall(const svc_definition *def)
     int rc;
     int handled;
 
-    if (com_util_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != COM_UTIL_OK)
+    if (cplat_snprintf(svc_name_buf, sizeof(svc_name_buf), "%s", def->name) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "サービス名が長すぎます。");
         return EXIT_FAILURE;
     }
@@ -439,9 +439,9 @@ int svc_os_uninstall(const svc_definition *def)
         return rc;
     }
 
-    if (com_util_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != COM_UTIL_OK)
+    if (cplat_snprintf(unit_path, sizeof(unit_path), "%s/%s.service", SYSTEMD_UNIT_DIR, def->name) != CPLAT_OK)
     {
-        com_util_tracer_write(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL,
+        cplat_tracer_write(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL,
                               "ユニット ファイルのパスが長すぎます。");
         return EXIT_FAILURE;
     }
@@ -453,29 +453,29 @@ int svc_os_uninstall(const svc_definition *def)
     rc = run_command(argv_disable);
     if (rc != 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_WARNING, NULL,
                                "systemctl disable %s が失敗しました (終了コード %d)。", def->name, rc);
     }
 
     /* ユニット ファイルを削除する */
     if (remove(unit_path) != 0 && errno != ENOENT)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_ERROR, NULL, "%s の削除に失敗しました: %s",
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_ERROR, NULL, "%s の削除に失敗しました: %s",
                                unit_path, strerror(errno));
         return EXIT_FAILURE;
     }
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "ユニット ファイルを削除しました: %s",
+    cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL, "ユニット ファイルを削除しました: %s",
                            unit_path);
 
     /* systemctl daemon-reload を実行する */
     rc = run_command(argv_daemon_reload);
     if (rc != 0)
     {
-        com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_WARNING, NULL,
+        cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_WARNING, NULL,
                                "systemctl daemon-reload が失敗しました (終了コード %d)。", rc);
     }
 
-    com_util_tracer_writef(svc_get_tracer(), COM_UTIL_TRACE_LEVEL_INFO, NULL, "サービス '%s' を解除しました。",
+    cplat_tracer_writef(svc_get_tracer(), CPLAT_TRACE_LEVEL_INFO, NULL, "サービス '%s' を解除しました。",
                            def->name);
 
     return EXIT_SUCCESS;

@@ -14,7 +14,7 @@
 #ifndef SUBFOLDER_SAMPLE_H
 #define SUBFOLDER_SAMPLE_H
 
-#include <com_util/base/platform.h>
+#include <cplat/base/platform.h>
 
 #ifdef DOXYGEN
 
@@ -50,9 +50,9 @@
     #ifndef SUBFOLDER_SAMPLE_EXPORTS
         #define SUBFOLDER_SAMPLE_EXPORTS 0
     #endif /* SUBFOLDER_SAMPLE_EXPORTS */
-    #include <com_util/base/dll_exports.h>
-    #define SUBFOLDER_SAMPLE_EXPORT COM_UTIL_DLL_EXPORT(SUBFOLDER_SAMPLE)
-    #define SUBFOLDER_SAMPLE_API    COM_UTIL_DLL_API(SUBFOLDER_SAMPLE)
+    #include <cplat/base/dll_exports.h>
+    #define SUBFOLDER_SAMPLE_EXPORT CPLAT_DLL_EXPORT(SUBFOLDER_SAMPLE)
+    #define SUBFOLDER_SAMPLE_API    CPLAT_DLL_API(SUBFOLDER_SAMPLE)
 
 #endif /* DOXYGEN */
 

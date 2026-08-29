@@ -58,9 +58,9 @@
     #ifndef BASE_EXT_EXPORTS
         #define BASE_EXT_EXPORTS 0
     #endif /* BASE_EXT_EXPORTS */
-    #include <com_util/base/dll_exports.h>
-    #define BASE_EXT_EXPORT COM_UTIL_DLL_EXPORT(BASE_EXT)
-    #define BASE_EXT_API    COM_UTIL_DLL_API(BASE_EXT)
+    #include <cplat/base/dll_exports.h>
+    #define BASE_EXT_EXPORT CPLAT_DLL_EXPORT(BASE_EXT)
+    #define BASE_EXT_API    CPLAT_DLL_API(BASE_EXT)
 
 #endif /* DOXYGEN */
 

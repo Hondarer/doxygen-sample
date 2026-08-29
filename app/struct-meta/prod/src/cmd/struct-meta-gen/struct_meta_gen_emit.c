@@ -20,7 +20,7 @@
 
 #include "struct_meta_gen_emit.h"
 
-#include <com_util/crt/stdio.h>
+#include <cplat/crt/stdio.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -402,7 +402,7 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
 static int emit_catalog_header(const char *header_out, const char *stem, const char *prefix,
                                const struct_meta_gen_struct_list *structs)
 {
-    FILE *out = com_util_fopen(header_out, "w", NULL);
+    FILE *out = cplat_fopen(header_out, "w", NULL);
     if (out == NULL)
     {
         fprintf(stderr, "struct-meta-gen: 出力ファイルを作成できません: %s\n", header_out);
@@ -520,7 +520,7 @@ int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char 
         return 1;
     }
 
-    FILE *out = com_util_fopen(out_path, "w", NULL);
+    FILE *out = cplat_fopen(out_path, "w", NULL);
     if (out == NULL)
     {
         fprintf(stderr, "struct-meta-gen: 出力ファイルを作成できません: %s\n", out_path);

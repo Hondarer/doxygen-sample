@@ -5,7 +5,7 @@
 C 言語は Linux と Windows の両方で動作するコードを書けますが、OS やコンパイラによって異なる部分を吸収するための工夫が必要です。プリプロセッサ マクロ (`#ifdef`・`#if defined`) を使った条件コンパイルが主な手段で、OS の判別やコンパイラ固有の属性・宣言の差異を吸収します。
 
 対象ワークスペースは Linux (GCC) と Windows (MSVC) の両方をサポートするクロスプラットフォーム設計になっています。  
-公開 API の印は各 app の `*_EXPORT` マクロに集約し、実体は `com_util/base/dll_exports.h` の `COM_UTIL_DLL_EXPORT` が担います。  
+公開 API の印は各 app の `*_EXPORT` マクロに集約し、実体は `cplat/base/dll_exports.h` の `CPLAT_DLL_EXPORT` が担います。  
 Windows では `dllexport` / `dllimport`、Linux の共有ライブラリでは `__attribute__((visibility("default")))` に展開します。  
 Linux の共有ビルドでは makefw が `-fvisibility=hidden` を付け、公開 API 以外を動的シンボル表から外します。
 
@@ -42,9 +42,9 @@ Linux の共有ビルドでは makefw が `-fvisibility=hidden` を付け、公�
 #ifndef SAMPLE_EXPORTS
     #define SAMPLE_EXPORTS 0
 #endif
-#include <com_util/base/dll_exports.h>
-#define SAMPLE_EXPORT COM_UTIL_DLL_EXPORT(SAMPLE)
-#define SAMPLE_API    COM_UTIL_DLL_API(SAMPLE)
+#include <cplat/base/dll_exports.h>
+#define SAMPLE_EXPORT CPLAT_DLL_EXPORT(SAMPLE)
+#define SAMPLE_API    CPLAT_DLL_API(SAMPLE)
 
 /* 公開ヘッダーの宣言に付ける (定義側には付けない) */
 SAMPLE_EXPORT int SAMPLE_API sample_open(void);

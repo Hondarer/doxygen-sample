@@ -79,9 +79,9 @@ extern "C"
     /**
      *  @brief          記述子を再帰的に検査します。
      *  @param[in]      descriptor 検査対象です。
-     *  @return         @c COM_UTIL_OK、@c COM_UTIL_ERR_INVALID_ARGUMENT、または
-     *                  @c COM_UTIL_ERR_CORRUPT_DESCRIPTOR、または
-     *                  @c COM_UTIL_ERR_OUT_OF_MEMORY を返します。
+     *  @return         @c CPLAT_OK、@c CPLAT_ERR_INVALID_ARGUMENT、または
+     *                  @c CPLAT_ERR_CORRUPT_DESCRIPTOR、または
+     *                  @c CPLAT_ERR_OUT_OF_MEMORY を返します。
      *
      *  @par            スレッド セーフ
      *  本関数はスレッド セーフです。内部に共有状態を持ちません。

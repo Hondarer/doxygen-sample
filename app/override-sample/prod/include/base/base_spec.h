@@ -21,8 +21,8 @@
 #ifndef BASE_SPEC_H
 #define BASE_SPEC_H
 
-#include <com_util/base/platform.h>
-#include <com_util/runtime/sym_loader.h>
+#include <cplat/base/platform.h>
+#include <cplat/runtime/sym_loader.h>
 #include <stddef.h>
 
 #include <base/base_const.h>
@@ -72,7 +72,7 @@ extern "C"
     BASE_EXPORT extern void BASE_API base_console_output(const char *format, ...);
 
     /**
-     *  @brief          libbase が管理する com_util_sym_loader_entry ポインター配列の内容を標準出力に表示します。
+     *  @brief          libbase が管理する cplat_sym_loader_entry ポインター配列の内容を標準出力に表示します。
      *  @return         すべてのエントリが正常に解決されている場合は @ref BASE_OK を返します。
      *  @return         1 つでも失敗している場合は @ref BASE_ERR_UNKNOWN を返します。
      *

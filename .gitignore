@@ -21,7 +21,7 @@
 !/framework/doxyfw
 !/framework/docsfw
 !/framework/testfw
-!/app/com_util
+!/app/c-platform
 !/app/porter
 !/app/cjson
 !/app/sqlite

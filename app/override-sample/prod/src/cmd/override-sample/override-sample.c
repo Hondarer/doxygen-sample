@@ -14,10 +14,10 @@
  */
 
 #include <base.h>
-#include <com_util/argparser/argparser.h>
-#include <com_util/base/error.h>
-#include <com_util/console/console.h>
-#include <com_util/crt/path.h>
+#include <cplat/argparser/argparser.h>
+#include <cplat/base/error.h>
+#include <cplat/console/console.h>
+#include <cplat/crt/path.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -29,31 +29,31 @@
  */
 int main(int argc, char *argv[])
 {
-    com_util_console_init();
+    cplat_console_init();
 
     int need_help = 0;
 
-    com_util_argparser_init(argc, argv, "関数の動的オーバーライドのサンプルコマンド。");
-    com_util_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
+    cplat_argparser_init(argc, argv, "関数の動的オーバーライドのサンプルコマンド。");
+    cplat_argparser_register_flag("-h", "--help", "ヘルプを表示します。", &need_help);
 
-    if (com_util_argparser_get_register_error_count() > 0)
+    if (cplat_argparser_get_register_error_count() > 0)
     {
-        com_util_argparser_print_register_error_messages(stderr);
+        cplat_argparser_print_register_error_messages(stderr);
         return EXIT_FAILURE;
     }
 
-    int parse_result = com_util_argparser_parse();
+    int parse_result = cplat_argparser_parse();
 
     if (need_help != 0)
     {
-        com_util_argparser_print_usage(stdout);
+        cplat_argparser_print_usage(stdout);
         return EXIT_SUCCESS;
     }
 
-    if (parse_result != COM_UTIL_OK)
+    if (parse_result != CPLAT_OK)
     {
-        com_util_argparser_print_error_messages(stderr);
-        com_util_argparser_print_usage(stderr);
+        cplat_argparser_print_error_messages(stderr);
+        cplat_argparser_print_usage(stderr);
         return EXIT_FAILURE;
     }
 
@@ -62,18 +62,18 @@ int main(int argc, char *argv[])
     char configpath[PLATFORM_PATH_MAX];
 
     {
-        com_util_error error;
+        cplat_error error;
         char tmpdir[PLATFORM_PATH_MAX];
-        if (com_util_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == COM_UTIL_OK)
+        if (cplat_get_temp_dir(tmpdir, sizeof(tmpdir), &error) == CPLAT_OK)
         {
-            if (com_util_path_concat(configpath, sizeof(configpath), &error, tmpdir, PLATFORM_PATH_SEP,
-                                     "libbase_extdef.json") != COM_UTIL_OK)
+            if (cplat_path_concat(configpath, sizeof(configpath), &error, tmpdir, PLATFORM_PATH_SEP,
+                                     "libbase_extdef.json") != CPLAT_OK)
             {
                 fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
                 return EXIT_FAILURE;
             }
         }
-        else if (com_util_error_is(&error, COM_UTIL_CAUSE_NAME_TOO_LONG) != 0)
+        else if (cplat_error_is(&error, CPLAT_CAUSE_NAME_TOO_LONG) != 0)
         {
             fprintf(stderr, "failed to build config path: exceeds PLATFORM_PATH_MAX\n");
             return EXIT_FAILURE;

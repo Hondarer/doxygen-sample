@@ -15,7 +15,7 @@
 
 #include <struct_meta/access/access.h>
 
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 
 #include <string.h>
 
@@ -34,7 +34,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
     case STRUCT_META_FIELD_INT:
         if (element_size != sizeof(int))
         {
-            return COM_UTIL_ERR_UNSUPPORTED;
+            return CPLAT_ERR_UNSUPPORTED;
         }
         {
             int value;
@@ -46,7 +46,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
     case STRUCT_META_FIELD_UNSIGNED:
         if (element_size != sizeof(unsigned int))
         {
-            return COM_UTIL_ERR_UNSUPPORTED;
+            return CPLAT_ERR_UNSUPPORTED;
         }
         {
             unsigned int value;
@@ -58,7 +58,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
     case STRUCT_META_FIELD_FLOAT:
         if (element_size != sizeof(float))
         {
-            return COM_UTIL_ERR_UNSUPPORTED;
+            return CPLAT_ERR_UNSUPPORTED;
         }
         {
             float value;
@@ -70,7 +70,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
     case STRUCT_META_FIELD_DOUBLE:
         if (element_size != sizeof(double))
         {
-            return COM_UTIL_ERR_UNSUPPORTED;
+            return CPLAT_ERR_UNSUPPORTED;
         }
         {
             double value;
@@ -87,15 +87,15 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
     case STRUCT_META_FIELD_STRUCT:
     default:
         /* STRUCT_META_FIELD_STRUCT は element_to_json() が先に振り分けるため、ここには到達しない。 */
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     if (item == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
     *item_out = item;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
@@ -120,7 +120,7 @@ static int field_to_json(const struct_meta_field *field, const unsigned char *ba
     {
         const void *element;
         int ret = struct_meta_field_get_const_element(field, base, 0U, &element);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -130,7 +130,7 @@ static int field_to_json(const struct_meta_field *field, const unsigned char *ba
     cJSON *array = cJSON_CreateArray();
     if (array == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
     for (size_t i = 0; i < field->element_count; i++)
@@ -138,11 +138,11 @@ static int field_to_json(const struct_meta_field *field, const unsigned char *ba
         cJSON *elem = NULL;
         const void *element;
         int ret = struct_meta_field_get_const_element(field, base, i, &element);
-        if (ret == COM_UTIL_OK)
+        if (ret == CPLAT_OK)
         {
             ret = element_to_json(field, (const unsigned char *)element, &elem);
         }
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             cJSON_Delete(array);
             return ret;
@@ -151,12 +151,12 @@ static int field_to_json(const struct_meta_field *field, const unsigned char *ba
         {
             cJSON_Delete(elem);
             cJSON_Delete(array);
-            return COM_UTIL_ERR_OUT_OF_MEMORY;
+            return CPLAT_ERR_OUT_OF_MEMORY;
         }
     }
 
     *item_out = array;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
@@ -166,7 +166,7 @@ static const char *json_key(const struct_meta_field *field)
 {
     const struct_meta_attribute *attribute = NULL;
     int ret = struct_meta_field_find_attribute(field, "json.name", &attribute);
-    if ((ret == COM_UTIL_OK) && (attribute->value != NULL) && (attribute->value[0] != '\0'))
+    if ((ret == CPLAT_OK) && (attribute->value != NULL) && (attribute->value[0] != '\0'))
     {
         return attribute->value;
     }
@@ -178,7 +178,7 @@ static int struct_to_json(const struct_meta_descriptor *desc, const unsigned cha
     cJSON *obj = cJSON_CreateObject();
     if (obj == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
     for (size_t i = 0; i < desc->field_count; i++)
@@ -188,13 +188,13 @@ static int struct_to_json(const struct_meta_descriptor *desc, const unsigned cha
         int ret;
 
         const struct_meta_attribute *attribute = NULL;
-        if (struct_meta_field_find_attribute(field, "json.ignore", &attribute) == COM_UTIL_OK)
+        if (struct_meta_field_find_attribute(field, "json.ignore", &attribute) == CPLAT_OK)
         {
             continue;
         }
 
         ret = field_to_json(field, base, &item);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             cJSON_Delete(obj);
             return ret;
@@ -203,12 +203,12 @@ static int struct_to_json(const struct_meta_descriptor *desc, const unsigned cha
         {
             cJSON_Delete(item);
             cJSON_Delete(obj);
-            return COM_UTIL_ERR_OUT_OF_MEMORY;
+            return CPLAT_ERR_OUT_OF_MEMORY;
         }
     }
 
     *json_out = obj;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /* Doxygen コメントは、ヘッダーに記載 */
@@ -217,12 +217,12 @@ int struct_meta_json_encode(const struct_meta_descriptor *desc, const void *inst
 {
     if ((desc == NULL) || (instance == NULL) || (json_out == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     *json_out = NULL;
     int ret = struct_meta_descriptor_validate(desc);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }

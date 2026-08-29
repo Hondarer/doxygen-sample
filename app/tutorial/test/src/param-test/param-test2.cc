@@ -1,4 +1,4 @@
-#include <com_util/base/platform.h>
+#include <cplat/base/platform.h>
 #include <testfw.h>
 
 class ParamTest2

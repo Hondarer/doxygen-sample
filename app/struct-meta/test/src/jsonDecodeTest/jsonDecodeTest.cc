@@ -1,6 +1,6 @@
 #include <testfw.h>
 #include <struct_meta/json/json.h>
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 #include <cstddef>
 
 namespace
@@ -24,7 +24,7 @@ TEST(JsonDecodeTest, UsesGenericJsonAttributes)
     Sample sample = {0, 9}; // [準備_正常系] - 任意フィールドに既存値を持たせる。
     ASSERT_NE(nullptr, json);
     int actual = struct_meta_json_decode(&kDescriptor, json, &sample); // [手順_正常系]
-    EXPECT_EQ(COM_UTIL_OK, actual); // [確認_正常系] - 必須の別名キーを読み込めること。
+    EXPECT_EQ(CPLAT_OK, actual); // [確認_正常系] - 必須の別名キーを読み込めること。
     EXPECT_EQ(42, sample.id);
     EXPECT_EQ(9, sample.optional);
     cJSON_Delete(json);
@@ -36,6 +36,6 @@ TEST(JsonDecodeTest, ReportsMissingRequiredAttribute)
     Sample sample = {}; // [準備_異常系] - 必須キーのない JSON を用意する。
     ASSERT_NE(nullptr, json);
     int actual = struct_meta_json_decode(&kDescriptor, json, &sample); // [手順_異常系]
-    EXPECT_EQ(COM_UTIL_ERR_MISSING_REQUIRED, actual); // [確認_異常系] - 必須キー欠落を報告すること。
+    EXPECT_EQ(CPLAT_ERR_MISSING_REQUIRED, actual); // [確認_異常系] - 必須キー欠落を報告すること。
     cJSON_Delete(json);
 }

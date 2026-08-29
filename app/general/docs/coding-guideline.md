@@ -169,24 +169,24 @@ Google Mock の Mock クラスを格納する変数名は、その Mock クラ�
 
 | 型 | 変数名 |
 |---|---|
-| `Mock_com_util` | `mock_com_util` |
-| `NiceMock<Mock_com_util>` | `mock_com_util` |
+| `Mock_cplat` | `mock_cplat` |
+| `NiceMock<Mock_cplat>` | `mock_cplat` |
 | `Mock_stdio` | `mock_stdio` |
 | `NiceMock<Mock_stdio>` | `mock_stdio` |
 
 ```cpp
 /* NG: どの Mock クラスかが名前から分からない */
-NiceMock<Mock_com_util> mock_;
+NiceMock<Mock_cplat> mock_;
 NiceMock<Mock_stdio> mock;
 
 /* OK: 型名を小文字にした識別子 */
-NiceMock<Mock_com_util> mock_com_util;
+NiceMock<Mock_cplat> mock_cplat;
 NiceMock<Mock_stdio> mock_stdio;
 ```
 
 > [!IMPORTANT]
 > Fixture のメンバーでも同じ規則です。  
-> `mock_` や `mock` のような省略名、および型名にない末尾 `_` (`mock_com_util_` など) は使いません。
+> `mock_` や `mock` のような省略名、および型名にない末尾 `_` (`mock_cplat_` など) は使いません。
 
 > [!WARNING]
 > `mock_` のまま複数の Mock クラスを扱うと、`file_open` の既定差し替えと `malloc` の失敗注入を別インスタンスへ書いてしまい、本物の I/O が単体テストから呼ばれることがあります。
@@ -1370,7 +1370,7 @@ bool is_enabled = flags;
 本章は、整数型を選んだあとの **演算・比較・変換** の安全性を定めます。  
 型そのものの選び方は [整数型の選択](#整数型の選択) に従います。
 
-外部文字列の解析と、動的メモリ確保における要素数とサイズの乗算は、すでに別章と com_util の API が検査を担っています。  
+外部文字列の解析と、動的メモリ確保における要素数とサイズの乗算は、すでに別章と cplat の API が検査を担っています。  
 本章が対象とするのは、それらに当てはまらない **通常の内部演算と型変換** です。
 
 | 論点 | 内容 | 主な担保手段 |
@@ -1506,7 +1506,7 @@ product = a * b;
 
 処理系組み込みのオーバーフロー検出 (`__builtin_add_overflow` など) は使用しません。  
 MSVC に同等の組み込みがなく、プラットフォームごとの条件分岐が増えるためです。  
-加減乗算の検査を共通 API へ切り出す必要が生じた時点で、com_util への追加を検討します。
+加減乗算の検査を共通 API へ切り出す必要が生じた時点で、cplat への追加を検討します。
 
 > [!WARNING]
 > 演算後の結果を見る事後検査は成立しません。  
@@ -1515,7 +1515,7 @@ MSVC に同等の組み込みがなく、プラットフォームごとの条件
 
 > [!NOTE]
 > 要素数と要素サイズの乗算は、本章の乗算検査ではなく [配列の確保](#配列の確保) に従います。  
-> `calloc(count, size)` または `com_util_calloc` を使い、自前で `count * size` を計算しません。
+> `calloc(count, size)` または `cplat_calloc` を使い、自前で `count * size` を計算しません。
 
 ### 符号なし整数の回り込み
 
@@ -1556,8 +1556,8 @@ product = (uint32_t)a * (uint32_t)b;
 
 | 対象 | 従う規定 |
 |---|---|
-| 外部文字列から整数への変換 | [文字列入力から意味付き型への変換](#文字列入力から意味付き型への変換)。com_util 利用時は `com_util_parse_*` |
-| 要素数を伴うメモリ確保の乗算 | [配列の確保](#配列の確保)。com_util 利用時は `com_util_calloc` / `com_util_realloc` 系 |
+| 外部文字列から整数への変換 | [文字列入力から意味付き型への変換](#文字列入力から意味付き型への変換)。cplat 利用時は `cplat_parse_*` |
+| 要素数を伴うメモリ確保の乗算 | [配列の確保](#配列の確保)。cplat 利用時は `cplat_calloc` / `cplat_realloc` 系 |
 
 app 固有の API が関数内部で検査する範囲は、各 app の `AGENTS.md` とコーディング規範で定義してください。
 
@@ -2903,8 +2903,8 @@ int sample_context_open(const char *path, sample_context **context_out);
 
 本リポジトリの既存例:
 
-- `char *const *argv` — `com_util_argparser_init` など
-- `com_util_sym_loader_entry *const *` — `com_util_sym_loader_init` など
+- `char *const *argv` — `cplat_argparser_init` など
+- `cplat_sym_loader_entry *const *` — `cplat_sym_loader_init` など
 - `const char **storage` — 文字列オプションの出力スロット (`argparser` の register 系)
 
 #### 禁止する書き方
@@ -3231,7 +3231,7 @@ int example_handler(const int kind, const int a, const int b, int *result_out)
 > `TEST_SRCS` をやめたあとに残ったシンボリック リンクは手動削除が必要です (makefw の TEST_SRCS 留意事項を参照)。
 
 > [!NOTE]
-> 実装の中心は `com_util/base/dll_exports.h` の `COM_UTIL_DLL_EXPORT` と、`framework/makefw` の `makelibsrc_c_cpp.mk` です。  
+> 実装の中心は `cplat/base/dll_exports.h` の `CPLAT_DLL_EXPORT` と、`framework/makefw` の `makelibsrc_c_cpp.mk` です。  
 > 各 app の `{lib}_export.h` はそれを薄く包みます。
 
 ### 検証

@@ -57,9 +57,9 @@
     #ifndef CALC_EXPORTS
         #define CALC_EXPORTS 0
     #endif /* CALC_EXPORTS */
-    #include <com_util/base/dll_exports.h>
-    #define CALC_EXPORT COM_UTIL_DLL_EXPORT(CALC)
-    #define CALC_API    COM_UTIL_DLL_API(CALC)
+    #include <cplat/base/dll_exports.h>
+    #define CALC_EXPORT CPLAT_DLL_EXPORT(CALC)
+    #define CALC_API    CPLAT_DLL_API(CALC)
 
 #endif /* DOXYGEN */
 

@@ -6,8 +6,8 @@
  *  @date           2026/08/16
  *  @version        1.0.0
  *
- *  `com_util_prompt` (`com_util/prompt/prompt.h`) を使用します。TTY でない場合
- *  (パイプ・リダイレクト等) は `com_util_prompt` 自身が `fgets` にフォールバック
+ *  `cplat_prompt` (`cplat/prompt/prompt.h`) を使用します。TTY でない場合
+ *  (パイプ・リダイレクト等) は `cplat_prompt` 自身が `fgets` にフォールバック
  *  するため、本ファイルは対話端末かどうかを意識しません。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
@@ -19,8 +19,8 @@
 
 #include <struct_meta/access/access.h>
 
-#include <com_util/base/result.h>
-#include <com_util/prompt/prompt.h>
+#include <cplat/base/result.h>
+#include <cplat/prompt/prompt.h>
 
 #include <errno.h>
 #include <limits.h>
@@ -32,7 +32,7 @@
 /** 1 回の入力行を受けるバッファーのバイト数です。 */
 #define STRUCT_META_PATCH_LINE_BYTES 256
 
-static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base,
+static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base,
                         const char *path);
 
 /**
@@ -48,21 +48,21 @@ static int append_path(const char *path, const char *separator, const char *suff
         ((path_length + separator_length) > (SIZE_MAX - suffix_length)) ||
         ((path_length + separator_length + suffix_length) == SIZE_MAX))
     {
-        return COM_UTIL_ERR_OUT_OF_RANGE;
+        return CPLAT_ERR_OUT_OF_RANGE;
     }
 
     size_t dest_size = path_length + separator_length + suffix_length + 1U;
     char *dest = (char *)malloc(dest_size);
     if (dest == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
     memcpy(dest, path, path_length);
     memcpy(dest + path_length, separator, separator_length);
     memcpy(dest + path_length + separator_length, suffix, suffix_length + 1U);
     *path_out = dest;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
@@ -83,7 +83,7 @@ static int append_index_path(const char *path, size_t index, char **path_out)
     int length = snprintf(suffix, sizeof(suffix), "[%zu]", index);
     if ((length < 0) || ((size_t)length >= sizeof(suffix)))
     {
-        return COM_UTIL_ERR_OUT_OF_RANGE;
+        return CPLAT_ERR_OUT_OF_RANGE;
     }
     return append_path(path, "", suffix, path_out);
 }
@@ -135,69 +135,69 @@ static void format_scalar_value(struct_meta_field_kind kind, const unsigned char
 }
 
 /**
- *  @brief          入力行を int へ変換します。空行は「変更なし」を表す @c COM_UTIL_ERR_EOF を返します。
+ *  @brief          入力行を int へ変換します。空行は「変更なし」を表す @c CPLAT_ERR_EOF を返します。
  */
 static int parse_int(const char *text, int *value_out)
 {
     if (text[0] == '\0')
     {
-        return COM_UTIL_ERR_EOF;
+        return CPLAT_ERR_EOF;
     }
     char *end = NULL;
     errno = 0;
     long value = strtol(text, &end, 10);
     if ((end == text) || (*end != '\0') || (errno != 0) || (value < INT_MIN) || (value > INT_MAX))
     {
-        return COM_UTIL_ERR_INVALID_INTEGER;
+        return CPLAT_ERR_INVALID_INTEGER;
     }
     *value_out = (int)value;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 static int parse_unsigned(const char *text, unsigned int *value_out)
 {
     if (text[0] == '\0')
     {
-        return COM_UTIL_ERR_EOF;
+        return CPLAT_ERR_EOF;
     }
     if (text[0] == '-')
     {
-        return COM_UTIL_ERR_INVALID_INTEGER;
+        return CPLAT_ERR_INVALID_INTEGER;
     }
     char *end = NULL;
     errno = 0;
     unsigned long value = strtoul(text, &end, 10);
     if ((end == text) || (*end != '\0') || (errno != 0) || (value > UINT_MAX))
     {
-        return COM_UTIL_ERR_INVALID_INTEGER;
+        return CPLAT_ERR_INVALID_INTEGER;
     }
     *value_out = (unsigned int)value;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 static int parse_double(const char *text, double *value_out)
 {
     if (text[0] == '\0')
     {
-        return COM_UTIL_ERR_EOF;
+        return CPLAT_ERR_EOF;
     }
     char *end = NULL;
     errno = 0;
     double value = strtod(text, &end);
     if ((end == text) || (*end != '\0') || (errno != 0))
     {
-        return COM_UTIL_ERR_INVALID_INTEGER;
+        return CPLAT_ERR_INVALID_INTEGER;
     }
     *value_out = value;
-    return COM_UTIL_OK;
+    return CPLAT_OK;
 }
 
 /**
  *  @brief          スカラー フィールド 1 個分の値を対話入力で書き換えます。
- *  @return         @c COM_UTIL_OK (書き換えた)、@c COM_UTIL_ERR_EOF (空行、変更なしで戻る)、
+ *  @return         @c CPLAT_OK (書き換えた)、@c CPLAT_ERR_EOF (空行、変更なしで戻る)、
  *                  それ以外は @p prompt からのエラー。
  */
-static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field, unsigned char *field_ptr,
+static int patch_scalar(cplat_prompt *prompt, const struct_meta_field *field, unsigned char *field_ptr,
                         const char *path)
 {
     char line[STRUCT_META_PATCH_LINE_BYTES];
@@ -208,15 +208,15 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
     for (;;)
     {
         int ret =
-            com_util_prompt_readline_fmt(prompt, line, sizeof(line), "%s (現在値 %s、空行で変更なし)> ", path, current);
-        if (ret != COM_UTIL_OK)
+            cplat_prompt_readline_fmt(prompt, line, sizeof(line), "%s (現在値 %s、空行で変更なし)> ", path, current);
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
 
         if (line[0] == '\0')
         {
-            return COM_UTIL_ERR_EOF;
+            return CPLAT_ERR_EOF;
         }
 
         switch (field->kind)
@@ -225,10 +225,10 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
         {
             int value;
             int parse_ret = parse_int(line, &value);
-            if (parse_ret == COM_UTIL_OK)
+            if (parse_ret == CPLAT_OK)
             {
                 memcpy(field_ptr, &value, sizeof(value));
-                return COM_UTIL_OK;
+                return CPLAT_OK;
             }
             printf("整数として解釈できません: %s\n", line);
             break;
@@ -237,10 +237,10 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
         {
             unsigned int value;
             int parse_ret = parse_unsigned(line, &value);
-            if (parse_ret == COM_UTIL_OK)
+            if (parse_ret == CPLAT_OK)
             {
                 memcpy(field_ptr, &value, sizeof(value));
-                return COM_UTIL_OK;
+                return CPLAT_OK;
             }
             printf("符号なし整数として解釈できません: %s\n", line);
             break;
@@ -249,11 +249,11 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
         {
             double parsed;
             int parse_ret = parse_double(line, &parsed);
-            if (parse_ret == COM_UTIL_OK)
+            if (parse_ret == CPLAT_OK)
             {
                 float value = (float)parsed;
                 memcpy(field_ptr, &value, sizeof(value));
-                return COM_UTIL_OK;
+                return CPLAT_OK;
             }
             printf("数値として解釈できません: %s\n", line);
             break;
@@ -262,10 +262,10 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
         {
             double value;
             int parse_ret = parse_double(line, &value);
-            if (parse_ret == COM_UTIL_OK)
+            if (parse_ret == CPLAT_OK)
             {
                 memcpy(field_ptr, &value, sizeof(value));
-                return COM_UTIL_OK;
+                return CPLAT_OK;
             }
             printf("数値として解釈できません: %s\n", line);
             break;
@@ -279,12 +279,12 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
                 break;
             }
             memcpy(field_ptr, line, text_len + 1U);
-            return COM_UTIL_OK;
+            return CPLAT_OK;
         }
         case STRUCT_META_FIELD_STRUCT:
         default:
             /* ここには到達しない (呼び出し元がスカラーだけを渡す)。 */
-            return COM_UTIL_ERR_INVALID_ARGUMENT;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
     }
 }
@@ -292,7 +292,7 @@ static int patch_scalar(com_util_prompt *prompt, const struct_meta_field *field,
 /**
  *  @brief          フィールド 1 要素分 (配列要素、またはネスト構造体) を編集します。
  */
-static int patch_element(com_util_prompt *prompt, const struct_meta_field *field, unsigned char *elem_ptr,
+static int patch_element(cplat_prompt *prompt, const struct_meta_field *field, unsigned char *elem_ptr,
                          const char *path)
 {
     if (field->kind == STRUCT_META_FIELD_STRUCT)
@@ -300,10 +300,10 @@ static int patch_element(com_util_prompt *prompt, const struct_meta_field *field
         return patch_struct(prompt, field->nested, elem_ptr, path);
     }
     int ret = patch_scalar(prompt, field, elem_ptr, path);
-    if (ret == COM_UTIL_ERR_EOF)
+    if (ret == CPLAT_ERR_EOF)
     {
         /* 空行 (変更なし) は呼び出し元にとってはエラーではない。 */
-        return COM_UTIL_OK;
+        return CPLAT_OK;
     }
     return ret;
 }
@@ -311,7 +311,7 @@ static int patch_element(com_util_prompt *prompt, const struct_meta_field *field
 /**
  *  @brief          配列フィールドの要素インデックスをメニュー形式で選択させ、選択した要素を編集します。
  */
-static int patch_array_field(com_util_prompt *prompt, const struct_meta_field *field, unsigned char *field_ptr,
+static int patch_array_field(cplat_prompt *prompt, const struct_meta_field *field, unsigned char *field_ptr,
                              const char *path)
 {
     char line[STRUCT_META_PATCH_LINE_BYTES];
@@ -323,7 +323,7 @@ static int patch_array_field(com_util_prompt *prompt, const struct_meta_field *f
         {
             char *element_path;
             int path_ret = append_index_path(path, i, &element_path);
-            if (path_ret != COM_UTIL_OK)
+            if (path_ret != CPLAT_OK)
             {
                 return path_ret;
             }
@@ -331,18 +331,18 @@ static int patch_array_field(com_util_prompt *prompt, const struct_meta_field *f
             free(element_path);
         }
 
-        int ret = com_util_prompt_readline_fmt(prompt, line, sizeof(line), "要素番号を選択 (空行で戻る)> ");
-        if (ret != COM_UTIL_OK)
+        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "要素番号を選択 (空行で戻る)> ");
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
         if (line[0] == '\0')
         {
-            return COM_UTIL_OK;
+            return CPLAT_OK;
         }
 
         int index;
-        if ((parse_int(line, &index) != COM_UTIL_OK) || (index < 0) || ((size_t)index >= field->element_count))
+        if ((parse_int(line, &index) != CPLAT_OK) || (index < 0) || ((size_t)index >= field->element_count))
         {
             printf("0 から %zu の範囲で入力してください。\n", field->element_count - 1U);
             continue;
@@ -351,12 +351,12 @@ static int patch_array_field(com_util_prompt *prompt, const struct_meta_field *f
         unsigned char *element = field_ptr + ((size_t)index * field->element_size);
         char *element_path;
         ret = append_index_path(path, (size_t)index, &element_path);
-        if (ret == COM_UTIL_OK)
+        if (ret == CPLAT_OK)
         {
             ret = patch_element(prompt, field, element, element_path);
             free(element_path);
         }
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -366,7 +366,7 @@ static int patch_array_field(com_util_prompt *prompt, const struct_meta_field *f
 /**
  *  @brief          構造体インスタンス 1 個分のフィールド一覧をメニュー形式で辿ります。
  */
-static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base,
+static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base,
                         const char *path)
 {
     char line[STRUCT_META_PATCH_LINE_BYTES];
@@ -386,13 +386,13 @@ static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *d
             const struct_meta_field *field = &desc->fields[i];
             char *field_path;
             int path_ret = append_field_path(path, field->name, &field_path);
-            if (path_ret != COM_UTIL_OK)
+            if (path_ret != CPLAT_OK)
             {
                 return path_ret;
             }
             void *element;
             int access_ret = struct_meta_field_get_element(field, base, 0U, &element);
-            if (access_ret != COM_UTIL_OK)
+            if (access_ret != CPLAT_OK)
             {
                 free(field_path);
                 return access_ret;
@@ -431,18 +431,18 @@ static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *d
             free(field_path);
         }
 
-        int ret = com_util_prompt_readline_fmt(prompt, line, sizeof(line), "フィールド番号を選択 (空行で戻る)> ");
-        if (ret != COM_UTIL_OK)
+        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "フィールド番号を選択 (空行で戻る)> ");
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
         if (line[0] == '\0')
         {
-            return COM_UTIL_OK;
+            return CPLAT_OK;
         }
 
         int index;
-        if ((parse_int(line, &index) != COM_UTIL_OK) || (index < 1) || ((size_t)index > desc->field_count))
+        if ((parse_int(line, &index) != CPLAT_OK) || (index < 1) || ((size_t)index > desc->field_count))
         {
             printf("1 から %zu の範囲で入力してください。\n", desc->field_count);
             continue;
@@ -451,7 +451,7 @@ static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *d
         const struct_meta_field *field = &desc->fields[(size_t)index - 1U];
         char *field_path;
         ret = append_field_path(path, field->name, &field_path);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -459,7 +459,7 @@ static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *d
         {
             void *element;
             ret = struct_meta_field_get_element(field, base, 0U, &element);
-            if (ret == COM_UTIL_OK)
+            if (ret == CPLAT_OK)
             {
                 ret = patch_array_field(prompt, field, (unsigned char *)element, field_path);
             }
@@ -468,13 +468,13 @@ static int patch_struct(com_util_prompt *prompt, const struct_meta_descriptor *d
         {
             void *element;
             ret = struct_meta_field_get_element(field, base, 0U, &element);
-            if (ret == COM_UTIL_OK)
+            if (ret == CPLAT_OK)
             {
                 ret = patch_element(prompt, field, (unsigned char *)element, field_path);
             }
         }
         free(field_path);
-        if (ret != COM_UTIL_OK)
+        if (ret != CPLAT_OK)
         {
             return ret;
         }
@@ -503,10 +503,10 @@ static int path_has_terminal_index(const char *path)
  */
 static int patch_target(const struct_meta_field *field, unsigned char *value, const char *path, int edit_array)
 {
-    com_util_prompt *prompt = com_util_prompt_create(NULL);
+    cplat_prompt *prompt = cplat_prompt_create(NULL);
     if (prompt == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
     int ret;
@@ -518,11 +518,11 @@ static int patch_target(const struct_meta_field *field, unsigned char *value, co
     {
         ret = patch_element(prompt, field, value, path);
     }
-    com_util_prompt_dispose(prompt);
+    cplat_prompt_dispose(prompt);
 
-    if (ret == COM_UTIL_ERR_EOF)
+    if (ret == CPLAT_ERR_EOF)
     {
-        return COM_UTIL_OK;
+        return CPLAT_OK;
     }
     return ret;
 }
@@ -533,27 +533,27 @@ int struct_meta_patch_interactive(const struct_meta_descriptor *desc, void *inst
 {
     if ((desc == NULL) || (instance == NULL))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     int ret = struct_meta_descriptor_validate(desc);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }
 
-    com_util_prompt *prompt = com_util_prompt_create(NULL);
+    cplat_prompt *prompt = cplat_prompt_create(NULL);
     if (prompt == NULL)
     {
-        return COM_UTIL_ERR_OUT_OF_MEMORY;
+        return CPLAT_ERR_OUT_OF_MEMORY;
     }
 
     ret = patch_struct(prompt, desc, (unsigned char *)instance, "");
-    com_util_prompt_dispose(prompt);
+    cplat_prompt_dispose(prompt);
 
-    if (ret == COM_UTIL_ERR_EOF)
+    if (ret == CPLAT_ERR_EOF)
     {
-        return COM_UTIL_OK;
+        return CPLAT_OK;
     }
     return ret;
 }
@@ -564,13 +564,13 @@ int struct_meta_patch_path_interactive(const struct_meta_descriptor *desc, void 
 {
     if ((desc == NULL) || (instance == NULL) || (path == NULL) || (path[0] == '\0'))
     {
-        return COM_UTIL_ERR_INVALID_ARGUMENT;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 
     const struct_meta_field *field;
     void *value;
     int ret = struct_meta_path_resolve(desc, instance, path, &field, &value);
-    if (ret != COM_UTIL_OK)
+    if (ret != CPLAT_OK)
     {
         return ret;
     }

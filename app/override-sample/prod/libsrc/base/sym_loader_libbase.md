@@ -2,31 +2,31 @@
 
 ## 役割
 
-`sym_loader_libbase.h` / `sym_loader_libbase.c` は、`base` ライブラリが管理するオーバーライド対応関数の **com_util_sym_loader_entry 実体と、それに紐付く型・変数の宣言** を提供します。
+`sym_loader_libbase.h` / `sym_loader_libbase.c` は、`base` ライブラリが管理するオーバーライド対応関数の **cplat_sym_loader_entry 実体と、それに紐付く型・変数の宣言** を提供します。
 
-`sym_loader` の汎用機能 (`com_util_sym_loader_init`, `com_util_sym_loader_resolve`, `com_util_sym_loader_dispose` など) は `base/base_spec.h` で定義されています。`sym_loader_libbase.h` / `sym_loader_libbase.c` はそれを `base` 固有の関数群に接続する「接着剤」の役割を担います。
+`sym_loader` の汎用機能 (`cplat_sym_loader_init`, `cplat_sym_loader_resolve`, `cplat_sym_loader_dispose` など) は `base/base_spec.h` で定義されています。`sym_loader_libbase.h` / `sym_loader_libbase.c` はそれを `base` 固有の関数群に接続する「接着剤」の役割を担います。
 
 ## ファイルの責務
 
 | ファイル | 責務 |
 |---|---|
-| `sym_loader_libbase.h` | 関数ポインター型の `typedef`、`com_util_sym_loader_entry` ポインタ・配列・設定ファイル パスの `extern` 宣言 |
-| `sym_loader_libbase.c` | `com_util_sym_loader_entry` 実体の定義、配列・要素数・設定ファイル パスの実体定義、`base_sym_loader_info()` の実装 |
+| `sym_loader_libbase.h` | 関数ポインター型の `typedef`、`cplat_sym_loader_entry` ポインタ・配列・設定ファイル パスの `extern` 宣言 |
+| `sym_loader_libbase.c` | `cplat_sym_loader_entry` 実体の定義、配列・要素数・設定ファイル パスの実体定義、`base_sym_loader_info()` の実装 |
 
-`com_util_sym_loader_entry` の実体は `sym_loader_libbase.c` 内で `static` 変数として定義します。外部からのアクセスは `com_util_sym_loader_entry *const` ポインター経由に限定することで、直接書き換えを防いでいます。
+`cplat_sym_loader_entry` の実体は `sym_loader_libbase.c` 内で `static` 変数として定義します。外部からのアクセスは `cplat_sym_loader_entry *const` ポインター経由に限定することで、直接書き換えを防いでいます。
 
 ## 利用側との関係
 
 ```text
 sample_func.c  (呼び出し元)
-    |  com_util_sym_loader_resolve_as(pfo_sample_func, sample_func_fn)
+    |  cplat_sym_loader_resolve_as(pfo_sample_func, sample_func_fn)
     +---> sym_loader_libbase.h の extern 宣言 (pfo_sample_func)
               |
               sym_loader_libbase.c の実体 (sfo_sample_func)
 
 dllmain_libbase.c  (初期化・解放)
-    |  com_util_sym_loader_init(fobj_array_libbase, fobj_length_libbase, sym_loader_configpath)
-    |  com_util_sym_loader_dispose(fobj_array_libbase, fobj_length_libbase)
+    |  cplat_sym_loader_init(fobj_array_libbase, fobj_length_libbase, sym_loader_configpath)
+    |  cplat_sym_loader_dispose(fobj_array_libbase, fobj_length_libbase)
     +---> sym_loader_libbase.h の extern 宣言 (fobj_array_libbase, fobj_length_libbase, sym_loader_configpath)
               |
               sym_loader_libbase.c の実体
@@ -43,20 +43,20 @@ dllmain_libbase.c  (初期化・解放)
 以下の 2 点を追記します。
 
 - `new_func` に対応する関数ポインター型の `typedef`
-- その com_util_sym_loader_entry へのポインターの `extern` 宣言
+- その cplat_sym_loader_entry へのポインターの `extern` 宣言
 
 ### sym_loader_libbase.c への追加
 
 以下の 2 点を追記します。
 
-- `COM_UTIL_SYM_LOADER_ENTRY_INIT` マクロで com_util_sym_loader_entry の `static` 実体を定義し、対応する `const` ポインターを定義
+- `CPLAT_SYM_LOADER_ENTRY_INIT` マクロで cplat_sym_loader_entry の `static` 実体を定義し、対応する `const` ポインターを定義
 - `fobj_array_libbase` 配列に新しい実体のアドレスを追加
 
 `fobj_length_libbase` は配列サイズから自動計算されるため変更不要です。
 
 ### 呼び出し元となる .c ファイルの作成・修正
 
-`new_func` の実装ファイルで、`com_util_sym_loader_resolve_as` を使って関数ポインターを取得し、オーバーライド処理またはデフォルト処理に分岐させます。`sample_func.c` を参考にしてください。
+`new_func` の実装ファイルで、`cplat_sym_loader_resolve_as` を使って関数ポインターを取得し、オーバーライド処理またはデフォルト処理に分岐させます。`sample_func.c` を参考にしてください。
 
 ### オーバーライド側ライブラリへの追加
 
@@ -68,7 +68,7 @@ dllmain_libbase.c  (初期化・解放)
 >
 > ```text
 > new_func (libbase)
-> +- com_util_sym_loader_resolve_as でオーバーライド関数を取得
+> +- cplat_sym_loader_resolve_as でオーバーライド関数を取得
 > +- new_override_func (liboverride) を呼び出す
 > +- new_func (libbase) を呼び出す <- 無限再帰
 > ```

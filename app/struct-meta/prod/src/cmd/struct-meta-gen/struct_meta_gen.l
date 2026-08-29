@@ -13,7 +13,7 @@
 #include "struct_meta_gen_ast.h"
 #include "struct_meta_gen.tab.h"
 
-#include <com_util/crt/string.h>
+#include <cplat/crt/string.h>
 
 int g_line = 1;
 %}
@@ -26,21 +26,21 @@ int g_line = 1;
 
 "/**<"([^*]|"*"+[^*/])*"*"+"/"  {
                                     for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
-                                    yylval.str = com_util_strdup(yytext);
+                                    yylval.str = cplat_strdup(yytext);
                                     return DOC_POSTFIX;
                                 }
 "/*!<"([^*]|"*"+[^*/])*"*"+"/"  {
                                     for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
-                                    yylval.str = com_util_strdup(yytext);
+                                    yylval.str = cplat_strdup(yytext);
                                     return DOC_POSTFIX;
                                 }
-"///<".*                        { yylval.str = com_util_strdup(yytext); return DOC_POSTFIX; }
-"//!<".*                        { yylval.str = com_util_strdup(yytext); return DOC_POSTFIX; }
+"///<".*                        { yylval.str = cplat_strdup(yytext); return DOC_POSTFIX; }
+"//!<".*                        { yylval.str = cplat_strdup(yytext); return DOC_POSTFIX; }
 "/**"([^*]|"*"+[^*/])*"*"+"/"   {
                                     for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
                                     if (struct_meta_gen_doc_has_file_tag(yytext) == 0)
                                     {
-                                        yylval.str = com_util_strdup(yytext);
+                                        yylval.str = cplat_strdup(yytext);
                                         return DOC_PREFIX;
                                     }
                                 }
@@ -48,12 +48,12 @@ int g_line = 1;
                                     for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } }
                                     if (struct_meta_gen_doc_has_file_tag(yytext) == 0)
                                     {
-                                        yylval.str = com_util_strdup(yytext);
+                                        yylval.str = cplat_strdup(yytext);
                                         return DOC_PREFIX;
                                     }
                                 }
-"///".*                         { yylval.str = com_util_strdup(yytext); return DOC_PREFIX; }
-"//!".*                         { yylval.str = com_util_strdup(yytext); return DOC_PREFIX; }
+"///".*                         { yylval.str = cplat_strdup(yytext); return DOC_PREFIX; }
+"//!".*                         { yylval.str = cplat_strdup(yytext); return DOC_PREFIX; }
 "/*"([^*]|"*"+[^*/])*"*"+"/"    { for (const char *p = yytext; *p != '\0'; p++) { if (*p == '\n') { g_line++; } } }
 "//".*                          { /* 行コメント */ }
 ^[ \t]*#.*                      { /* 前処理行 (#include, #ifndef 等) */ }
@@ -68,7 +68,7 @@ int g_line = 1;
 "float"                         { return T_FLOAT; }
 "double"                        { return T_DOUBLE; }
 
-[A-Za-z_][A-Za-z0-9_]*          { yylval.str = com_util_strdup(yytext); return IDENT; }
+[A-Za-z_][A-Za-z0-9_]*          { yylval.str = cplat_strdup(yytext); return IDENT; }
 [0-9]+                          { yylval.num = strtol(yytext, NULL, 10); return INTEGER; }
 
 "{"                              { return LBRACE; }

@@ -13,5 +13,5 @@ description: app 配下の C ライブラリ関数に通常の Google Mock 対�
 6. `makepart.mk` のソースとリンク先を確認してください。
 7. 対象 app の局所テストを実行してください。
 
-`mock_com_util` には `create-mock-com-mock` を優先してください。  
+`mock_cplat` には `create-mock-cplat-mock` を優先してください。  
 API 表から生成する第三者共有ライブラリには `create-mock-shared-lib` を優先してください。

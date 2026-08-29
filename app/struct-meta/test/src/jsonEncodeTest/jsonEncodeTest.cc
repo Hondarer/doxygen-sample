@@ -1,6 +1,6 @@
 #include <testfw.h>
 #include <struct_meta/json/json.h>
-#include <com_util/base/result.h>
+#include <cplat/base/result.h>
 #include <cstddef>
 
 namespace
@@ -24,7 +24,7 @@ TEST(JsonEncodeTest, UsesGenericJsonAttributes)
 {
     Sample sample = {42, 7}; // [準備_正常系] - 名前変更属性と除外属性を持つ値を用意する。
     cJSON *json = nullptr;
-    ASSERT_EQ(COM_UTIL_OK, struct_meta_json_encode(&kDescriptor, &sample, &json)); // [手順_正常系]
+    ASSERT_EQ(CPLAT_OK, struct_meta_json_encode(&kDescriptor, &sample, &json)); // [手順_正常系]
     ASSERT_NE(nullptr, json); // [確認_正常系] - 属性に従った JSON が生成されること。
     EXPECT_EQ(42, cJSON_GetObjectItemCaseSensitive(json, "person_id")->valueint);
     EXPECT_EQ(nullptr, cJSON_GetObjectItemCaseSensitive(json, "id"));
@@ -38,6 +38,6 @@ TEST(JsonEncodeTest, RejectsCorruptDescriptor)
     Sample sample = {}; // [準備_異常系] - フィールド配列が欠けた記述子を用意する。
     cJSON *json = nullptr;
     int actual = struct_meta_json_encode(&descriptor, &sample, &json); // [手順_異常系]
-    EXPECT_EQ(COM_UTIL_ERR_CORRUPT_DESCRIPTOR, actual);                // [確認_異常系] - 検査エラーになること。
+    EXPECT_EQ(CPLAT_ERR_CORRUPT_DESCRIPTOR, actual);                // [確認_異常系] - 検査エラーになること。
     EXPECT_EQ(nullptr, json);
 }
