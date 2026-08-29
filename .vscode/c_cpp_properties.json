@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/app/c-platform/prod/include",
                 "${workspaceFolder}/app/c-platform/prod/include_internal",
+                "${workspaceFolder}/app/c-platform/prod/libsrc/cplat/hashtable",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/compress-cli",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/etw-viewer",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/trace-cli",
@@ -24,6 +25,7 @@
                 "${workspaceFolder}/app/sqlite/prod/include",
                 "${workspaceFolder}/app/sqlite/test/include",
                 "${workspaceFolder}/app/struct-meta/prod/include",
+                "${workspaceFolder}/app/struct-meta/prod/src/cmd/struct-meta-gen",
                 "${workspaceFolder}/app/subfolder-sample/prod/include",
                 "${workspaceFolder}/app/tutorial/test/src/static-access/sample-static-lib",
                 "${workspaceFolder}/framework/testfw/gtest/include",
@@ -43,6 +45,7 @@
             "includePath": [
                 "${workspaceFolder}/app/c-platform/prod/include",
                 "${workspaceFolder}/app/c-platform/prod/include_internal",
+                "${workspaceFolder}/app/c-platform/prod/libsrc/cplat/hashtable",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/compress-cli",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/etw-viewer",
                 "${workspaceFolder}/app/c-platform/prod/src/cmd/trace-cli",
@@ -62,6 +65,7 @@
                 "${workspaceFolder}/app/sqlite/prod/include",
                 "${workspaceFolder}/app/sqlite/test/include",
                 "${workspaceFolder}/app/struct-meta/prod/include",
+                "${workspaceFolder}/app/struct-meta/prod/src/cmd/struct-meta-gen",
                 "${workspaceFolder}/app/subfolder-sample/prod/include",
                 "${workspaceFolder}/app/tutorial/test/src/static-access/sample-static-lib",
                 "${workspaceFolder}/framework/testfw/gtest/include",
