@@ -118,12 +118,32 @@ clean :
 	rm -f "$(APP_ENV_WARN_FILE)"
 	$(MAKE) cleandocs
 
+# Windows では preview-stop 直後でも pages/preview のハンドルが残ることがある。
+# 短い間隔で最大 5 回削除を試み、残った場合だけ失敗する。
+# 呼び出し側は削除対象をシェル変数 path に入れてからこの断片を展開する。
+define _RM_RF_RETRY
+	_try=0; \
+	while [ "$$_try" -lt 5 ]; do \
+		if [ ! -e "$$path" ] && [ ! -L "$$path" ]; then break; fi; \
+		printf 'rm -rf "%s"\n' "$$path"; \
+		rm -rf "$$path" || true; \
+		if [ ! -e "$$path" ] && [ ! -L "$$path" ]; then break; fi; \
+		_try=$$((_try + 1)); \
+		if [ "$$_try" -lt 5 ]; then sleep 0.4; fi; \
+	done; \
+	if [ -e "$$path" ] || [ -L "$$path" ]; then \
+		printf 'ERROR: failed to remove "%s"\n' "$$path" >&2; \
+		exit 1; \
+	fi
+endef
+
 .PHONY: cleandocs
-cleandocs :
+cleandocs : preview-stop
 	@if [ -d pages ]; then \
+		set -e; \
+		set -o pipefail; \
 		find pages/ -mindepth 1 -maxdepth 1 ! -name 'doxygen' -print | while IFS= read -r path; do \
-			printf 'rm -rf "%s"\n' "$$path"; \
-			rm -rf "$$path"; \
+			$(_RM_RF_RETRY); \
 		done; \
 	fi
 	rm -f "$(DOCS_WARN_FILE)"
@@ -243,6 +263,7 @@ PREVIEW_VENV := $(PREVIEW_HOME)/.venv
 PREVIEW_PYTHON := $(PREVIEW_VENV)/bin/python
 PREVIEW_MKDOCS := $(PREVIEW_VENV)/bin/mkdocs
 PREVIEW_DIR := $(CURDIR)/pages/preview
+PREVIEW_STOP := $(PREVIEW_HOME)/bin/stop_preview_serve.sh
 PREVIEW_ADDR ?= 127.0.0.1:8000
 
 # Windows (Git Bash) では venv の実行ファイルが Scripts/ に置かれる。
@@ -279,6 +300,10 @@ preview-build : preview-stage
 		"$(PREVIEW_MKDOCS)" build; \
 	fi
 
+.PHONY: preview-stop
+preview-stop :
+	@"$(BASH)" "$(PREVIEW_STOP)" --venv "$(PREVIEW_VENV)"
+
 .PHONY: cleanpreview
-cleanpreview :
-	rm -rf "$(PREVIEW_DIR)"
+cleanpreview : preview-stop
+	@path="$(PREVIEW_DIR)"; $(_RM_RF_RETRY)
