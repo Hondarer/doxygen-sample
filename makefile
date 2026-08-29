@@ -289,7 +289,7 @@ preview-stage : preview-venv
 .PHONY: preview
 preview : preview-stage
 	@printf 'INFO: mkdocs serve on http://%s/\n' "$(PREVIEW_ADDR)"
-	@cd "$(PREVIEW_DIR)" && "$(PREVIEW_MKDOCS)" serve --dev-addr "$(PREVIEW_ADDR)"
+	@cd "$(PREVIEW_DIR)" && trap 'exit 0' INT && "$(PREVIEW_MKDOCS)" serve --dev-addr "$(PREVIEW_ADDR)"
 
 .PHONY: preview-build
 preview-build : preview-stage
