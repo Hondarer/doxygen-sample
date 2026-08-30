@@ -4,4 +4,4 @@ TEST_SRCS := \
 INCDIR += \
 	$(MYAPP_DIR)/prod/src/cmd/struct-meta-gen
 
-LIBS += mock_libc
+LIBS += cplat mock_libc

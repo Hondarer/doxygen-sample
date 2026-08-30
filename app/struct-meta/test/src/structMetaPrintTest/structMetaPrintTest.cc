@@ -1,4 +1,6 @@
 #include <cplat/base/result.h>
+#include <cplat/crt/path.h>
+#include <cplat/crt/stdio.h>
 #include <struct_meta/print/print.h>
 #include <testfw.h>
 
@@ -27,7 +29,8 @@ TEST(structMetaPrintTest, prints_byte_arrays_in_selected_format)
 {
     // Arrange
     ByteArrays sample = {{-1, 0, 1}, {0, 165, 255}};
-    FILE *stream = tmpfile();
+    char path[PLATFORM_PATH_MAX] = {};
+    FILE *stream = cplat_fopen_temp("smp", "w+b", path, sizeof(path), nullptr); // [状態] - 一時出力先を作成する。
     ASSERT_NE(nullptr, stream); // [状態確認] - 一時出力先を作成できること。
 
     // Pre-Assert
@@ -45,5 +48,6 @@ TEST(structMetaPrintTest, prints_byte_arrays_in_selected_format)
     EXPECT_NE(nullptr, strstr(output, "hex_values = 00 a5 ff"));  // [確認_正常系] - hex形式を一行で表示すること。
 
     // Cleanup
-    fclose(stream);
+    (void)fclose(stream);
+    (void)cplat_remove(path, nullptr);
 }

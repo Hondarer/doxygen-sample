@@ -1,4 +1,6 @@
 #include <testfw.h>
+#include <cplat/crt/path.h>
+#include <cplat/crt/stdio.h>
 
 extern "C"
 {
@@ -27,8 +29,10 @@ TEST(structMetaGenEmitArrayTest, emits_words_with_line_wrapping_and_zero_padded_
         "UINT64_C(0x1111222233334444), UINT64_C(0xaaaabbbbccccdddd),\n"
         "    UINT64_C(0x00000000000000aa)\n"
         "};\n\n";
-    FILE *stream = std::tmpfile();
-    ASSERT_NE(nullptr, stream); // [状態確認] - 生成結果を読み戻す一時ストリームを作成できること。
+    char path[PLATFORM_PATH_MAX] = {};
+    FILE *stream = cplat_fopen_temp("sma", "w+b", path, sizeof(path),
+                                    nullptr); // [状態] - 生成結果を読み戻す一時ストリームを作成する。
+    ASSERT_NE(nullptr, stream);               // [状態確認] - 生成結果を読み戻す一時ストリームを作成できること。
 
     // Pre-Assert
 
@@ -50,4 +54,5 @@ TEST(structMetaGenEmitArrayTest, emits_words_with_line_wrapping_and_zero_padded_
 
     // Cleanup
     (void)std::fclose(stream);
+    (void)cplat_remove(path, nullptr);
 }
