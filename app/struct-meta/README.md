@@ -17,8 +17,8 @@
 
 生成ファイルは `gen/` に置かれ、Git では管理しません。  
 生成器は Doxygen コメントの `@struct_meta{key}` と `@struct_meta{key=value}` を解析し、構造体またはフィールドの汎用 key/value 属性として保持します。  
-属性の記述方法と制約は [アーキテクチャー](docs/architecture.md#doxygen-属性の書式) を参照してください。
-文字列とバイト配列の判定、および `meta.kind` と `meta.format` は
+属性の記述方法と制約は [アーキテクチャー](docs/architecture.md#doxygen-属性の書式) を参照してください。  
+文字列とバイト配列の判定、および `meta.kind` と `meta.format` は  
 [文字列とバイト配列](docs/architecture.md#文字列とバイト配列) を参照してください。
 
 ## 実行
@@ -30,7 +30,8 @@ make test
 ./prod/cbin/struct-meta-sample --help
 ```
 
-サンプルでは `init`、`load <path>`、`patch`、`patch <field-path>`、`save <path>`、`cat <path>`、`dump`、`help`、`exit` を使用できます。  
+サンプルは起動時に `sample_types` の構造体一覧を表示し、番号で操作対象を選択します。  
+選択後は `init`、`load <path>`、`patch`、`patch <field-path>`、`save <path>`、`cat <path>`、`dump`、`help`、`exit` を使用できます。  
 `patch` はメニューを順に辿り、`patch addresses[0].city` は指定したパスの値を直接編集します。  
 メニューには現在位置と各候補の完全パスが表示されるため、そのパスを次回の `patch <field-path>` に利用できます。  
 設計と依存方向は [アーキテクチャー](docs/architecture.md) を参照してください。

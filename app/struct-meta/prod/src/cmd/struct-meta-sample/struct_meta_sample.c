@@ -17,7 +17,7 @@
  *  `patch` はメニュー形式、`patch <path>` はパス指定で編集対象を選びます。\n
  *  その他は `init` / `dump` / `help` / `exit` です。\n
  *  ルートメニューの空行は `help` と同じです。終了は `exit` です。\n
- *  記述子は型一覧の @c SAMPLE_TYPES_PERSON だけを使います。\n
+ *  起動時に型一覧を表示し、選択した構造体の記述子を使います。\n
  *  領域は記述子のサイズで確保し、`init` はゼロ初期化します。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
@@ -34,8 +34,10 @@
 #include <cplat/argparser/argparser.h>
 #include <cplat/console/console.h>
 #include <cplat/crt/stdio.h>
+#include <cplat/crt/stdlib.h>
 #include <cplat/prompt/prompt.h>
 
+#include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,23 +51,73 @@
 /** cat コマンドが一度に読み取るバイト数です。 */
 #define SAMPLE_CAT_BUFFER_BYTES 4096
 
-/**
- *  @brief          型一覧から person の記述子を取得します。
- */
-static const struct_meta_descriptor *person_desc(void)
-{
-    const struct_meta_descriptor *desc = sample_types_meta_find("person");
-    if (desc == NULL)
-    {
-        fprintf(stderr, "struct-meta-sample: person の記述子を取得できません\n");
-    }
-    return desc;
-}
-
 static void print_commands(void)
 {
     fprintf(stderr, "commands: init  load <path>  patch [field-path]  save <path>  cat <path>  dump  help  exit\n");
     fprintf(stderr, "          (空行は help、終了は exit)\n");
+}
+
+/**
+ *  @brief          生成カタログから操作対象の構造体を選択します。
+ *
+ *  一覧は生成カタログの ID 順に表示します。
+ *
+ *  @param[in]      prompt          入力に使用するプロンプトです。NULL は指定しません。
+ *  @param[out]     descriptor_out  選択した記述子の格納先です。NULL は指定しません。
+ *  @return         選択成功時は @c CPLAT_OK、EOF、キャンセル、その他の入力エラー時は
+ *                  対応する結果コードを返します。
+ */
+static int select_descriptor(cplat_prompt *prompt, const struct_meta_descriptor **descriptor_out)
+{
+    size_t descriptor_count = sample_types_meta_count();
+    char line[SAMPLE_CMD_LINE_BYTES];
+
+    if (descriptor_count == 0U)
+    {
+        fprintf(stderr, "struct-meta-sample: 構造体の一覧が空です\n");
+        return CPLAT_ERR_NOT_FOUND;
+    }
+    if (descriptor_count > (size_t)INT_MAX)
+    {
+        fprintf(stderr, "struct-meta-sample: 構造体の一覧が大きすぎます\n");
+        return CPLAT_ERR_OUT_OF_RANGE;
+    }
+
+    for (;;)
+    {
+        printf("構造体を選択してください:\n");
+        for (size_t i = 0; i < descriptor_count; i++)
+        {
+            const struct_meta_descriptor *descriptor = sample_types_meta_get((sample_types_meta_id)i);
+            if (descriptor == NULL)
+            {
+                fprintf(stderr, "struct-meta-sample: 構造体の記述子を取得できません: %zu\n", i + 1U);
+                return CPLAT_ERR_NOT_FOUND;
+            }
+            printf("  %zu) %s\n", i + 1U, descriptor->name);
+        }
+
+        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "構造体番号を選択> ");
+        if (ret != CPLAT_OK)
+        {
+            return ret;
+        }
+
+        int index;
+        if ((cplat_parse_int(&index, line, 10) != CPLAT_OK) || (index < 1) || ((size_t)index > descriptor_count))
+        {
+            fprintf(stderr, "struct-meta-sample: 1 から %zu の範囲で入力してください\n", descriptor_count);
+            continue;
+        }
+
+        *descriptor_out = sample_types_meta_get((sample_types_meta_id)(index - 1));
+        if (*descriptor_out == NULL)
+        {
+            fprintf(stderr, "struct-meta-sample: 選択した構造体の記述子を取得できません: %d\n", index);
+            return CPLAT_ERR_NOT_FOUND;
+        }
+        return CPLAT_OK;
+    }
 }
 
 /**
@@ -301,24 +353,29 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    desc = person_desc();
-    if (desc == NULL)
+    prompt = cplat_prompt_create(NULL);
+    if (prompt == NULL)
     {
+        fprintf(stderr, "struct-meta-sample: プロンプトを作成できません\n");
         return 1;
+    }
+
+    int select_result = select_descriptor(prompt, &desc);
+    if (select_result != CPLAT_OK)
+    {
+        if ((select_result != CPLAT_ERR_EOF) && (select_result != CPLAT_ERR_CANCELED))
+        {
+            fprintf(stderr, "struct-meta-sample: 構造体の選択に失敗しました (結果コード %d)\n", select_result);
+        }
+        cplat_prompt_dispose(prompt);
+        return (select_result == CPLAT_ERR_EOF) ? 0 : 1;
     }
 
     instance = malloc(desc->size);
     if (instance == NULL)
     {
         fprintf(stderr, "struct-meta-sample: 領域を確保できません\n");
-        return 1;
-    }
-
-    prompt = cplat_prompt_create(NULL);
-    if (prompt == NULL)
-    {
-        fprintf(stderr, "struct-meta-sample: プロンプトを作成できません\n");
-        free(instance);
+        cplat_prompt_dispose(prompt);
         return 1;
     }
 

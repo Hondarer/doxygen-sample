@@ -28,6 +28,29 @@ TEST(sampleTypesMetaTest, finds_descriptor_through_embedded_index)
     EXPECT_EQ(nullptr, empty);              // [確認_正常系] - 空の型名で NULL が返ること。
 }
 
+TEST(sampleTypesMetaTest, enumerates_all_descriptors_in_catalog_order)
+{
+    // Arrange
+    const char *expected_names[] = {"address", "byte_fields", "person"};
+
+    // Pre-Assert
+    ASSERT_EQ(3U, sample_types_meta_count()); // [事前条件] - 生成カタログが 3 型を持つこと。
+
+    // Act
+    const struct_meta_descriptor *actual[3] = {};
+    for (size_t i = 0; i < sample_types_meta_count(); i++)
+    {
+        actual[i] = sample_types_meta_get(static_cast<sample_types_meta_id>(i)); // [手順] - ID 順に記述子を取得する。
+    }
+
+    // Assert
+    for (size_t i = 0; i < 3U; i++)
+    {
+        ASSERT_NE(nullptr, actual[i]); // [確認_正常系] - カタログの各 ID から記述子を取得できること。
+        EXPECT_STREQ(expected_names[i], actual[i]->name); // [確認_正常系] - カタログの宣言順に名称が並ぶこと。
+    }
+}
+
 TEST(sampleTypesMetaTest, classifies_character_and_byte_fields)
 {
     // Arrange
