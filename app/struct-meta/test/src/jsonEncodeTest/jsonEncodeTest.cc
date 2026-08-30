@@ -1,5 +1,6 @@
 #include <testfw.h>
 #include <struct_meta/json/json.h>
+#include <cJSON_Integer.h>
 #include <cplat/base/result.h>
 #include <cstddef>
 #include <cstdint>
@@ -41,6 +42,23 @@ const struct_meta_field kWidthFields[] = {
 };
 const struct_meta_descriptor kWidthsDescriptor = {"Widths", sizeof(Widths), kWidthFields, 4, nullptr, nullptr, 0};
 
+struct Integer64Limits
+{
+    int64_t minimum;
+    int64_t maximum;
+    uint64_t unsigned_maximum;
+};
+const struct_meta_field kInteger64LimitFields[] = {
+    {"minimum", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Integer64Limits, minimum), sizeof(int64_t), 1, 0, nullptr,
+     nullptr, nullptr, 0},
+    {"maximum", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Integer64Limits, maximum), sizeof(int64_t), 1, 0, nullptr,
+     nullptr, nullptr, 0},
+    {"unsigned_maximum", STRUCT_META_FIELD_UNSIGNED_INTEGER, 0, offsetof(Integer64Limits, unsigned_maximum),
+     sizeof(uint64_t), 1, 0, nullptr, nullptr, nullptr, 0},
+};
+const struct_meta_descriptor kInteger64LimitsDescriptor = {
+    "Integer64Limits", sizeof(Integer64Limits), kInteger64LimitFields, 3, nullptr, nullptr, 0};
+
 struct ByteArrays
 {
     int8_t signed_values[3];
@@ -72,15 +90,41 @@ TEST(JsonEncodeTest, EncodesEachIntegerWidth)
     cJSON_Delete(json);
 }
 
-TEST(JsonEncodeTest, RejectsIntegerBeyondJsonPrecision)
+TEST(JsonEncodeTest, encodes_64_bit_integer_limits_exactly)
 {
-    /* cJSON は %1.15g で出力し、往復判定に 1 ULP の余裕があるため、
-       15 桁を超える整数はそのまま読み戻せない。黙って丸めずに拒否する。 */
-    Widths sample = {1000000000000000, 0, 0, 0, 0}; // [準備_異常系] - 16 桁の整数を用意する。
+    // Arrange
+    Integer64Limits sample = {INT64_MIN, INT64_MAX, UINT64_MAX};
     cJSON *json = nullptr;
-    int actual = struct_meta_json_encode(&kWidthsDescriptor, &sample, &json); // [手順_異常系]
-    EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, actual); // [確認_異常系] - 表現できない整数が拒否されること。
-    EXPECT_EQ(nullptr, json);                  // [確認_異常系] - JSON が生成されないこと。
+
+    // Pre-Assert
+
+    // Act
+    int actual = struct_meta_json_encode(&kInteger64LimitsDescriptor, &sample, &json); // [手順] - 境界値を変換する。
+
+    // Assert
+    ASSERT_EQ(CPLAT_OK, actual); // [確認_正常系] - 64 ビット整数の全境界値を変換できること。
+    ASSERT_NE(nullptr, json);    // [確認_正常系] - JSON オブジェクトが生成されること。
+    int64_t minimum = 0;
+    int64_t maximum = 0;
+    uint64_t unsigned_maximum = 0U;
+    EXPECT_TRUE(cJSON_GetInt64Value(cJSON_GetObjectItemCaseSensitive(json, "minimum"),
+                                    &minimum)); // [確認_正常系] - 符号付き最小値を整数として取得できること。
+    EXPECT_TRUE(cJSON_GetInt64Value(cJSON_GetObjectItemCaseSensitive(json, "maximum"),
+                                    &maximum)); // [確認_正常系] - 符号付き最大値を整数として取得できること。
+    EXPECT_TRUE(cJSON_GetUInt64Value(cJSON_GetObjectItemCaseSensitive(json, "unsigned_maximum"),
+                                     &unsigned_maximum)); // [確認_正常系] - 符号なし最大値を整数として取得できること。
+    EXPECT_EQ(INT64_MIN, minimum);                        // [確認_正常系] - 符号付き最小値を正確に保持すること。
+    EXPECT_EQ(INT64_MAX, maximum);                        // [確認_正常系] - 符号付き最大値を正確に保持すること。
+    EXPECT_EQ(UINT64_MAX, unsigned_maximum);              // [確認_正常系] - 符号なし最大値を正確に保持すること。
+    char *text = cJSON_PrintUnformatted(json);
+    ASSERT_NE(nullptr, text); // [確認_正常系] - JSON テキストを生成できること。
+    EXPECT_STREQ("{\"minimum\":-9223372036854775808,\"maximum\":9223372036854775807,"
+                 "\"unsigned_maximum\":18446744073709551615}",
+                 text); // [確認_正常系] - 丸めや指数表記のない十進整数として出力すること。
+
+    // Cleanup
+    cJSON_free(text);
+    cJSON_Delete(json);
 }
 
 TEST(JsonEncodeTest, UsesGenericJsonAttributes)

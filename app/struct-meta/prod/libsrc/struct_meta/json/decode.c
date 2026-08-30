@@ -13,12 +13,11 @@
 
 #include <struct_meta/json/json.h>
 
-#include "json.h"
-
 #include <struct_meta/access/access.h>
 #include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
+#include <cJSON_Integer.h>
 #include <cplat/base/result.h>
 
 #include <string.h>
@@ -39,19 +38,12 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
         {
             return CPLAT_ERR_INVALID_ARGUMENT;
         }
-        double raw = cJSON_GetNumberValue(item);
-        /* 範囲検査を先に行う。範囲外や NaN のまま int64_t へ変換すると未定義動作になる。
-           否定形で書くことで、比較がすべて偽になる NaN もここで弾く。 */
-        if (!((raw >= -(double)STRUCT_META_JSON_INTEGER_LIMIT) && (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
+        int64_t value;
+        if (!cJSON_GetInt64Value(item, &value))
         {
             return CPLAT_ERR_OUT_OF_RANGE;
         }
-        /* 整数でない値は受け付けない。 */
-        if (raw != (double)(int64_t)raw)
-        {
-            return CPLAT_ERR_OUT_OF_RANGE;
-        }
-        return struct_meta_internal_integer_store_signed(field_ptr, element_size, (int64_t)raw);
+        return struct_meta_internal_integer_store_signed(field_ptr, element_size, value);
     }
 
     case STRUCT_META_FIELD_UNSIGNED_INTEGER:
@@ -60,17 +52,12 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
         {
             return CPLAT_ERR_INVALID_ARGUMENT;
         }
-        double raw = cJSON_GetNumberValue(item);
-        /* 範囲検査を先に行う。範囲外や NaN のまま uint64_t へ変換すると未定義動作になる。 */
-        if (!((raw >= 0.0) && (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
+        uint64_t value;
+        if (!cJSON_GetUInt64Value(item, &value))
         {
             return CPLAT_ERR_OUT_OF_RANGE;
         }
-        if (raw != (double)(uint64_t)raw)
-        {
-            return CPLAT_ERR_OUT_OF_RANGE;
-        }
-        return struct_meta_internal_integer_store_unsigned(field_ptr, element_size, (uint64_t)raw);
+        return struct_meta_internal_integer_store_unsigned(field_ptr, element_size, value);
     }
 
     case STRUCT_META_FIELD_FLOAT:

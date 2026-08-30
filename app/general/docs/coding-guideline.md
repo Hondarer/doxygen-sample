@@ -157,7 +157,8 @@ int sample_strcpy(char *dest, size_t dest_size, const char *src);
 次の検索結果をレビューし、出力引数の `out_` 接頭辞と、上表の不自然な `_out` が残っていないことを確認します。
 
 ```bash
-rg -n --glob '*.{c,h,cc}' --glob '!**/obj/**' --glob '!app/lua/**' --glob '!app/cjson/**' --glob '!app/sqlite/**' \
+rg -n --glob '*.{c,h,cc}' --glob '!**/obj/**' --glob '!app/lua/prod/**' --glob '!app/sqlite/prod/**' \
+  --glob '!app/cjson/prod/**/cJSON.[ch]' --glob '!app/cjson/prod/**/cJSON_Utils.[ch]' \
   '\bout_[A-Za-z][A-Za-z0-9_]*|\b(buf_out|dest_out)\b' app
 ```
 
@@ -719,6 +720,10 @@ typedef void (*sample_hook_callback_t)(sample_context *context, void *user_data)
 | 構造体初期化子の定型 | 定型の中括弧初期化子を共有します。 | `SAMPLE_ENTRY_INIT(key, type)` |
 | コンパイル時整数定数 | `#if` 分岐、他マクロへの埋め込み、公開ヘッダーの整数定数 | 結果コード、ビット フラグ、パス上限 |
 | 処理系・ABI の抽象 | 呼び出し規約、export、インライン強制など | `SAMPLE_EXPORT`、`FORCE_INLINE` |
+| API 表の展開 | 1 つの関数一覧から宣言・実装・テストを生成する X マクロ | `MOCK_CJSON_RET` / `MOCK_SQLITE3_VOID` |
+
+第三者共有ライブラリの mock を API 表から生成する方式は [共有ライブラリの mock 化](shared-library-mock-guideline.md) が正本です。  
+API 表は include guard を持たず、展開に必要なマクロが未定義なら `#error` で停止する形とします。
 
 > [!IMPORTANT]
 > 結果コードを `#define` と `int` で表す方針は [エラー処理と戻り値規約](#エラー処理と戻り値規約) が正です。  
@@ -841,10 +846,10 @@ static inline int sample_twice_int(int x)
 - GNU 文式を使っていないか
 
 ```bash
-# 関数形式マクロの定義箇所の洗い出し (第一党の目視レビュー用。OSS は除外)
+# 関数形式マクロの定義箇所の洗い出し (第一者の目視レビュー用。OSS は除外)
 grep -rnE '^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\(' \
   app --include=*.h --include=*.c \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/'
 ```
 
 ### ヘッダー ファイル名の _internal
@@ -959,7 +964,7 @@ grep -rnE '^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\(' \
 
 ```bash
 # 外部 OSS とビルド生成物を除外する共通条件
-EXCL='app/(lua|sqlite|cjson)/|/obj/|doxybook2_|/prod/(lib|cbin)/'
+EXCL='app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|doxybook2_|/prod/(lib|cbin)/'
 
 # _t サフィックスの検出 (例外として明記した alias のみが残る)
 grep -rnE '(^|[[:space:]])typedef[[:space:]].*[A-Za-z0-9_]+_t[[:space:]]*(\)|;)|^\}[[:space:]]*[a-z0-9_]+_t[[:space:]]*;' \
@@ -2006,11 +2011,11 @@ int sample_config_load(const char *path)
 # static_assert / _Static_assert は語境界の条件により検出されない
 grep -rnE '(^|[^A-Za-z0-9_])assert[[:space:]]*\(|#[[:space:]]*include[[:space:]]*<assert\.h>' \
   app --include=*.c --include=*.h \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|doxybook2_'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|doxybook2_'
 
 # abort() の呼び出し箇所 (件数は最小であること)
 grep -rnE '(^|[^A-Za-z0-9_])abort[[:space:]]*\(' app --include=*.c \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/'
 ```
 
 抽出した `abort()` の各箇所について、次を確認します。
@@ -2259,20 +2264,20 @@ char *sample_config_dup_name(const sample_config *config);
 ```bash
 # malloc による配列確保 (乗算を伴う確保。0 件であること)
 grep -rnE '(malloc|realloc)[[:space:]]*\([^;]*[^*/]\*[^;]*sizeof' app --include=*.c \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|/test/'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|/test/'
 
 # realloc の戻り値を元のポインターへ直接代入 (0 件であること)
 # 後方参照を使うため PCRE (-P) を指定する。左側の語境界がないと new_ptr = realloc(ptr, ...) を誤検出する
 grep -rnP '(?<![A-Za-z0-9_])([A-Za-z_][A-Za-z0-9_]*(?:(?:->|\.)[A-Za-z_][A-Za-z0-9_]*)*)\s*=\s*\(?[^;=]*realloc\s*\(\s*\1\s*[,)]' \
-  app --include=*.c | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+  app --include=*.c | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/'
 
 # 確保関数の戻り値をキャストしていない箇所
 grep -rnE '=[[:space:]]*(malloc|calloc|realloc)[[:space:]]*\(' app --include=*.c \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/'
 
 # 確保サイズに型名を書いている箇所
 grep -rnE '(malloc|calloc|realloc)[[:space:]]*\([^;]*sizeof[[:space:]]*\([[:space:]]*[A-Za-z_]' \
-  app --include=*.c | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|/test/'
+  app --include=*.c | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|/test/'
 ```
 
 最後の 1 つは、`sizeof` の被演算子が型ではない場合 (文字列リテラルのマクロなど) も抽出します。  
@@ -2704,7 +2709,7 @@ err1:
 
 ```bash
 grep -rnE '(^|[^A-Za-z0-9_])goto[[:space:]]|^[a-z_][a-z0-9_]*:[[:space:]]*$' app --include=*.c --include=*.h \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|doxybook2_' \
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|doxybook2_' \
   | grep -vE ':[[:space:]]*(public|private|protected):'
 ```
 
@@ -2759,7 +2764,7 @@ const char *label = s_level_labels[level];
 
 ```bash
 grep -rnE '\?' app --include=*.c --include=*.h \
-  | grep -vE 'app/(lua|sqlite|cjson)/|/obj/|doxybook2_'
+  | grep -vE 'app/(lua|sqlite)/prod/|app/cjson/prod/(include|libsrc/cjson)/cJSON(\.|_Utils\.)|/obj/|doxybook2_'
 ```
 
 ## restrict、volatile、inline の利用

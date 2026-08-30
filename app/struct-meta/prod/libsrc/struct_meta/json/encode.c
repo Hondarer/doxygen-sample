@@ -13,12 +13,11 @@
 
 #include <struct_meta/json/json.h>
 
-#include "json.h"
-
 #include <struct_meta/access/access.h>
 #include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
+#include <cJSON_Integer.h>
 #include <cplat/base/result.h>
 
 #include <string.h>
@@ -44,12 +43,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
         {
             return ret;
         }
-        /* cJSON の数値は double のため、正確に表せない値は黙って丸めずに拒否する。 */
-        if ((value > (int64_t)STRUCT_META_JSON_INTEGER_LIMIT) || (value < -(int64_t)STRUCT_META_JSON_INTEGER_LIMIT))
-        {
-            return CPLAT_ERR_OUT_OF_RANGE;
-        }
-        item = cJSON_CreateNumber((double)value);
+        item = cJSON_CreateInt64(value);
         break;
     }
 
@@ -61,11 +55,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
         {
             return ret;
         }
-        if (value > (uint64_t)STRUCT_META_JSON_INTEGER_LIMIT)
-        {
-            return CPLAT_ERR_OUT_OF_RANGE;
-        }
-        item = cJSON_CreateNumber((double)value);
+        item = cJSON_CreateUInt64(value);
         break;
     }
 

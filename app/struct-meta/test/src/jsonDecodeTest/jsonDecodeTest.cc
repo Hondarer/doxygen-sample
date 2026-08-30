@@ -40,6 +40,23 @@ const struct_meta_field kWidthFields[] = {
 };
 const struct_meta_descriptor kWidthsDescriptor = {"Widths", sizeof(Widths), kWidthFields, 4, nullptr, nullptr, 0};
 
+struct Integer64Limits
+{
+    int64_t minimum;
+    int64_t maximum;
+    uint64_t unsigned_maximum;
+};
+const struct_meta_field kInteger64LimitFields[] = {
+    {"minimum", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Integer64Limits, minimum), sizeof(int64_t), 1, 0, nullptr,
+     nullptr, nullptr, 0},
+    {"maximum", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Integer64Limits, maximum), sizeof(int64_t), 1, 0, nullptr,
+     nullptr, nullptr, 0},
+    {"unsigned_maximum", STRUCT_META_FIELD_UNSIGNED_INTEGER, 0, offsetof(Integer64Limits, unsigned_maximum),
+     sizeof(uint64_t), 1, 0, nullptr, nullptr, nullptr, 0},
+};
+const struct_meta_descriptor kInteger64LimitsDescriptor = {
+    "Integer64Limits", sizeof(Integer64Limits), kInteger64LimitFields, 3, nullptr, nullptr, 0};
+
 struct ByteArrays
 {
     int8_t signed_values[3];
@@ -82,6 +99,19 @@ int decode_bytes(const char *text, ByteArrays *sample)
     cJSON_Delete(json);
     return ret;
 }
+
+/** 64 ビット整数を JSON から書き戻し、結果コードを返します。 */
+int decode_integer64_limits(const char *text, Integer64Limits *sample)
+{
+    cJSON *json = cJSON_Parse(text);
+    if (json == nullptr)
+    {
+        return CPLAT_ERR_INVALID_ARGUMENT;
+    }
+    int ret = struct_meta_json_decode(&kInteger64LimitsDescriptor, json, sample);
+    cJSON_Delete(json);
+    return ret;
+}
 } // namespace
 
 TEST(JsonDecodeTest, DecodesEachIntegerWidth)
@@ -114,6 +144,46 @@ TEST(JsonDecodeTest, RejectsNonIntegerAndUnrepresentableNumber)
     int huge = decode_widths("{\"wide\":1e300}", &sample);   // [手順_異常系] - double の範囲の巨大値を与える。
     EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, fraction);             // [確認_異常系] - 小数が拒否されること。
     EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, huge);                 // [確認_異常系] - 表現できない値が拒否されること。
+}
+
+TEST(JsonDecodeTest, decodes_64_bit_integer_limits_exactly)
+{
+    // Arrange
+    Integer64Limits sample = {};
+
+    // Pre-Assert
+
+    // Act
+    int actual = decode_integer64_limits("{\"minimum\":-9223372036854775808,\"maximum\":9223372036854775807,"
+                                         "\"unsigned_maximum\":18446744073709551615}",
+                                         &sample); // [手順] - 64 ビット整数の全境界値を読み込む。
+
+    // Assert
+    ASSERT_EQ(CPLAT_OK, actual);                    // [確認_正常系] - 全境界値を読み込めること。
+    EXPECT_EQ(INT64_MIN, sample.minimum);           // [確認_正常系] - 符号付き最小値を正確に復元すること。
+    EXPECT_EQ(INT64_MAX, sample.maximum);           // [確認_正常系] - 符号付き最大値を正確に復元すること。
+    EXPECT_EQ(UINT64_MAX, sample.unsigned_maximum); // [確認_正常系] - 符号なし最大値を正確に復元すること。
+}
+
+TEST(JsonDecodeTest, rejects_values_outside_64_bit_integer_ranges)
+{
+    // Arrange
+    Integer64Limits sample = {1, 2, 3U};
+
+    // Pre-Assert
+
+    // Act
+    int signed_over = decode_integer64_limits("{\"maximum\":9223372036854775808}", &sample);
+    int unsigned_negative = decode_integer64_limits("{\"unsigned_maximum\":-1}", &sample);
+    int unsigned_over = decode_integer64_limits("{\"unsigned_maximum\":18446744073709551616}", &sample);
+
+    // Assert
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, signed_over);       // [確認_異常系] - 符号付き上限を超える値を拒否すること。
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, unsigned_negative); // [確認_異常系] - 符号なしフィールドの負値を拒否すること。
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_RANGE, unsigned_over);     // [確認_異常系] - 符号なし上限を超える値を拒否すること。
+    EXPECT_EQ(1, sample.minimum);                         // [確認_異常系] - 無関係なフィールドを変更しないこと。
+    EXPECT_EQ(2, sample.maximum);           // [確認_異常系] - 失敗した符号付きフィールドを変更しないこと。
+    EXPECT_EQ(3U, sample.unsigned_maximum); // [確認_異常系] - 失敗した符号なしフィールドを変更しないこと。
 }
 
 TEST(JsonDecodeTest, UsesGenericJsonAttributes)
