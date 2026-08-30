@@ -5,6 +5,32 @@ extern "C"
 #include "struct_meta_gen_ast.h"
 }
 
+TEST(structMetaGenAstTest, maps_character_scalar_types)
+{
+    // Arrange
+
+    // Pre-Assert
+
+    // Act
+    const struct_meta_gen_scalar_type *plain =
+        struct_meta_gen_find_scalar_type("char"); // [手順] - plain charを検索する。
+    const struct_meta_gen_scalar_type *signed_char =
+        struct_meta_gen_find_scalar_type("signed char"); // [手順] - signed charを検索する。
+    const struct_meta_gen_scalar_type *unsigned_char =
+        struct_meta_gen_find_scalar_type("unsigned char"); // [手順] - unsigned charを検索する。
+
+    // Assert
+    ASSERT_NE(nullptr, plain); // [確認_正常系] - plain charを認識すること。
+    EXPECT_STREQ("STRUCT_META_FIELD_SIGNED_INTEGER",
+                 plain->kind_name);  // [確認_正常系] - plain charを符号付きとすること。
+    ASSERT_NE(nullptr, signed_char); // [確認_正常系] - signed charを認識すること。
+    EXPECT_STREQ("STRUCT_META_FIELD_SIGNED_INTEGER",
+                 signed_char->kind_name); // [確認_正常系] - signed charを符号付きとすること。
+    ASSERT_NE(nullptr, unsigned_char);    // [確認_正常系] - unsigned charを認識すること。
+    EXPECT_STREQ("STRUCT_META_FIELD_UNSIGNED_INTEGER",
+                 unsigned_char->kind_name); // [確認_正常系] - unsigned charを符号なしとすること。
+}
+
 TEST(structMetaGenAstTest, parses_generic_attributes_and_removes_them_from_brief)
 {
     // Arrange

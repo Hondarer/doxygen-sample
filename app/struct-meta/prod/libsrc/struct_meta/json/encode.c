@@ -16,11 +16,13 @@
 #include "json.h"
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 
 #include <string.h>
+#include <stdlib.h>
 
 static int struct_to_json(const struct_meta_descriptor *desc, const unsigned char *base, cJSON **json_out);
 
@@ -28,7 +30,7 @@ static int struct_to_json(const struct_meta_descriptor *desc, const unsigned cha
  *  @brief          スカラー値 1 個分のメモリー内容から cJSON アイテムを作成します。
  */
 static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
-                          cJSON **item_out)
+                          size_t char_buffer_size, cJSON **item_out)
 {
     cJSON *item = NULL;
 
@@ -43,8 +45,7 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
             return ret;
         }
         /* cJSON の数値は double のため、正確に表せない値は黙って丸めずに拒否する。 */
-        if ((value > (int64_t)STRUCT_META_JSON_INTEGER_LIMIT) ||
-            (value < -(int64_t)STRUCT_META_JSON_INTEGER_LIMIT))
+        if ((value > (int64_t)STRUCT_META_JSON_INTEGER_LIMIT) || (value < -(int64_t)STRUCT_META_JSON_INTEGER_LIMIT))
         {
             return CPLAT_ERR_OUT_OF_RANGE;
         }
@@ -94,6 +95,10 @@ static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *fiel
 
     case STRUCT_META_FIELD_CHAR_ARRAY:
         /* field_ptr は char[N] の先頭を指す。NUL 終端文字列として扱う。 */
+        if ((char_buffer_size == 0U) || (memchr(field_ptr, '\0', char_buffer_size) == NULL))
+        {
+            return CPLAT_ERR_INVALID_ENCODING;
+        }
         item = cJSON_CreateString((const char *)field_ptr);
         break;
 
@@ -120,7 +125,40 @@ static int element_to_json(const struct_meta_field *field, const unsigned char *
     {
         return struct_to_json(field->nested, elem_ptr, item_out);
     }
-    return scalar_to_json(field->kind, elem_ptr, field->element_size, item_out);
+    return scalar_to_json(field->kind, elem_ptr, field->element_size, field->char_buffer_size, item_out);
+}
+
+static int byte_array_to_json(const struct_meta_field *field, const unsigned char *base, cJSON **item_out)
+{
+    const void *element;
+    int ret = struct_meta_field_get_const_element(field, base, 0U, &element);
+    if (ret != CPLAT_OK)
+    {
+        return ret;
+    }
+
+    size_t text_size;
+    ret = struct_meta_internal_bytes_hex_text_size(field->element_count, &text_size);
+    if (ret != CPLAT_OK)
+    {
+        return ret;
+    }
+    char *text = (char *)malloc(text_size);
+    if (text == NULL)
+    {
+        return CPLAT_ERR_OUT_OF_MEMORY;
+    }
+    ret = struct_meta_internal_bytes_to_hex((const unsigned char *)element, field->element_count, text, text_size);
+    if (ret == CPLAT_OK)
+    {
+        *item_out = cJSON_CreateString(text);
+        if (*item_out == NULL)
+        {
+            ret = CPLAT_ERR_OUT_OF_MEMORY;
+        }
+    }
+    free(text);
+    return ret;
 }
 
 /**
@@ -128,6 +166,17 @@ static int element_to_json(const struct_meta_field *field, const unsigned char *
  */
 static int field_to_json(const struct_meta_field *field, const unsigned char *base, cJSON **item_out)
 {
+    struct_meta_internal_byte_format byte_format;
+    int format_ret = struct_meta_internal_field_byte_format(field, &byte_format);
+    if (format_ret != CPLAT_OK)
+    {
+        return format_ret;
+    }
+    if (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX)
+    {
+        return byte_array_to_json(field, base, item_out);
+    }
+
     /* char[N] は配列ですが、単一の JSON 文字列として扱います。 */
     if ((field->kind == STRUCT_META_FIELD_CHAR_ARRAY) || (field->element_count <= 1U))
     {

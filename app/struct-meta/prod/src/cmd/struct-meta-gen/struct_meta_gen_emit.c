@@ -77,6 +77,64 @@ static const char *field_kind_name(const char *type_name, int is_char_array)
     return "STRUCT_META_FIELD_CHAR_ARRAY";
 }
 
+static const struct_meta_gen_attribute *field_attribute(const struct_meta_gen_field *field, const char *key)
+{
+    for (const struct_meta_gen_attribute *attribute = field->attributes; attribute != NULL; attribute = attribute->next)
+    {
+        if (strcmp(attribute->key, key) == 0)
+        {
+            return attribute;
+        }
+    }
+    return NULL;
+}
+
+static int is_explicit_byte_type(const char *type_name)
+{
+    return ((strcmp(type_name, "signed char") == 0) || (strcmp(type_name, "unsigned char") == 0) ||
+            (strcmp(type_name, "int8_t") == 0) || (strcmp(type_name, "uint8_t") == 0))
+               ? 1
+               : 0;
+}
+
+static int field_is_byte_array(const struct_meta_gen_field *field)
+{
+    if (field->array_count <= 0)
+    {
+        return 0;
+    }
+    if (is_explicit_byte_type(field->type_name) != 0)
+    {
+        return 1;
+    }
+    const struct_meta_gen_attribute *kind = field_attribute(field, "meta.kind");
+    return ((strcmp(field->type_name, "char") == 0) && (kind != NULL) && (kind->value != NULL) &&
+            (strcmp(kind->value, "bytes") == 0))
+               ? 1
+               : 0;
+}
+
+static void validate_meta_attributes(const struct_meta_gen_field *field)
+{
+    const struct_meta_gen_attribute *kind = field_attribute(field, "meta.kind");
+    if ((kind != NULL) &&
+        ((kind->value == NULL) || (strcmp(kind->value, "bytes") != 0) || (field_is_byte_array(field) == 0)))
+    {
+        fprintf(stderr, "struct-meta-gen: %d: meta.kind はバイト配列へ bytes だけを指定できます: %s\n", field->line,
+                field->name);
+        exit(1);
+    }
+
+    const struct_meta_gen_attribute *format = field_attribute(field, "meta.format");
+    if ((format != NULL) &&
+        ((format->value == NULL) || (strcmp(format->value, "hex") != 0) || (field_is_byte_array(field) == 0)))
+    {
+        fprintf(stderr, "struct-meta-gen: %d: meta.format=hex はバイト配列だけへ指定できます: %s\n", field->line,
+                field->name);
+        exit(1);
+    }
+}
+
 /**
  *  @brief          フィールドの型スペリングから、要素 1 個分の `sizeof` 式を求めます。
  */
@@ -311,6 +369,7 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
 
     for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
     {
+        validate_meta_attributes(f);
         char symbol[STRUCT_META_GEN_EMIT_PATH_BYTES];
         snprintf(symbol, sizeof(symbol), "%s_%s", s->name, f->name);
         emit_attributes(out, symbol, f->attributes);
@@ -320,7 +379,8 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
     fprintf(out, "static const struct_meta_field g_%s_fields[] = {\n", s->name);
     for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
     {
-        int is_char_array = ((!f->is_struct_type) && (strcmp(f->type_name, "char") == 0) && (f->array_count > 0));
+        int is_char_array = ((!f->is_struct_type) && (strcmp(f->type_name, "char") == 0) && (f->array_count > 0) &&
+                             (field_is_byte_array(f) == 0));
         long array_count_out = 1;
         char char_buf_expr[256] = "0";
         char elem_size_expr[128] = "0";
@@ -695,10 +755,15 @@ int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char 
     fprintf(out, "#include <cplat/runtime/shutdown.h>\n");
     fprintf(out, "#include <cplat/sync/sync.h>\n\n");
     fprintf(out, "#include <stddef.h>\n");
+    fprintf(out, "#include <limits.h>\n");
     fprintf(out, "#include <stdint.h>\n");
     fprintf(out, "#include <stdio.h>\n");
     fprintf(out, "#include <stdlib.h>\n");
     fprintf(out, "#include <time.h>\n\n");
+    fprintf(out, "_Static_assert(CHAR_BIT == 8, \"struct-meta は8ビットの char を前提とします\");\n");
+    fprintf(out, "_Static_assert(CHAR_MIN == INT8_MIN, \"struct-meta は符号付きの char を前提とします\");\n");
+    fprintf(out,
+            "_Static_assert(CHAR_MAX == INT8_MAX, \"struct-meta は char と int8_t の同じ範囲を前提とします\");\n\n");
 
     emitted_name *emitted = NULL;
     for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)

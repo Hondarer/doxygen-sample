@@ -18,6 +18,8 @@
 生成ファイルは `gen/` に置かれ、Git では管理しません。  
 生成器は Doxygen コメントの `@struct_meta{key}` と `@struct_meta{key=value}` を解析し、構造体またはフィールドの汎用 key/value 属性として保持します。  
 属性の記述方法と制約は [アーキテクチャー](docs/architecture.md#doxygen-属性の書式) を参照してください。
+文字列とバイト配列の判定、および `meta.kind` と `meta.format` は
+[文字列とバイト配列](docs/architecture.md#文字列とバイト配列) を参照してください。
 
 ## 実行
 

@@ -18,6 +18,7 @@
 #include <struct_meta/patch/patch.h>
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
@@ -94,7 +95,7 @@ static int append_index_path(const char *path, size_t index, char **path_out)
  *  @brief          フィールド 1 個分の現在値を、一覧表示用に短く整形します。
  */
 static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
-                                char *dest, size_t dest_size)
+                                size_t char_buffer_size, char *dest, size_t dest_size)
 {
     switch (kind)
     {
@@ -135,7 +136,14 @@ static void format_scalar_value(struct_meta_field_kind kind, const unsigned char
         break;
     }
     case STRUCT_META_FIELD_CHAR_ARRAY:
-        snprintf(dest, dest_size, "\"%s\"", (const char *)field_ptr);
+        if ((char_buffer_size == 0U) || (memchr(field_ptr, '\0', char_buffer_size) == NULL))
+        {
+            snprintf(dest, dest_size, "<NUL 終端なし>");
+        }
+        else
+        {
+            snprintf(dest, dest_size, "\"%s\"", (const char *)field_ptr);
+        }
         break;
     case STRUCT_META_FIELD_STRUCT:
     default:
@@ -242,7 +250,7 @@ static int patch_scalar(cplat_prompt *prompt, const struct_meta_field *field, un
     char line[STRUCT_META_PATCH_LINE_BYTES];
     char current[64];
 
-    format_scalar_value(field->kind, field_ptr, field->element_size, current, sizeof(current));
+    format_scalar_value(field->kind, field_ptr, field->element_size, field->char_buffer_size, current, sizeof(current));
 
     for (;;)
     {
@@ -338,6 +346,52 @@ static int patch_scalar(cplat_prompt *prompt, const struct_meta_field *field, un
     }
 }
 
+static int patch_hex_array(cplat_prompt *prompt, const struct_meta_field *field, unsigned char *field_ptr,
+                           const char *path)
+{
+    size_t text_size;
+    int ret = struct_meta_internal_bytes_hex_text_size(field->element_count, &text_size);
+    if (ret != CPLAT_OK)
+    {
+        return ret;
+    }
+    if (text_size > (SIZE_MAX / 2U))
+    {
+        return CPLAT_ERR_OUT_OF_RANGE;
+    }
+
+    char *current = (char *)malloc(text_size);
+    char *line = (char *)malloc(text_size * 2U);
+    if ((current == NULL) || (line == NULL))
+    {
+        free(current);
+        free(line);
+        return CPLAT_ERR_OUT_OF_MEMORY;
+    }
+    ret = struct_meta_internal_bytes_to_hex(field_ptr, field->element_count, current, text_size);
+    while (ret == CPLAT_OK)
+    {
+        ret =
+            cplat_prompt_readline_fmt(prompt, line, text_size * 2U, "%s (現在値 %s、空行で変更なし)> ", path, current);
+        if ((ret != CPLAT_OK) || (line[0] == '\0'))
+        {
+            break;
+        }
+        int parse_ret = struct_meta_internal_bytes_from_hex(field_ptr, field->element_count, line);
+        if (parse_ret == CPLAT_OK)
+        {
+            break;
+        }
+        else
+        {
+            printf("%zu 個のバイトを2桁の16進数で空白区切りにしてください: %s\n", field->element_count, line);
+        }
+    }
+    free(current);
+    free(line);
+    return ret;
+}
+
 /**
  *  @brief          フィールド 1 要素分 (配列要素、またはネスト構造体) を編集します。
  */
@@ -415,8 +469,7 @@ static int patch_array_field(cplat_prompt *prompt, const struct_meta_field *fiel
 /**
  *  @brief          構造体インスタンス 1 個分のフィールド一覧をメニュー形式で辿ります。
  */
-static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base,
-                        const char *path)
+static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base, const char *path)
 {
     char line[STRUCT_META_PATCH_LINE_BYTES];
 
@@ -469,12 +522,47 @@ static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc
             }
             else if ((field->kind != STRUCT_META_FIELD_CHAR_ARRAY) && (field->element_count > 1U))
             {
-                printf("  %zu) %s [配列 %zu 件]%s%s\n", i + 1U, field_path, field->element_count, brief_sep, brief);
+                struct_meta_internal_byte_format byte_format;
+                int format_ret = struct_meta_internal_field_byte_format(field, &byte_format);
+                if (format_ret != CPLAT_OK)
+                {
+                    free(field_path);
+                    return format_ret;
+                }
+                if (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX)
+                {
+                    size_t text_size;
+                    format_ret = struct_meta_internal_bytes_hex_text_size(field->element_count, &text_size);
+                    char *text = NULL;
+                    if (format_ret == CPLAT_OK)
+                    {
+                        text = (char *)malloc(text_size);
+                        format_ret = (text == NULL) ? CPLAT_ERR_OUT_OF_MEMORY : CPLAT_OK;
+                    }
+                    if (format_ret == CPLAT_OK)
+                    {
+                        format_ret =
+                            struct_meta_internal_bytes_to_hex(field_ptr, field->element_count, text, text_size);
+                    }
+                    if (format_ret != CPLAT_OK)
+                    {
+                        free(text);
+                        free(field_path);
+                        return format_ret;
+                    }
+                    printf("  %zu) %s = %s%s%s\n", i + 1U, field_path, text, brief_sep, brief);
+                    free(text);
+                }
+                else
+                {
+                    printf("  %zu) %s [配列 %zu 件]%s%s\n", i + 1U, field_path, field->element_count, brief_sep, brief);
+                }
             }
             else
             {
                 char current[64];
-                format_scalar_value(field->kind, field_ptr, field->element_size, current, sizeof(current));
+                format_scalar_value(field->kind, field_ptr, field->element_size, field->char_buffer_size, current,
+                                    sizeof(current));
                 printf("  %zu) %s = %s%s%s\n", i + 1U, field_path, current, brief_sep, brief);
             }
             free(field_path);
@@ -504,7 +592,23 @@ static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc
         {
             return ret;
         }
-        if ((field->kind != STRUCT_META_FIELD_CHAR_ARRAY) && (field->element_count > 1U))
+        struct_meta_internal_byte_format byte_format;
+        ret = struct_meta_internal_field_byte_format(field, &byte_format);
+        if (ret != CPLAT_OK)
+        {
+            free(field_path);
+            return ret;
+        }
+        if (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX)
+        {
+            void *element;
+            ret = struct_meta_field_get_element(field, base, 0U, &element);
+            if (ret == CPLAT_OK)
+            {
+                ret = patch_hex_array(prompt, field, (unsigned char *)element, field_path);
+            }
+        }
+        else if ((field->kind != STRUCT_META_FIELD_CHAR_ARRAY) && (field->element_count > 1U))
         {
             void *element;
             ret = struct_meta_field_get_element(field, base, 0U, &element);
@@ -550,7 +654,8 @@ static int path_has_terminal_index(const char *path)
 /**
  *  @brief          プロンプトを作成し、指定されたフィールドまたは配列を編集します。
  */
-static int patch_target(const struct_meta_field *field, unsigned char *value, const char *path, int edit_array)
+static int patch_target(const struct_meta_field *field, unsigned char *value, const char *path, int edit_array,
+                        int edit_hex)
 {
     cplat_prompt *prompt = cplat_prompt_create(NULL);
     if (prompt == NULL)
@@ -559,7 +664,11 @@ static int patch_target(const struct_meta_field *field, unsigned char *value, co
     }
 
     int ret;
-    if (edit_array != 0)
+    if (edit_hex != 0)
+    {
+        ret = patch_hex_array(prompt, field, value, path);
+    }
+    else if (edit_array != 0)
     {
         ret = patch_array_field(prompt, field, value, path);
     }
@@ -626,6 +735,13 @@ int struct_meta_patch_path_interactive(const struct_meta_descriptor *desc, void 
 
     int edit_array = (field->kind != STRUCT_META_FIELD_CHAR_ARRAY) && (field->element_count > 1U) &&
                      (path_has_terminal_index(path) == 0);
-    ret = patch_target(field, (unsigned char *)value, path, edit_array);
+    struct_meta_internal_byte_format byte_format;
+    ret = struct_meta_internal_field_byte_format(field, &byte_format);
+    if (ret != CPLAT_OK)
+    {
+        return ret;
+    }
+    int edit_hex = (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX) && (path_has_terminal_index(path) == 0);
+    ret = patch_target(field, (unsigned char *)value, path, edit_array, edit_hex);
     return ret;
 }

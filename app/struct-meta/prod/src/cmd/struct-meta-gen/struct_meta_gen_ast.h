@@ -24,7 +24,7 @@
 typedef struct struct_meta_gen_typespec
 {
     char *name;    /**< 型のスペリングです (@ref struct_meta_gen_find_scalar_type が扱う型名、
-                       *   "char"、または他の `typedef struct` の名前 (ネスト メンバー))。 */
+                       *   または他の `typedef struct` の名前 (ネスト メンバー))。 */
     int is_struct; /**< 1 なら `name` は同一ヘッダー内の構造体名 (ネスト メンバー) です。 */
     int pad;       /**< 明示的アラインメント (構造体全体を 8 バイト境界へ揃える)。 */
 } struct_meta_gen_typespec;
@@ -44,7 +44,7 @@ typedef struct struct_meta_gen_scalar_type
  *  @param[in]      name  型スペリング。NULL を渡してはなりません。
  *  @return         対応する情報。対応しない型名なら NULL を返します。
  *
- *  `char` は文字列として扱うため、この表には含めません。\n
+ *  `char` はスカラーでは符号付き整数、配列では既定で文字列として扱います。\n
  *  `long` と `unsigned long` は LP64 と LLP64 で幅が異なり、生成物のプラットフォーム間
  *  互換性を壊すため、この表に含めず文法規則で拒否します。
  */

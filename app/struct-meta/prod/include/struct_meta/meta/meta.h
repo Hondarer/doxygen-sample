@@ -37,6 +37,9 @@ extern "C"
      *  表します。`int`、`long long`、`int32_t` のような C の型名ごとに種別を増やさず、
      *  対応する型が増えても列挙が変わらないようにするためです。\n
      *  整数の @ref struct_meta_field::element_size は 1、2、4、8 のいずれかです。
+     *  `char[N]` は既定で NUL 終端文字列です。`signed char[N]`、`unsigned char[N]`、
+     *  `int8_t[N]`、`uint8_t[N]` はバイト配列です。`char[N]` に
+     *  `meta.kind=bytes` 属性を指定した場合も、符号付きバイト配列として扱います。
      */
     typedef enum struct_meta_field_kind
     {
@@ -44,7 +47,7 @@ extern "C"
         STRUCT_META_FIELD_UNSIGNED_INTEGER = 1, /**< 符号なし整数です。幅は element_size が表します。 */
         STRUCT_META_FIELD_FLOAT = 2,            /**< float 値です。 */
         STRUCT_META_FIELD_DOUBLE = 3,           /**< double 値です。 */
-        STRUCT_META_FIELD_CHAR_ARRAY = 4,       /**< NUL 終端文字列として扱う char 配列です。 */
+        STRUCT_META_FIELD_CHAR_ARRAY = 4,       /**< NUL 終端文字列として扱う既定の char 配列です。 */
         STRUCT_META_FIELD_STRUCT = 5            /**< ネストした構造体です。 */
     } struct_meta_field_kind;
 

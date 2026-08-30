@@ -36,7 +36,7 @@ struct_meta_gen_struct_list *g_struct_meta_gen_structs = NULL;
 }
 
 %token TYPEDEF STRUCT
-%token T_INT T_UNSIGNED T_CHAR T_FLOAT T_DOUBLE T_LONG
+%token T_INT T_SIGNED T_UNSIGNED T_CHAR T_FLOAT T_DOUBLE T_LONG
 %token LBRACE RBRACE LBRACKET RBRACKET SEMI COMMA STAR
 %token <str> IDENT
 %token <str> DOC_PREFIX DOC_POSTFIX
@@ -127,6 +127,8 @@ field_decl:
 
 type_spec:
       T_INT { $$.name = cplat_strdup("int"); $$.is_struct = 0; }
+    | T_SIGNED T_CHAR { $$.name = cplat_strdup("signed char"); $$.is_struct = 0; }
+    | T_UNSIGNED T_CHAR { $$.name = cplat_strdup("unsigned char"); $$.is_struct = 0; }
     | T_UNSIGNED { $$.name = cplat_strdup("unsigned"); $$.is_struct = 0; }
     | T_UNSIGNED T_INT { $$.name = cplat_strdup("unsigned"); $$.is_struct = 0; }
     | T_CHAR { $$.name = cplat_strdup("char"); $$.is_struct = 0; }

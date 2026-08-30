@@ -33,6 +33,25 @@ typedef struct address
 } address;
 
 /**
+ *  @brief          1 バイト整数、文字列、バイト配列の判定確認に使用します。
+ */
+typedef struct byte_fields
+{
+    char character;                   /**< plain char のスカラーです。 */
+    signed char signed_character;     /**< signed char のスカラーです。 */
+    unsigned char unsigned_character; /**< unsigned char のスカラーです。 */
+    int8_t fixed_signed;              /**< int8_t のスカラーです。 */
+    uint8_t fixed_unsigned;           /**< uint8_t のスカラーです。 */
+    char text[4];                     /**< NUL 終端文字列です。 */
+    char raw_chars[3];                /**< char のバイト配列です。 @struct_meta{meta.kind=bytes} */
+    signed char signed_bytes[3];      /**< signed char のバイト配列です。 */
+    unsigned char unsigned_bytes[3];  /**< unsigned char のバイト配列です。 */
+    int8_t fixed_signed_bytes[3];     /**< int8_t のバイト配列です。 */
+    uint8_t fixed_unsigned_bytes[3];  /**< uint8_t のバイト配列です。 */
+    uint8_t hex_bytes[3];             /**< 16進形式のバイト配列です。 @struct_meta{meta.format=hex} */
+} byte_fields;
+
+/**
  *  @brief          動作確認に使う構造体です。ネスト構造体・固定長配列メンバーを含みます。
  *  @struct_meta{sample.category=person}
  */

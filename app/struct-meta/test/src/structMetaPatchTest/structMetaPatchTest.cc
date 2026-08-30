@@ -34,21 +34,27 @@ struct Sample
     Address addresses[2];
     int scores[3];
     int id;
+    uint8_t hex_bytes[4];
 };
 
 const struct_meta_field kAddressFields[] = {
     {"city", STRUCT_META_FIELD_CHAR_ARRAY, 0, offsetof(Address, city), sizeof(char), 1, sizeof(Address::city), nullptr,
      nullptr, nullptr, 0},
-    {"zip", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Address, zip), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
+    {"zip", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Address, zip), sizeof(int), 1, 0, nullptr, nullptr, nullptr,
+     0},
 };
 const struct_meta_descriptor kAddressDescriptor = {"Address", sizeof(Address), kAddressFields, 2, nullptr, nullptr, 0};
+const struct_meta_attribute kHexAttributes[] = {{"meta.format", "hex"}};
 const struct_meta_field kSampleFields[] = {
     {"addresses", STRUCT_META_FIELD_STRUCT, 0, offsetof(Sample, addresses), sizeof(Address), 2, 0, &kAddressDescriptor,
      nullptr, nullptr, 0},
-    {"scores", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Sample, scores), sizeof(int), 3, 0, nullptr, nullptr, nullptr, 0},
+    {"scores", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Sample, scores), sizeof(int), 3, 0, nullptr, nullptr,
+     nullptr, 0},
     {"id", STRUCT_META_FIELD_SIGNED_INTEGER, 0, offsetof(Sample, id), sizeof(int), 1, 0, nullptr, nullptr, nullptr, 0},
+    {"hex_bytes", STRUCT_META_FIELD_UNSIGNED_INTEGER, 0, offsetof(Sample, hex_bytes), sizeof(uint8_t), 4, 0, nullptr,
+     nullptr, kHexAttributes, 1},
 };
-const struct_meta_descriptor kSampleDescriptor = {"Sample", sizeof(Sample), kSampleFields, 3, nullptr, nullptr, 0};
+const struct_meta_descriptor kSampleDescriptor = {"Sample", sizeof(Sample), kSampleFields, 4, nullptr, nullptr, 0};
 
 void copy_line(char *dest, size_t dest_size, const std::string &line)
 {
@@ -123,6 +129,43 @@ TEST_F(StructMetaPatchTest, PathSelectsArrayElement)
 
     EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - 編集が成功すること。
     EXPECT_EQ(42, sample.scores[1]); // [確認_正常系] - 指定した要素だけが更新されること。
+}
+
+TEST_F(StructMetaPatchTest, path_edits_hex_array_as_a_whole)
+{
+    // Arrange
+    Sample sample = {};
+    expect_inputs({"aa bb gg dd", "AA bb cc DD"});
+
+    // Pre-Assert
+
+    // Act
+    int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "hex_bytes");
+    // [手順] - 不正な入力に続けて正しい16進文字列を指定する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_OK, actual_ret);      // [確認_正常系] - 再入力後に編集が成功すること。
+    EXPECT_EQ(0xaa, sample.hex_bytes[0]); // [確認_正常系] - 先頭バイトを更新すること。
+    EXPECT_EQ(0xbb, sample.hex_bytes[1]); // [確認_正常系] - 2番目のバイトを更新すること。
+    EXPECT_EQ(0xcc, sample.hex_bytes[2]); // [確認_正常系] - 3番目のバイトを更新すること。
+    EXPECT_EQ(0xdd, sample.hex_bytes[3]); // [確認_正常系] - 末尾バイトを更新すること。
+}
+
+TEST_F(StructMetaPatchTest, path_edits_hex_array_element_as_decimal)
+{
+    // Arrange
+    Sample sample = {};
+    expect_inputs({"127"});
+
+    // Pre-Assert
+
+    // Act
+    int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "hex_bytes[1]");
+    // [手順] - hex配列の1要素を10進整数で指定する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_OK, actual_ret);     // [確認_正常系] - 要素編集が成功すること。
+    EXPECT_EQ(127, sample.hex_bytes[1]); // [確認_正常系] - 指定要素を10進値で更新すること。
 }
 
 TEST_F(StructMetaPatchTest, PathEndingAtStructOpensFieldMenu)
@@ -251,7 +294,7 @@ TEST_F(StructMetaPatchTest, InvalidArgumentsAreRejectedBeforePromptCreation)
 TEST_F(StructMetaPatchTest, CorruptDescriptorIsRejectedBeforePromptCreation)
 {
     Sample sample = {}; // [準備_異常系] - 不正な記述子の対象インスタンスを用意する。
-    const struct_meta_descriptor corrupt_descriptor = {nullptr, sizeof(Sample), kSampleFields, 3, nullptr, nullptr, 0};
+    const struct_meta_descriptor corrupt_descriptor = {nullptr, sizeof(Sample), kSampleFields, 4, nullptr, nullptr, 0};
     EXPECT_CALL(mock_cplat, cplat_prompt_create(_)).Times(0);
     // [Pre-Assert確認_異常系] - 記述子検査に失敗した場合はプロンプトを作成しないこと。
 

@@ -26,6 +26,9 @@
  *  see: app/struct-meta/docs/architecture.md
  */
 static const struct_meta_gen_scalar_type g_scalar_types[] = {
+    {"char", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(char)"},
+    {"signed char", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(signed char)"},
+    {"unsigned char", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned char)"},
     {"int", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int)"},
     {"unsigned", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned int)"},
     {"long long", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(long long)"},

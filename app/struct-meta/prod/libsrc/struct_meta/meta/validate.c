@@ -10,6 +10,7 @@
 
 #include <struct_meta/meta/meta.h>
 
+#include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/index_internal.h>
 #include <struct_meta/meta/integer.h>
 
@@ -108,9 +109,8 @@ static int validate_descriptor(validation_context *context, const struct_meta_de
         const struct_meta_field *field = &descriptor->fields[i];
         size_t field_size;
 
-        if ((field->name == NULL) || (field->name[0] == '\0') ||
-            (field->kind < STRUCT_META_FIELD_SIGNED_INTEGER) || (field->kind > STRUCT_META_FIELD_STRUCT) ||
-            (field->element_size == 0U) || (field->element_count == 0U))
+        if ((field->name == NULL) || (field->name[0] == '\0') || (field->kind < STRUCT_META_FIELD_SIGNED_INTEGER) ||
+            (field->kind > STRUCT_META_FIELD_STRUCT) || (field->element_size == 0U) || (field->element_count == 0U))
         {
             ret = CPLAT_ERR_CORRUPT_DESCRIPTOR;
             break;
@@ -170,6 +170,13 @@ static int validate_descriptor(validation_context *context, const struct_meta_de
         }
 
         ret = validate_attributes(field->attributes, field->attribute_count);
+        if (ret != CPLAT_OK)
+        {
+            break;
+        }
+
+        struct_meta_internal_byte_format byte_format;
+        ret = struct_meta_internal_field_byte_format(field, &byte_format);
         if (ret != CPLAT_OK)
         {
             break;

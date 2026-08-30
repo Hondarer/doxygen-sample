@@ -63,6 +63,7 @@ int g_line = 1;
 "typedef"                       { return TYPEDEF; }
 "struct"                        { return STRUCT; }
 "int"                           { return T_INT; }
+"signed"                        { return T_SIGNED; }
 "unsigned"                      { return T_UNSIGNED; }
 "long"                          { return T_LONG; }
 "char"                          { return T_CHAR; }

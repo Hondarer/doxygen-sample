@@ -11,21 +11,78 @@ TEST(sampleTypesMetaTest, finds_descriptor_through_embedded_index)
        「索引へ接続できた」ことの表明になる。 */
 
     // Pre-Assert
-    ASSERT_EQ(2U, sample_types_meta_count()); // [事前条件] - 生成カタログが 2 型を持つこと。
+    ASSERT_EQ(3U, sample_types_meta_count()); // [事前条件] - 生成カタログが 3 型を持つこと。
 
     // Act
-    const struct_meta_descriptor *person = sample_types_meta_find("person"); // [手順] - 型名で記述子を検索する。
+    const struct_meta_descriptor *person = sample_types_meta_find("person");   // [手順] - 型名で記述子を検索する。
     const struct_meta_descriptor *address = sample_types_meta_find("address"); // [手順] - もう 1 つの型名を検索する。
     const struct_meta_descriptor *unknown = sample_types_meta_find("unknown"); // [手順] - 未知の型名を検索する。
     const struct_meta_descriptor *empty = sample_types_meta_find("");          // [手順] - 空の型名を検索する。
 
     // Assert
-    ASSERT_NE(nullptr, person);           // [確認_正常系] - person の記述子が引けること。
-    EXPECT_STREQ("person", person->name); // [確認_正常系] - 引いた記述子が person であること。
-    ASSERT_NE(nullptr, address);          // [確認_正常系] - address の記述子が引けること。
+    ASSERT_NE(nullptr, person);             // [確認_正常系] - person の記述子が引けること。
+    EXPECT_STREQ("person", person->name);   // [確認_正常系] - 引いた記述子が person であること。
+    ASSERT_NE(nullptr, address);            // [確認_正常系] - address の記述子が引けること。
     EXPECT_STREQ("address", address->name); // [確認_正常系] - 引いた記述子が address であること。
     EXPECT_EQ(nullptr, unknown);            // [確認_正常系] - 未知の型名で NULL が返ること。
     EXPECT_EQ(nullptr, empty);              // [確認_正常系] - 空の型名で NULL が返ること。
+}
+
+TEST(sampleTypesMetaTest, classifies_character_and_byte_fields)
+{
+    // Arrange
+    const struct_meta_descriptor *descriptor = sample_types_meta_find("byte_fields");
+
+    // Pre-Assert
+    ASSERT_NE(nullptr, descriptor); // [事前条件] - 生成した確認用記述子が存在すること。
+
+    // Act
+    const struct_meta_field *character = nullptr;
+    const struct_meta_field *signed_character = nullptr;
+    const struct_meta_field *unsigned_character = nullptr;
+    const struct_meta_field *fixed_signed = nullptr;
+    const struct_meta_field *fixed_unsigned = nullptr;
+    const struct_meta_field *text = nullptr;
+    const struct_meta_field *raw_chars = nullptr;
+    const struct_meta_field *signed_bytes = nullptr;
+    const struct_meta_field *unsigned_bytes = nullptr;
+    const struct_meta_field *fixed_signed_bytes = nullptr;
+    const struct_meta_field *fixed_unsigned_bytes = nullptr;
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "character", &character));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "signed_character", &signed_character));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "unsigned_character", &unsigned_character));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "fixed_signed", &fixed_signed));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "fixed_unsigned", &fixed_unsigned));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "text", &text));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "raw_chars", &raw_chars));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "signed_bytes", &signed_bytes));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "unsigned_bytes", &unsigned_bytes));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "fixed_signed_bytes", &fixed_signed_bytes));
+    ASSERT_EQ(CPLAT_OK, struct_meta_descriptor_find_field(descriptor, "fixed_unsigned_bytes", &fixed_unsigned_bytes));
+
+    // Assert
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              character->kind); // [確認_正常系] - plain char が符号付き整数であること。
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              signed_character->kind); // [確認_正常系] - signed char が符号付き整数であること。
+    EXPECT_EQ(STRUCT_META_FIELD_UNSIGNED_INTEGER,
+              unsigned_character->kind); // [確認_正常系] - unsigned char が符号なし整数であること。
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              fixed_signed->kind); // [確認_正常系] - int8_t が符号付き整数であること。
+    EXPECT_EQ(STRUCT_META_FIELD_UNSIGNED_INTEGER,
+              fixed_unsigned->kind);                     // [確認_正常系] - uint8_t が符号なし整数であること。
+    EXPECT_EQ(STRUCT_META_FIELD_CHAR_ARRAY, text->kind); // [確認_正常系] - char 配列の既定が文字列であること。
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              raw_chars->kind);              // [確認_正常系] - 属性付き char 配列が符号付きバイト配列であること。
+    EXPECT_EQ(3U, raw_chars->element_count); // [確認_正常系] - char 配列の全要素が保持されること。
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              signed_bytes->kind); // [確認_正常系] - signed char 配列が符号付きであること。
+    EXPECT_EQ(STRUCT_META_FIELD_UNSIGNED_INTEGER,
+              unsigned_bytes->kind); // [確認_正常系] - unsigned char 配列が符号なしであること。
+    EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER,
+              fixed_signed_bytes->kind); // [確認_正常系] - int8_t 配列が符号付きであること。
+    EXPECT_EQ(STRUCT_META_FIELD_UNSIGNED_INTEGER,
+              fixed_unsigned_bytes->kind); // [確認_正常系] - uint8_t 配列が符号なしであること。
 }
 
 TEST(sampleTypesMetaTest, rejects_null_name)
@@ -56,8 +113,8 @@ TEST(sampleTypesMetaTest, registers_descriptors_into_index)
                                                    &field); // [手順] - 登録済み記述子のフィールドを検索する。
 
     // Assert
-    ASSERT_EQ(CPLAT_OK, actual);                            // [確認_正常系] - フィールド検索が成功すること。
-    EXPECT_STREQ("balance", field->name);                   // [確認_正常系] - 要求したフィールドが返ること。
+    ASSERT_EQ(CPLAT_OK, actual);                              // [確認_正常系] - フィールド検索が成功すること。
+    EXPECT_STREQ("balance", field->name);                     // [確認_正常系] - 要求したフィールドが返ること。
     EXPECT_EQ(STRUCT_META_FIELD_SIGNED_INTEGER, field->kind); // [確認_正常系] - 符号付き整数と判定されること。
-    EXPECT_EQ(sizeof(int64_t), field->element_size);        // [確認_正常系] - 幅が 8 バイトであること。
+    EXPECT_EQ(sizeof(int64_t), field->element_size);          // [確認_正常系] - 幅が 8 バイトであること。
 }

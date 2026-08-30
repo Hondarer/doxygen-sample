@@ -14,12 +14,14 @@
 #include <struct_meta/print/print.h>
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void print_indent(FILE *out, int indent)
@@ -31,8 +33,8 @@ static void print_indent(FILE *out, int indent)
     }
 }
 
-static void format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
-                                char *dest, size_t dest_size)
+static int format_scalar_value(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
+                               size_t char_buffer_size, char *dest, size_t dest_size)
 {
     switch (kind)
     {
@@ -42,10 +44,10 @@ static void format_scalar_value(struct_meta_field_kind kind, const unsigned char
         if (struct_meta_internal_integer_load_signed(field_ptr, element_size, &value) != CPLAT_OK)
         {
             snprintf(dest, dest_size, "?");
-            break;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         snprintf(dest, dest_size, "%" PRId64, value);
-        break;
+        return CPLAT_OK;
     }
     case STRUCT_META_FIELD_UNSIGNED_INTEGER:
     {
@@ -53,32 +55,36 @@ static void format_scalar_value(struct_meta_field_kind kind, const unsigned char
         if (struct_meta_internal_integer_load_unsigned(field_ptr, element_size, &value) != CPLAT_OK)
         {
             snprintf(dest, dest_size, "?");
-            break;
+            return CPLAT_ERR_INVALID_ARGUMENT;
         }
         snprintf(dest, dest_size, "%" PRIu64, value);
-        break;
+        return CPLAT_OK;
     }
     case STRUCT_META_FIELD_FLOAT:
     {
         float value;
         memcpy(&value, field_ptr, sizeof(value));
         snprintf(dest, dest_size, "%g", (double)value);
-        break;
+        return CPLAT_OK;
     }
     case STRUCT_META_FIELD_DOUBLE:
     {
         double value;
         memcpy(&value, field_ptr, sizeof(value));
         snprintf(dest, dest_size, "%g", value);
-        break;
+        return CPLAT_OK;
     }
     case STRUCT_META_FIELD_CHAR_ARRAY:
+        if ((char_buffer_size == 0U) || (memchr(field_ptr, '\0', char_buffer_size) == NULL))
+        {
+            return CPLAT_ERR_INVALID_ENCODING;
+        }
         snprintf(dest, dest_size, "\"%s\"", (const char *)field_ptr);
-        break;
+        return CPLAT_OK;
     case STRUCT_META_FIELD_STRUCT:
     default:
         snprintf(dest, dest_size, "{...}");
-        break;
+        return CPLAT_ERR_INVALID_ARGUMENT;
     }
 }
 
@@ -100,7 +106,12 @@ static int print_element(const struct_meta_field *field, const unsigned char *el
 
     {
         char current[64];
-        format_scalar_value(field->kind, elem_ptr, field->element_size, current, sizeof(current));
+        int ret = format_scalar_value(field->kind, elem_ptr, field->element_size, field->char_buffer_size, current,
+                                      sizeof(current));
+        if (ret != CPLAT_OK)
+        {
+            return ret;
+        }
         print_indent(out, indent);
         fprintf(out, "%s = %s\n", label, current);
     }
@@ -109,6 +120,41 @@ static int print_element(const struct_meta_field *field, const unsigned char *el
 
 static int print_field(const struct_meta_field *field, const unsigned char *base, FILE *out, int indent)
 {
+    struct_meta_internal_byte_format byte_format;
+    int format_ret = struct_meta_internal_field_byte_format(field, &byte_format);
+    if (format_ret != CPLAT_OK)
+    {
+        return format_ret;
+    }
+    if (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX)
+    {
+        const void *element;
+        int ret = struct_meta_field_get_const_element(field, base, 0U, &element);
+        if (ret != CPLAT_OK)
+        {
+            return ret;
+        }
+        size_t text_size;
+        ret = struct_meta_internal_bytes_hex_text_size(field->element_count, &text_size);
+        if (ret != CPLAT_OK)
+        {
+            return ret;
+        }
+        char *text = (char *)malloc(text_size);
+        if (text == NULL)
+        {
+            return CPLAT_ERR_OUT_OF_MEMORY;
+        }
+        ret = struct_meta_internal_bytes_to_hex((const unsigned char *)element, field->element_count, text, text_size);
+        if (ret == CPLAT_OK)
+        {
+            print_indent(out, indent);
+            fprintf(out, "%s = %s\n", field->name, text);
+        }
+        free(text);
+        return ret;
+    }
+
     if ((field->kind == STRUCT_META_FIELD_CHAR_ARRAY) || (field->element_count <= 1U))
     {
         const void *element;

@@ -16,6 +16,7 @@
 #include "json.h"
 
 #include <struct_meta/access/access.h>
+#include <struct_meta/meta/bytes.h>
 #include <struct_meta/meta/integer.h>
 
 #include <cplat/base/result.h>
@@ -41,8 +42,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
         double raw = cJSON_GetNumberValue(item);
         /* 範囲検査を先に行う。範囲外や NaN のまま int64_t へ変換すると未定義動作になる。
            否定形で書くことで、比較がすべて偽になる NaN もここで弾く。 */
-        if (!((raw >= -(double)STRUCT_META_JSON_INTEGER_LIMIT) &&
-              (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
+        if (!((raw >= -(double)STRUCT_META_JSON_INTEGER_LIMIT) && (raw <= (double)STRUCT_META_JSON_INTEGER_LIMIT)))
         {
             return CPLAT_ERR_OUT_OF_RANGE;
         }
@@ -165,6 +165,28 @@ static int field_from_json(const struct_meta_field *field, const cJSON *json, un
             return CPLAT_ERR_MISSING_REQUIRED;
         }
         return CPLAT_OK;
+    }
+
+    struct_meta_internal_byte_format byte_format;
+    int format_ret = struct_meta_internal_field_byte_format(field, &byte_format);
+    if (format_ret != CPLAT_OK)
+    {
+        return format_ret;
+    }
+    if (byte_format == STRUCT_META_INTERNAL_BYTE_FORMAT_HEX)
+    {
+        if (!cJSON_IsString(item))
+        {
+            return CPLAT_ERR_INVALID_ARGUMENT;
+        }
+        void *element;
+        int ret = struct_meta_field_get_element(field, base, 0U, &element);
+        if (ret != CPLAT_OK)
+        {
+            return ret;
+        }
+        return struct_meta_internal_bytes_from_hex((unsigned char *)element, field->element_count,
+                                                   cJSON_GetStringValue(item));
     }
 
     if ((field->kind == STRUCT_META_FIELD_CHAR_ARRAY) || (field->element_count <= 1U))
