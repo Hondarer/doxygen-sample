@@ -27,10 +27,11 @@
  *  ゼロ初期化します。実行中に何度でも対象を切り替えられます。\n
  *
  *  入出力は JSON とバイナリの 2 形式です。`loadjson` / `savejson` / `catjson` は
- *  記述子に従って JSON へ相互変換し、`loadbin` / `savebin` / `catbin` は記述子が
- *  表すバイト列をそのまま扱います。いずれもファイル名を引数に取ります。\n
+ *  記述子に従って JSON へ相互変換し、`dumpjson` は現在の値を標準出力へ表示します。\n
+ *  `loadbin` / `savebin` / `catbin` は記述子が表すバイト列をそのまま扱い、`dumpbin` は
+ *  現在の値を標準出力へ 16 進ダンプします。\n
  *  `patch` はメニュー形式、`patch <path>` はパス指定で編集対象を選びます。\n
- *  その他は `dump` / `help` / `exit` です。\n
+ *  その他は `dump` / `dumpjson` / `dumpbin` / `help` / `exit` です。\n
  *  ルートメニューの空行は `help` と同じです。終了は `exit` です。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
@@ -40,6 +41,7 @@
 
 #include <struct_meta/catalog/catalog.h>
 #include <struct_meta/json/file.h>
+#include <struct_meta/json/json.h>
 #include <struct_meta/patch/patch.h>
 #include <struct_meta/print/print.h>
 
@@ -53,6 +55,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,8 +128,8 @@ static void print_commands(void)
     fprintf(stderr, "commands: init <");
     print_builtin_catalog_names(stderr);
     fprintf(stderr, "|header-path>  patch [field-path]  dump  help  exit\n");
-    fprintf(stderr, "          loadjson <path>  savejson <path>  catjson <path>   (JSON)\n");
-    fprintf(stderr, "          loadbin  <path>  savebin  <path>  catbin  <path>   (バイナリ)\n");
+    fprintf(stderr, "          loadjson <path>  savejson <path>  catjson <path>  dumpjson   (JSON)\n");
+    fprintf(stderr, "          loadbin  <path>  savebin  <path>  catbin  <path>  dumpbin    (バイナリ)\n");
     fprintf(stderr, "          (空行は help、終了は exit)\n");
 }
 
@@ -295,6 +298,59 @@ static void cmd_savejson(const sample_target *target, const char *path)
 }
 
 /**
+ *  @brief          構造体の内容を整形 JSON として標準出力へ表示します。
+ *
+ *  ファイルを作成せず、`savejson` で保存した内容を `catjson` で表示した場合と同じ内容を
+ *  出力します。
+ */
+static void cmd_dumpjson(const sample_target *target)
+{
+    cJSON *json = NULL;
+    int ret = struct_meta_json_encode(target->descriptor, target->instance, &json);
+    if (ret != CPLAT_OK)
+    {
+        fprintf(stderr, "struct-meta-sample: JSON の変換に失敗しました (結果コード %d)\n", ret);
+        return;
+    }
+
+    char *text = cJSON_Print(json);
+    cJSON_Delete(json);
+    if (text == NULL)
+    {
+        fprintf(stderr, "struct-meta-sample: JSON のテキストを作成できません\n");
+        return;
+    }
+
+    cplat_error error;
+    const size_t text_length = strlen(text);
+    if (text_length == SIZE_MAX)
+    {
+        fprintf(stderr, "struct-meta-sample: JSON のテキストが大きすぎます\n");
+        cJSON_free(text);
+        return;
+    }
+    const int needs_newline = (text_length == 0U) || (text[text_length - 1U] != '\n');
+    if (cplat_fwrite(text, 1U, text_length, stdout, &error) != text_length)
+    {
+        fprintf(stderr, "struct-meta-sample: dumpjson の標準出力へ書き込めません (結果コード %d)\n",
+                cplat_error_to_result(&error));
+        cJSON_free(text);
+        return;
+    }
+
+    static const char newline[] = "\n";
+    if ((needs_newline != 0) && (cplat_fwrite(newline, 1U, 1U, stdout, &error) != 1U))
+    {
+        fprintf(stderr, "struct-meta-sample: dumpjson の最終改行を出力できません (結果コード %d)\n",
+                cplat_error_to_result(&error));
+        cJSON_free(text);
+        return;
+    }
+    (void)cplat_fflush(stdout, NULL);
+    cJSON_free(text);
+}
+
+/**
  *  @brief          構造体の内容を、記述子が表すバイト列としてファイルへ書き出します。
  *
  *  JSON と異なり、書き出すのはメモリ上の像そのものです。パディングもそのまま含みます。
@@ -444,6 +500,61 @@ static void cmd_catjson(const char *path)
     }
 }
 
+/* バイト列を 16 進ダンプとして標準出力へ表示する共通処理です。 */
+static void print_hexdump(const unsigned char *buffer, size_t size, size_t offset)
+{
+    for (size_t line_start = 0U; line_start < size; line_start += SAMPLE_HEXDUMP_BYTES_PER_LINE)
+    {
+        size_t line_bytes = size - line_start;
+        if (line_bytes > SAMPLE_HEXDUMP_BYTES_PER_LINE)
+        {
+            line_bytes = SAMPLE_HEXDUMP_BYTES_PER_LINE;
+        }
+
+        printf("%08zx  ", offset + line_start);
+        for (size_t i = 0U; i < SAMPLE_HEXDUMP_BYTES_PER_LINE; i++)
+        {
+            if (i < line_bytes)
+            {
+                printf("%02x ", buffer[line_start + i]);
+            }
+            else
+            {
+                /* 最終行が欠けても、印字可能文字の欄の位置を揃える。 */
+                printf("   ");
+            }
+        }
+
+        printf(" |");
+        for (size_t i = 0U; i < SAMPLE_HEXDUMP_BYTES_PER_LINE; i++)
+        {
+            if (i < line_bytes)
+            {
+                const unsigned char value = buffer[line_start + i];
+                printf("%c", ((value >= 0x20U) && (value < 0x7fU)) ? (char)value : '.');
+            }
+            else
+            {
+                /* 最終行が欠けても、閉じる縦棒の位置を揃える。 */
+                printf(" ");
+            }
+        }
+        printf("|\n");
+    }
+}
+
+/**
+ *  @brief          構造体の内容を 16 進ダンプとして標準出力へ表示します。
+ *
+ *  ファイルを作成せず、`savebin` で保存した内容を `catbin` で表示した場合と同じ内容を
+ *  出力します。
+ */
+static void cmd_dumpbin(const sample_target *target)
+{
+    print_hexdump((const unsigned char *)target->instance, target->descriptor->size, 0U);
+    (void)cplat_fflush(stdout, NULL);
+}
+
 /**
  *  @brief          指定ファイルの内容を 16 進ダンプとして標準出力へ表示します。
  *
@@ -480,44 +591,7 @@ static void cmd_catbin(const char *path)
             break;
         }
 
-        for (size_t line_start = 0U; line_start < read_count; line_start += SAMPLE_HEXDUMP_BYTES_PER_LINE)
-        {
-            size_t line_bytes = read_count - line_start;
-            if (line_bytes > SAMPLE_HEXDUMP_BYTES_PER_LINE)
-            {
-                line_bytes = SAMPLE_HEXDUMP_BYTES_PER_LINE;
-            }
-
-            printf("%08zx  ", offset + line_start);
-            for (size_t i = 0U; i < SAMPLE_HEXDUMP_BYTES_PER_LINE; i++)
-            {
-                if (i < line_bytes)
-                {
-                    printf("%02x ", buffer[line_start + i]);
-                }
-                else
-                {
-                    /* 最終行が欠けても、印字可能文字の欄の位置を揃える。 */
-                    printf("   ");
-                }
-            }
-
-            printf(" |");
-            for (size_t i = 0U; i < SAMPLE_HEXDUMP_BYTES_PER_LINE; i++)
-            {
-                if (i < line_bytes)
-                {
-                    const unsigned char value = buffer[line_start + i];
-                    printf("%c", ((value >= 0x20U) && (value < 0x7fU)) ? (char)value : '.');
-                }
-                else
-                {
-                    /* 最終行が欠けても、閉じる縦棒の位置を揃える。 */
-                    printf(" ");
-                }
-            }
-            printf("|\n");
-        }
+        print_hexdump(buffer, read_count, offset);
 
         offset += read_count;
         if (read_count < sizeof(buffer))
@@ -778,6 +852,17 @@ int main(int argc, char **argv)
                 cmd_catjson(path);
             }
         }
+        else if (match_command(line, "dumpjson", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else if (ensure_selected(&target) != 0)
+            {
+                cmd_dumpjson(&target);
+            }
+        }
         else if (match_command(line, "loadbin", &args) != 0)
         {
             const char *path = require_path(args);
@@ -801,6 +886,17 @@ int main(int argc, char **argv)
             if (path != NULL)
             {
                 cmd_catbin(path);
+            }
+        }
+        else if (match_command(line, "dumpbin", &args) != 0)
+        {
+            if (args[0] != '\0')
+            {
+                print_commands();
+            }
+            else if (ensure_selected(&target) != 0)
+            {
+                cmd_dumpbin(&target);
             }
         }
         else if (match_command(line, "patch", &args) != 0)

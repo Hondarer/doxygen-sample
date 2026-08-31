@@ -54,14 +54,16 @@ make test
 組み込みカタログの名前は生成カタログのステムと同じで、`sample_types.h` からは `sample_types` になります。  
 表に無い引数はヘッダーのパスとして扱うため、実行中に何度でも対象を切り替えられます。
 
-対象を定めた後は、`patch`、`patch <field-path>`、`dump`、`help`、`exit` に加えて、次のファイル入出力を使用できます。
+対象を定めた後は、`patch`、`patch <field-path>`、`dump`、`dumpjson`、`dumpbin`、`help`、`exit` に加えて、次の入出力コマンドを使用できます。
 
 | コマンド | 形式 | 内容 |
 |---|---|---|
 | `loadjson <path>` / `savejson <path>` | JSON | 記述子に従って JSON と相互変換します。 |
 | `catjson <path>` | JSON | ファイルの内容をテキストとして表示します。 |
+| `dumpjson` | JSON | 現在の値をファイルへ保存せず、整形 JSON として標準出力へ表示します。`savejson` と `catjson` を続けて実行した場合と同じ内容です。 |
 | `loadbin <path>` / `savebin <path>` | バイナリ | 記述子が表すバイト列をそのまま読み書きします。 |
 | `catbin <path>` | バイナリ | ファイルの内容を 16 進ダンプで表示します。 |
+| `dumpbin` | バイナリ | 現在の値をファイルへ保存せず、16 進ダンプとして標準出力へ表示します。`savebin` と `catbin` を続けて実行した場合と同じ内容です。 |
 
 `catjson` と `catbin` はファイルを読むだけなので、対象の選択を必要としません。  
 それ以外の値を扱うコマンドは、`init` で対象を定めるまで受け付けません。
