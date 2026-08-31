@@ -25,6 +25,7 @@
  *  必要としません。\n
  *  `init` はカタログを用意してから構造体を選ばせ、記述子のサイズで領域を確保して
  *  ゼロ初期化します。実行中に何度でも対象を切り替えられます。\n
+ *  構造体を選択した後のプロンプトは `struct-meta-sample(catalog/struct)>` の形式で表示します。\n
  *
  *  入出力は JSON とバイナリの 2 形式です。`loadjson` / `savejson` / `catjson` は
  *  記述子に従って JSON へ相互変換し、`dumpjson` は現在の値を標準出力へ表示します。\n
@@ -110,6 +111,7 @@ typedef struct sample_target
     struct_meta_catalog *parsed_catalog;      /**< 実行時に解析して作ったカタログです。組み込みでは NULL です。 */
     const struct_meta_descriptor *descriptor; /**< 選択した記述子です。未選択では NULL です。 */
     void *instance;                           /**< 記述子のサイズで確保した領域です。未選択では NULL です。 */
+    char catalog_name[SAMPLE_CMD_LINE_BYTES]; /**< init へ渡したカタログ名またはヘッダーパスです。 */
 } sample_target;
 
 /**
@@ -151,6 +153,7 @@ static void print_init_usage(void)
  *  @brief          カタログから操作対象の構造体を選択します。
  *
  *  一覧はカタログの並び順 (解析対象ヘッダーの宣言順) で表示します。
+ *  番号または構造体名の完全一致で選択できます。
  *  事前組み込み型と事後解析型のどちらのカタログでも同じ手順で扱えます。
  *
  *  @param[in]      prompt          入力に使用するプロンプトです。NULL は指定しません。
@@ -196,25 +199,37 @@ static int select_descriptor(cplat_prompt *prompt, const struct_meta_catalog *ca
             printf("  %zu) %s\n", i + 1U, descriptor->name);
         }
 
-        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "構造体番号を選択> ");
+        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "構造体番号または構造体名を選択> ");
         if (ret != CPLAT_OK)
         {
             return ret;
         }
 
         int index;
-        if ((cplat_parse_int(&index, line, 10) != CPLAT_OK) || (index < 1) || ((size_t)index > descriptor_count))
+        const int parse_result = cplat_parse_int(&index, line, 10);
+        if (parse_result == CPLAT_OK)
         {
-            fprintf(stderr, "struct-meta-sample: 1 から %zu の範囲で入力してください\n", descriptor_count);
-            continue;
+            if ((index < 1) || ((size_t)index > descriptor_count))
+            {
+                fprintf(stderr, "struct-meta-sample: 1 から %zu の範囲で入力してください\n", descriptor_count);
+                continue;
+            }
+
+            if (struct_meta_catalog_get(catalog, (size_t)(index - 1), descriptor_out) != CPLAT_OK)
+            {
+                fprintf(stderr, "struct-meta-sample: 選択した構造体の記述子を取得できません: %d\n", index);
+                return CPLAT_ERR_NOT_FOUND;
+            }
+            return CPLAT_OK;
         }
 
-        if (struct_meta_catalog_get(catalog, (size_t)(index - 1), descriptor_out) != CPLAT_OK)
+        if (struct_meta_catalog_find(catalog, line, descriptor_out) == CPLAT_OK)
         {
-            fprintf(stderr, "struct-meta-sample: 選択した構造体の記述子を取得できません: %d\n", index);
-            return CPLAT_ERR_NOT_FOUND;
+            return CPLAT_OK;
         }
-        return CPLAT_OK;
+
+        fprintf(stderr, "struct-meta-sample: 1 から %zu の番号、または構造体名を入力してください\n",
+                descriptor_count);
     }
 }
 
@@ -696,6 +711,13 @@ static void cmd_init(cplat_prompt *prompt, sample_target *target, const char *ar
         return;
     }
 
+    const size_t catalog_name_length = strlen(args);
+    if (catalog_name_length >= sizeof(target->catalog_name))
+    {
+        fprintf(stderr, "struct-meta-sample: カタログ名またはヘッダーパスが長すぎます\n");
+        return;
+    }
+
     for (size_t i = 0; i < (sizeof(g_builtin_catalogs) / sizeof(g_builtin_catalogs[0])); i++)
     {
         if (strcmp(g_builtin_catalogs[i].name, args) == 0)
@@ -744,12 +766,13 @@ static void cmd_init(cplat_prompt *prompt, sample_target *target, const char *ar
     target->parsed_catalog = parsed_catalog;
     target->descriptor = descriptor;
     target->instance = instance;
+    memcpy(target->catalog_name, args, catalog_name_length + 1U);
     memset(target->instance, 0, descriptor->size);
 }
 
 int main(int argc, char **argv)
 {
-    sample_target target = {NULL, NULL, NULL, NULL};
+    sample_target target = {NULL, NULL, NULL, NULL, {0}};
     int exit_code = 0;
     cplat_prompt *prompt = NULL;
     char line[SAMPLE_CMD_LINE_BYTES];
@@ -790,7 +813,16 @@ int main(int argc, char **argv)
     for (;;)
     {
         const char *args = NULL;
-        int ret = cplat_prompt_readline(prompt, line, sizeof(line), "struct-meta-sample> ");
+        int ret;
+        if (target.descriptor == NULL)
+        {
+            ret = cplat_prompt_readline(prompt, line, sizeof(line), "struct-meta-sample> ");
+        }
+        else
+        {
+            ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "struct-meta-sample(%s/%s)> ",
+                                            target.catalog_name, target.descriptor->name);
+        }
         if ((ret == CPLAT_ERR_EOF) || (ret == CPLAT_ERR_CANCELED))
         {
             exit_code = (ret == CPLAT_ERR_EOF) ? 0 : 1;

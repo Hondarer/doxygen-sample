@@ -173,6 +173,36 @@ static int parse_int(const char *text, int *value_out)
 }
 
 /**
+ *  @brief          現在位置のメンバー名からフィールドを一意に検索します。
+ *
+ *  同名フィールドを含む不正な記述子では、最初のフィールドを暗黙に選ばず、
+ *  @c CPLAT_ERR_DUPLICATE_KEY を返します。
+ */
+static int find_field_by_name(const struct_meta_descriptor *descriptor, const char *name,
+                              const struct_meta_field **field_out)
+{
+    if ((descriptor == NULL) || (name == NULL) || (field_out == NULL))
+    {
+        return CPLAT_ERR_INVALID_ARGUMENT;
+    }
+    *field_out = NULL;
+
+    for (size_t i = 0; i < descriptor->field_count; i++)
+    {
+        if (strcmp(descriptor->fields[i].name, name) == 0)
+        {
+            if (*field_out != NULL)
+            {
+                return CPLAT_ERR_DUPLICATE_KEY;
+            }
+            *field_out = &descriptor->fields[i];
+        }
+    }
+
+    return (*field_out == NULL) ? CPLAT_ERR_NOT_FOUND : CPLAT_OK;
+}
+
+/**
  *  @brief          符号付き整数フィールド用に、入力行を @c int64_t として解釈します。
  *
  *  幅ごとの範囲検査は @ref struct_meta_internal_integer_store_signed が行うため、
@@ -468,6 +498,8 @@ static int patch_array_field(cplat_prompt *prompt, const struct_meta_field *fiel
 
 /**
  *  @brief          構造体インスタンス 1 個分のフィールド一覧をメニュー形式で辿ります。
+ *
+ *  フィールドは番号または現在位置のメンバー名の完全一致で選択できます。
  */
 static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc, unsigned char *base, const char *path)
 {
@@ -568,7 +600,8 @@ static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc
             free(field_path);
         }
 
-        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line), "フィールド番号を選択 (空行で戻る)> ");
+        int ret = cplat_prompt_readline_fmt(prompt, line, sizeof(line),
+                                            "フィールド番号またはメンバー名を選択 (空行で戻る)> ");
         if (ret != CPLAT_OK)
         {
             return ret;
@@ -579,13 +612,32 @@ static int patch_struct(cplat_prompt *prompt, const struct_meta_descriptor *desc
         }
 
         int index;
-        if ((parse_int(line, &index) != CPLAT_OK) || (index < 1) || ((size_t)index > desc->field_count))
+        const struct_meta_field *field = NULL;
+        const int parse_result = parse_int(line, &index);
+        if (parse_result == CPLAT_OK)
         {
-            printf("1 から %zu の範囲で入力してください。\n", desc->field_count);
-            continue;
+            if ((index < 1) || ((size_t)index > desc->field_count))
+            {
+                printf("1 から %zu の範囲で入力してください。\n", desc->field_count);
+                continue;
+            }
+            field = &desc->fields[(size_t)index - 1U];
+        }
+        else
+        {
+            const int find_result = find_field_by_name(desc, line, &field);
+            if (find_result == CPLAT_ERR_DUPLICATE_KEY)
+            {
+                printf("メンバー名が重複しているため選択できません: %s\n", line);
+                continue;
+            }
+            if (find_result != CPLAT_OK)
+            {
+                printf("1 から %zu の番号、またはメンバー名を入力してください。\n", desc->field_count);
+                continue;
+            }
         }
 
-        const struct_meta_field *field = &desc->fields[(size_t)index - 1U];
         char *field_path;
         ret = append_field_path(path, field->name, &field_path);
         if (ret != CPLAT_OK)

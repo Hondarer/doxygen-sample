@@ -229,6 +229,25 @@ TEST_F(StructMetaPatchTest, EmptyValueKeepsCurrentValue)
     EXPECT_EQ(12, sample.id);        // [確認_正常系] - 元の値を維持すること。
 }
 
+TEST_F(StructMetaPatchTest, MenuSelectsFieldByMemberName)
+{
+    // Arrange
+    Sample sample = {};
+    expect_inputs({"id", "42", ""});
+
+    // Pre-Assert
+
+    // Act
+    int actual_ret = struct_meta_patch_interactive(&kSampleDescriptor, &sample);
+    // [手順] - メンバー名で id を選択して編集する。
+
+    // Assert
+    EXPECT_EQ(CPLAT_OK, actual_ret); // [確認_正常系] - メンバー名選択後の編集が成功すること。
+    EXPECT_EQ(42, sample.id);        // [確認_正常系] - メンバー名で選択した id が更新されること。
+    EXPECT_THAT(prompts, Contains(HasSubstr("フィールド番号またはメンバー名を選択")));
+    // [確認_正常系] - メンバー名を入力できるプロンプトを表示すること。
+}
+
 TEST_F(StructMetaPatchTest, DrillDownRemainsAvailable)
 {
     Sample sample = {}; // [準備_正常系] - 従来のメニュー選択に使う構造体を用意する。
