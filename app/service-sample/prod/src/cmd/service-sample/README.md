@@ -147,7 +147,8 @@ Linux は `$ORIGIN` の RUNPATH、Windows は実行ファイルと同じディ�
 
 ### Linux: systemd サービスとして登録・実行
 
-> 注意: WSL2 では既定で systemd が無効です。
+> [!NOTE]
+> WSL2 では既定で systemd が無効です。
 > `/etc/wsl.conf` に `[boot]` セクションで `systemd=true` を追加し、
 > `wsl --shutdown` で再起動してから使用してください。
 
