@@ -1,7 +1,7 @@
 /**
  *******************************************************************************
  *  @file           struct_meta_gen_main.c
- *  @brief          struct-meta-gen (ヘッダー解析ツール) のエントリー ポイントです。
+ *  @brief          struct-meta-gen (ヘッダー解析ツール) のエントリ ポイントです。
  *  @author         Tetsuo Honda
  *  @date           2026/08/16
  *  @version        1.0.0
@@ -15,26 +15,47 @@
  *  (`struct_meta_descriptor`) と型一覧 (enum + 取得関数) を `--out` へ生成します。\n
  *  同名の `.h` も同じディレクトリへ書き出します。
  *
+ *  解析とレイアウトの計算は `libstruct_meta` が行います。本コマンドは、実行時に
+ *  ヘッダーを解析する経路 (事後解析型) とまったく同じ入口を使い、その結果を
+ *  C ソースとして書き出すだけです。
+ *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
  *
  *******************************************************************************
  */
 
-#include "struct_meta_gen_ast.h"
 #include "struct_meta_gen_emit.h"
 
-#include <cplat/crt/stdio.h>
+#include <struct_meta/catalog/catalog.h>
+
+#include <cplat/base/result.h>
 
 #include <stdio.h>
 #include <string.h>
 
-extern FILE *yyin;
-extern struct_meta_gen_struct_list *g_struct_meta_gen_structs;
-int yyparse(void);
-
 static void print_usage(const char *prog)
 {
     fprintf(stderr, "usage: %s --header <header> --out <out.c>\n", prog);
+}
+
+/**
+ *  @brief          診断を標準エラーへ書き出します。
+ *
+ *  行が定まらない診断では、行番号を付けません。
+ */
+static void print_diagnostic(const char *header_path, const struct_meta_diagnostic *diagnostic)
+{
+    if (diagnostic->message[0] == '\0')
+    {
+        fprintf(stderr, "struct-meta-gen: ヘッダーを解析できません: %s\n", header_path);
+        return;
+    }
+    if (diagnostic->line > 0)
+    {
+        fprintf(stderr, "struct-meta-gen: %d: %s\n", diagnostic->line, diagnostic->message);
+        return;
+    }
+    fprintf(stderr, "struct-meta-gen: %s\n", diagnostic->message);
 }
 
 int main(int argc, char **argv)
@@ -66,25 +87,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    yyin = cplat_fopen(header_path, "r", NULL);
-    if (yyin == NULL)
+    struct_meta_catalog *catalog = NULL;
+    struct_meta_diagnostic diagnostic;
+    if (struct_meta_catalog_create_from_header_file(header_path, &catalog, &diagnostic) != CPLAT_OK)
     {
-        fprintf(stderr, "struct-meta-gen: ヘッダーを開けません: %s\n", header_path);
+        print_diagnostic(header_path, &diagnostic);
         return 1;
     }
 
-    if (yyparse() != 0)
-    {
-        fclose(yyin);
-        return 1;
-    }
-    fclose(yyin);
-
-    if ((g_struct_meta_gen_structs == NULL) || (g_struct_meta_gen_structs->head == NULL))
-    {
-        fprintf(stderr, "struct-meta-gen: 構造体が見つかりません (ヘッダー: %s)\n", header_path);
-        return 1;
-    }
-
-    return struct_meta_gen_emit(g_struct_meta_gen_structs, header_path, out_path);
+    const int ret = struct_meta_gen_emit(catalog, header_path, out_path);
+    struct_meta_catalog_destroy(catalog);
+    return ret;
 }

@@ -1,14 +1,19 @@
 /**
  *******************************************************************************
  *  @file           struct_meta_gen_emit.c
- *  @brief          解析済みの構造体定義から、メタデータ記述子の C ソースを生成します。
+ *  @brief          組み立て済みの記述子から、メタデータ記述子の C ソースを生成します。
  *  @author         Tetsuo Honda
  *  @date           2026/08/16
  *  @version        1.0.0
  *
- *  フィールドのオフセットとサイズは、生成コードに埋め込んだ `offsetof`/`sizeof` を
- *  実ヘッダーに対してコンパイラへ計算させます。struct-meta-gen 自身はレイアウトを
- *  計算しません (`docs/architecture.md` の設計方針を参照)。
+ *  記述子の初期化子には `offsetof` と `sizeof` を出力し、レイアウトの決定を実際の
+ *  コンパイラへ委ねます。あわせて、`libstruct_meta` のレイアウト エンジンが求めた
+ *  値と一致することを検査する `_Static_assert` を出力します。これにより、実行時に
+ *  ヘッダーを解析する経路 (事後解析型) の正しさが、この経路 (事前組み込み型) の
+ *  ビルドのたびに検証されます (`docs/architecture.md` の設計方針を参照)。
+ *
+ *  型のスペリングは使いません。要素 1 個の大きさもフィールドの式から求めるため、
+ *  記述子だけを入力として出力できます。
  *
  *  ネスト構造体メンバーがある場合、参照先の構造体記述子を先に出力してから
  *  (依存順)、それを参照する構造体の記述子を出力します。
@@ -21,6 +26,8 @@
 #include "struct_meta_gen_emit.h"
 #include "struct_meta_gen_emit_array.h"
 
+#include <struct_meta/catalog/catalog.h>
+
 #include <cplat/base/result.h>
 #include <cplat/crt/stdio.h>
 #include <cplat/hashtable/hashtable.h>
@@ -29,8 +36,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-extern struct_meta_gen_struct_list *g_struct_meta_gen_structs;
 
 /** 生成パス・識別子を組み立てる作業バッファーのバイト数です。 */
 #define STRUCT_META_GEN_EMIT_PATH_BYTES 512
@@ -55,109 +60,6 @@ static int is_emitted(const emitted_name *list, const char *name)
     }
     return 0;
 }
-
-/**
- *  @brief          フィールドの型スペリングから @ref struct_meta_field_kind の列挙定数名を求めます。
- *
- *  型名と列挙定数名の対応は @ref struct_meta_gen_find_scalar_type が持つ表を正本とします。
- */
-static const char *field_kind_name(const char *type_name, int is_char_array)
-{
-    if (is_char_array)
-    {
-        return "STRUCT_META_FIELD_CHAR_ARRAY";
-    }
-
-    const struct_meta_gen_scalar_type *scalar = struct_meta_gen_find_scalar_type(type_name);
-    if (scalar != NULL)
-    {
-        return scalar->kind_name;
-    }
-    /* 文法規則が受理する非構造体型は、char か表にある型に限られる。 */
-    return "STRUCT_META_FIELD_CHAR_ARRAY";
-}
-
-static const struct_meta_gen_attribute *field_attribute(const struct_meta_gen_field *field, const char *key)
-{
-    for (const struct_meta_gen_attribute *attribute = field->attributes; attribute != NULL; attribute = attribute->next)
-    {
-        if (strcmp(attribute->key, key) == 0)
-        {
-            return attribute;
-        }
-    }
-    return NULL;
-}
-
-static int is_explicit_byte_type(const char *type_name)
-{
-    return ((strcmp(type_name, "signed char") == 0) || (strcmp(type_name, "unsigned char") == 0) ||
-            (strcmp(type_name, "int8_t") == 0) || (strcmp(type_name, "uint8_t") == 0))
-               ? 1
-               : 0;
-}
-
-static int field_is_byte_array(const struct_meta_gen_field *field)
-{
-    if (field->array_count <= 0)
-    {
-        return 0;
-    }
-    if (is_explicit_byte_type(field->type_name) != 0)
-    {
-        return 1;
-    }
-    const struct_meta_gen_attribute *kind = field_attribute(field, "meta.kind");
-    return ((strcmp(field->type_name, "char") == 0) && (kind != NULL) && (kind->value != NULL) &&
-            (strcmp(kind->value, "bytes") == 0))
-               ? 1
-               : 0;
-}
-
-static void validate_meta_attributes(const struct_meta_gen_field *field)
-{
-    const struct_meta_gen_attribute *kind = field_attribute(field, "meta.kind");
-    if ((kind != NULL) &&
-        ((kind->value == NULL) || (strcmp(kind->value, "bytes") != 0) || (field_is_byte_array(field) == 0)))
-    {
-        fprintf(stderr, "struct-meta-gen: %d: meta.kind はバイト配列へ bytes だけを指定できます: %s\n", field->line,
-                field->name);
-        exit(1);
-    }
-
-    const struct_meta_gen_attribute *format = field_attribute(field, "meta.format");
-    if ((format != NULL) &&
-        ((format->value == NULL) || (strcmp(format->value, "hex") != 0) || (field_is_byte_array(field) == 0)))
-    {
-        fprintf(stderr, "struct-meta-gen: %d: meta.format=hex はバイト配列だけへ指定できます: %s\n", field->line,
-                field->name);
-        exit(1);
-    }
-}
-
-/**
- *  @brief          フィールドの型スペリングから、要素 1 個分の `sizeof` 式を求めます。
- */
-static const char *elem_sizeof_expr(const char *type_name)
-{
-    const struct_meta_gen_scalar_type *scalar = struct_meta_gen_find_scalar_type(type_name);
-    if (scalar != NULL)
-    {
-        return scalar->sizeof_expr;
-    }
-    return "sizeof(char)";
-}
-
-static int count_fields(const struct_meta_gen_struct *s)
-{
-    int count = 0;
-    for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
-    {
-        count++;
-    }
-    return count;
-}
-
 /**
  *  @brief          パスの末尾ファイル名を返します (`/` と `\\` を区切りとします)。
  */
@@ -299,144 +201,183 @@ static void fprint_c_string(FILE *out, const char *text)
     fputc('"', out);
 }
 
-static int count_structs(const struct_meta_gen_struct_list *list)
+/**
+ *  @brief          フィールド種別から、生成コードへ出力する列挙定数名を求めます。
+ */
+static const char *field_kind_name(struct_meta_field_kind kind)
 {
-    int count = 0;
-    for (const struct_meta_gen_struct *s = list->head; s != NULL; s = s->next)
+    switch (kind)
     {
-        count++;
+        case STRUCT_META_FIELD_SIGNED_INTEGER:
+            return "STRUCT_META_FIELD_SIGNED_INTEGER";
+        case STRUCT_META_FIELD_UNSIGNED_INTEGER:
+            return "STRUCT_META_FIELD_UNSIGNED_INTEGER";
+        case STRUCT_META_FIELD_FLOAT:
+            return "STRUCT_META_FIELD_FLOAT";
+        case STRUCT_META_FIELD_DOUBLE:
+            return "STRUCT_META_FIELD_DOUBLE";
+        case STRUCT_META_FIELD_CHAR_ARRAY:
+            return "STRUCT_META_FIELD_CHAR_ARRAY";
+        case STRUCT_META_FIELD_STRUCT:
+            return "STRUCT_META_FIELD_STRUCT";
+        default:
+            /* 記述子は libstruct_meta が組み立てるため、未知の種別は起こらない。 */
+            return "STRUCT_META_FIELD_SIGNED_INTEGER";
     }
-    return count;
-}
-
-static int count_attributes(const struct_meta_gen_attribute *attributes)
-{
-    int count = 0;
-    for (const struct_meta_gen_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
-    {
-        count++;
-    }
-    return count;
-}
-
-static void emit_attributes(FILE *out, const char *symbol, const struct_meta_gen_attribute *attributes)
-{
-    if (attributes == NULL)
-    {
-        return;
-    }
-
-    fprintf(out, "static const struct_meta_attribute g_%s_attributes[] = {\n", symbol);
-    for (const struct_meta_gen_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
-    {
-        fputs("    { ", out);
-        fprint_c_string(out, attribute->key);
-        fputs(", ", out);
-        fprint_c_string(out, attribute->value);
-        fputs(" },\n", out);
-    }
-    fputs("};\n\n", out);
 }
 
 /**
- *  @brief          構造体 1 個分の記述子を再帰的に出力します。
+ *  @brief          フィールドが配列として宣言されていたかどうかを返します。
  *
- *  ネスト構造体メンバーがあれば、参照先の記述子を先に出力してから
- *  (依存順)、`s` 自身の記述子を出力します。同じ構造体は 2 回出力しません。
- *  記述子はすべて `static` です。外部からは型一覧の取得関数だけが見えます。
+ *  `char` 配列は要素数 1 の NUL 終端文字列として記述子に入るため、種別で判定します。
+ *  要素数 1 の配列は添字の有無で `sizeof` の値が変わらないため、区別しません。
  */
-static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name **emitted)
+static int field_is_declared_array(const struct_meta_field *field)
 {
-    if (is_emitted(*emitted, s->name))
+    return ((field->kind == STRUCT_META_FIELD_CHAR_ARRAY) || (field->element_count > 1U)) ? 1 : 0;
+}
+
+
+/**
+ *  @brief          属性の配列を生成コードへ書き出します。
+ */
+static void emit_attributes(FILE *out, const char *symbol, const struct_meta_attribute *attributes, size_t count)
+{
+    if (count == 0U)
+    {
+        return;
+    }
+    fprintf(out, "static const struct_meta_attribute g_%s_attributes[] = {\n", symbol);
+    for (size_t i = 0; i < count; i++)
+    {
+        fprintf(out, "    { ");
+        fprint_c_string(out, attributes[i].key);
+        fprintf(out, ", ");
+        fprint_c_string(out, attributes[i].value);
+        fprintf(out, " },\n");
+    }
+    fprintf(out, "};\n\n");
+}
+
+
+/**
+ *  @brief          レイアウト エンジンの計算値と、コンパイラの実レイアウトを照合します。
+ *
+ *  記述子の初期化子は `offsetof` と `sizeof` を使うため、この検査が通る限り、
+ *  事前組み込み型と事後解析型は同じレイアウトを表します。破れた場合は、生成コードの
+ *  コンパイル時に落ちます。
+ *  see: app/struct-meta/docs/architecture.md
+ */
+static void emit_layout_assertions(FILE *out, const struct_meta_descriptor *descriptor)
+{
+    fprintf(out, "/* レイアウト エンジンの計算値と、コンパイラが決めた配置との照合。 */\n");
+    fprintf(out, "_Static_assert(sizeof(%s) == %zu, \"%s: レイアウト エンジンの計算値と一致しません\");\n",
+            descriptor->name, descriptor->size, descriptor->name);
+    for (size_t i = 0; i < descriptor->field_count; i++)
+    {
+        const struct_meta_field *field = &descriptor->fields[i];
+        fprintf(out,
+                "_Static_assert(offsetof(%s, %s) == %zu, \"%s.%s: レイアウト エンジンの計算値と一致しません\");\n",
+                descriptor->name, field->name, field->offset, descriptor->name, field->name);
+    }
+    fprintf(out, "\n");
+}
+
+
+/**
+ *  @brief          記述子 1 個分の C ソースを書き出します。
+ *
+ *  ネスト先を先に出力してから自分を出力します。出力済みの構造体は飛ばします。
+ */
+static void emit_struct(FILE *out, const struct_meta_descriptor *descriptor, emitted_name **emitted)
+{
+    if (is_emitted(*emitted, descriptor->name))
     {
         return;
     }
 
-    for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
+    for (size_t i = 0; i < descriptor->field_count; i++)
     {
-        if (f->is_struct_type)
+        if (descriptor->fields[i].nested != NULL)
         {
-            const struct_meta_gen_struct *nested =
-                struct_meta_gen_struct_list_find(g_struct_meta_gen_structs, f->type_name);
-            if (nested == NULL)
-            {
-                fprintf(stderr, "struct-meta-gen: %d: 未知の型です: %s\n", f->line, f->type_name);
-                exit(1);
-            }
-            emit_struct(out, nested, emitted);
+            emit_struct(out, descriptor->fields[i].nested, emitted);
         }
     }
 
-    for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
+    for (size_t i = 0; i < descriptor->field_count; i++)
     {
-        validate_meta_attributes(f);
+        const struct_meta_field *field = &descriptor->fields[i];
         char symbol[STRUCT_META_GEN_EMIT_PATH_BYTES];
-        snprintf(symbol, sizeof(symbol), "%s_%s", s->name, f->name);
-        emit_attributes(out, symbol, f->attributes);
+        snprintf(symbol, sizeof(symbol), "%s_%s", descriptor->name, field->name);
+        emit_attributes(out, symbol, field->attributes, field->attribute_count);
     }
-    emit_attributes(out, s->name, s->attributes);
+    emit_attributes(out, descriptor->name, descriptor->attributes, descriptor->attribute_count);
 
-    fprintf(out, "static const struct_meta_field g_%s_fields[] = {\n", s->name);
-    for (const struct_meta_gen_field *f = s->fields; f != NULL; f = f->next)
+    fprintf(out, "static const struct_meta_field g_%s_fields[] = {\n", descriptor->name);
+    for (size_t i = 0; i < descriptor->field_count; i++)
     {
-        int is_char_array = ((!f->is_struct_type) && (strcmp(f->type_name, "char") == 0) && (f->array_count > 0) &&
-                             (field_is_byte_array(f) == 0));
-        long array_count_out = 1;
-        char char_buf_expr[256] = "0";
-        char elem_size_expr[128] = "0";
-        char nested_expr[256] = "NULL";
-        const char *kind;
+        const struct_meta_field *field = &descriptor->fields[i];
+        const char *element = (field_is_declared_array(field) != 0) ? "[0]" : "";
+        char element_size_expr[STRUCT_META_GEN_EMIT_PATH_BYTES];
+        char char_buffer_expr[STRUCT_META_GEN_EMIT_PATH_BYTES];
+        char nested_expr[STRUCT_META_GEN_EMIT_PATH_BYTES];
 
-        if (is_char_array)
+        snprintf(element_size_expr, sizeof(element_size_expr), "sizeof(((%s *)0)->%s%s)", descriptor->name,
+                 field->name, element);
+        if (field->char_buffer_size != 0U)
         {
-            snprintf(char_buf_expr, sizeof(char_buf_expr), "sizeof(((%s *)0)->%s)", s->name, f->name);
-        }
-        else if (f->array_count > 0)
-        {
-            array_count_out = f->array_count;
-        }
-
-        if (f->is_struct_type)
-        {
-            kind = "STRUCT_META_FIELD_STRUCT";
-            snprintf(elem_size_expr, sizeof(elem_size_expr), "sizeof(%s)", f->type_name);
-            snprintf(nested_expr, sizeof(nested_expr), "&g_%s_desc", f->type_name);
+            snprintf(char_buffer_expr, sizeof(char_buffer_expr), "sizeof(((%s *)0)->%s)", descriptor->name,
+                     field->name);
         }
         else
         {
-            kind = field_kind_name(f->type_name, is_char_array);
-            snprintf(elem_size_expr, sizeof(elem_size_expr), "%s", elem_sizeof_expr(f->type_name));
+            snprintf(char_buffer_expr, sizeof(char_buffer_expr), "0");
+        }
+        if (field->nested != NULL)
+        {
+            snprintf(nested_expr, sizeof(nested_expr), "&g_%s_desc", field->nested->name);
+        }
+        else
+        {
+            snprintf(nested_expr, sizeof(nested_expr), "NULL");
         }
 
-        int attribute_count = count_attributes(f->attributes);
-        fprintf(out, "    { \"%s\", %s, 0, offsetof(%s, %s), %s, %ld, %s, %s, ", f->name, kind, s->name, f->name,
-                elem_size_expr, array_count_out, char_buf_expr, nested_expr);
-        fprint_c_string(out, f->brief);
-        if (attribute_count == 0)
+        fprintf(out, "    { \"%s\", %s, 0, offsetof(%s, %s), %s, %zu, %s, %s, ", field->name,
+                field_kind_name(field->kind), descriptor->name, field->name, element_size_expr,
+                field->element_count, char_buffer_expr, nested_expr);
+        fprint_c_string(out, field->brief);
+        if (field->attribute_count == 0U)
         {
             fputs(", NULL, 0 },\n", out);
         }
         else
         {
-            fprintf(out, ", g_%s_%s_attributes, %d },\n", s->name, f->name, attribute_count);
+            fprintf(out, ", g_%s_%s_attributes, %zu },\n", descriptor->name, field->name, field->attribute_count);
         }
     }
     fprintf(out, "};\n\n");
 
-    fprintf(out, "static const struct_meta_descriptor g_%s_desc = { \"%s\", sizeof(%s), g_%s_fields, %d, ", s->name,
-            s->name, s->name, s->name, count_fields(s));
-    fprint_c_string(out, s->brief);
-    if (s->attributes == NULL)
+    fprintf(out, "static const struct_meta_descriptor g_%s_desc = { \"%s\", sizeof(%s), g_%s_fields, %zu, ",
+            descriptor->name, descriptor->name, descriptor->name, descriptor->name, descriptor->field_count);
+    fprint_c_string(out, descriptor->brief);
+    if (descriptor->attribute_count == 0U)
     {
         fprintf(out, ", NULL, 0 };\n\n");
     }
     else
     {
-        fprintf(out, ", g_%s_attributes, %d };\n\n", s->name, count_attributes(s->attributes));
+        fprintf(out, ", g_%s_attributes, %zu };\n\n", descriptor->name, descriptor->attribute_count);
     }
 
+    emit_layout_assertions(out, descriptor);
+
     emitted_name *node = (emitted_name *)calloc(1, sizeof(*node));
-    node->name = s->name;
+    if (node == NULL)
+    {
+        fprintf(stderr, "struct-meta-gen: 出力状態を確保できません\n");
+        exit(1);
+    }
+    node->name = descriptor->name;
     node->next = *emitted;
     *emitted = node;
 }
@@ -445,7 +386,7 @@ static void emit_struct(FILE *out, const struct_meta_gen_struct *s, emitted_name
  *  @brief          型一覧 enum と取得関数の宣言をヘッダーへ書き出します。
  */
 static int emit_catalog_header(const char *header_out, const char *stem, const char *prefix,
-                               const struct_meta_gen_struct_list *structs)
+                               const struct_meta_catalog *catalog)
 {
     FILE *out = cplat_fopen(header_out, "w", NULL);
     if (out == NULL)
@@ -454,12 +395,13 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
         return 1;
     }
 
-    int index = 0;
-    int count = count_structs(structs);
+    size_t count = 0U;
+    (void)struct_meta_catalog_get_count(catalog, &count);
 
     fprintf(out, "/* このファイルは struct-meta-gen が自動生成しました。手編集しないでください。 */\n");
     fprintf(out, "#ifndef %s_META_H\n", prefix);
     fprintf(out, "#define %s_META_H\n\n", prefix);
+    fprintf(out, "#include <struct_meta/catalog/catalog.h>\n");
     fprintf(out, "#include <struct_meta/meta/meta.h>\n\n");
     fprintf(out, "#ifdef __cplusplus\n");
     fprintf(out, "extern \"C\"\n");
@@ -467,17 +409,18 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
     fprintf(out, "#endif /* __cplusplus */\n\n");
     fprintf(out, "typedef enum %s_meta_id\n", stem);
     fprintf(out, "{\n");
-    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    for (size_t index = 0; index < count; index++)
     {
+        const struct_meta_descriptor *descriptor = NULL;
+        (void)struct_meta_catalog_get(catalog, index, &descriptor);
         fprintf(out, "    %s_META_", prefix);
-        for (const char *p = s->name; *p != '\0'; p++)
+        for (const char *p = descriptor->name; *p != '\0'; p++)
         {
             fputc(toupper((unsigned char)*p), out);
         }
-        fprintf(out, " = %d,\n", index);
-        index++;
+        fprintf(out, " = %zu,\n", index);
     }
-    fprintf(out, "    %s_META_COUNT = %d,\n", prefix, count);
+    fprintf(out, "    %s_META_COUNT = %zu,\n", prefix, count);
     fprintf(out, "} %s_meta_id;\n\n", stem);
     fprintf(out, "/**\n");
     fprintf(out, " *  @brief          カタログが持つ型の数を返します。\n");
@@ -514,6 +457,18 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
     fprintf(out, " *  本関数はスレッド セーフです。初回の接続は 1 回だけ実行されます。\n");
     fprintf(out, " */\n");
     fprintf(out, "const struct_meta_descriptor *%s_meta_find(const char *name);\n\n", stem);
+
+    fprintf(out, "/**\n");
+    fprintf(out, " *  @brief          カタログ ハンドルを返します。\n");
+    fprintf(out, " *  @return         カタログです。接続できない場合はプロセスを終了させます。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  実行時にヘッダーを解析して作ったカタログと同じ API で扱えます。\n");
+    fprintf(out, " *  このカタログは静的領域を指すため、破棄してはなりません。\n");
+    fprintf(out, " *\n");
+    fprintf(out, " *  @par            スレッド セーフ\n");
+    fprintf(out, " *  本関数はスレッド セーフです。初回の接続は 1 回だけ実行されます。\n");
+    fprintf(out, " */\n");
+    fprintf(out, "const struct_meta_catalog *%s_meta_catalog(void);\n\n", stem);
     fprintf(out, "#ifdef __cplusplus\n");
     fprintf(out, "}\n");
     fprintf(out, "#endif /* __cplusplus */\n\n");
@@ -524,14 +479,16 @@ static int emit_catalog_header(const char *header_out, const char *stem, const c
 }
 
 /**
- *  @brief          構造体名の最大バイト数 (NUL を含む) を求めます。
+ *  @brief          構造体名のうち、終端を含む最長のバイト数を求めます。
  */
-static size_t max_struct_name_bytes(const struct_meta_gen_struct_list *structs)
+static size_t max_struct_name_bytes(const struct_meta_catalog *catalog, size_t count)
 {
-    size_t longest = 0;
-    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    size_t longest = 0U;
+    for (size_t i = 0; i < count; i++)
     {
-        size_t length = strlen(s->name);
+        const struct_meta_descriptor *descriptor = NULL;
+        (void)struct_meta_catalog_get(catalog, i, &descriptor);
+        const size_t length = strlen(descriptor->name);
         if (length > longest)
         {
             longest = length;
@@ -547,16 +504,14 @@ static size_t max_struct_name_bytes(const struct_meta_gen_struct_list *structs)
  *  レコード数もキーの最大長も生成時に確定するため、実行時に構築せず、ここで構築した
  *  テーブルの永続化イメージを生成コードへ埋め込みます。実行時は接続するだけになります。
  */
-static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_meta_gen_struct_list *structs)
+static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_meta_catalog *catalog, size_t count)
 {
     cplat_hashtable_config config = {0};
     cplat_hashtable *table = NULL;
-    size_t name_bytes = max_struct_name_bytes(structs);
-    size_t count = (size_t)count_structs(structs);
 
     config.capacity = count * 2U;
     config.key_type = CPLAT_HASHTABLE_FIELD_FIXED_STRING;
-    config.key_size = name_bytes;
+    config.key_size = max_struct_name_bytes(catalog, count);
     config.value_type = CPLAT_HASHTABLE_FIELD_FIXED_BINARY;
     config.value_size = sizeof(size_t);
     config.value_align = sizeof(size_t);
@@ -568,16 +523,16 @@ static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_
         return 1;
     }
 
-    size_t index = 0;
-    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    for (size_t index = 0; index < count; index++)
     {
-        if (cplat_hashtable_add(table, s->name, &index, CPLAT_HASHTABLE_ADD_DELETED_OVERWRITE) != CPLAT_OK)
+        const struct_meta_descriptor *descriptor = NULL;
+        (void)struct_meta_catalog_get(catalog, index, &descriptor);
+        if (cplat_hashtable_add(table, descriptor->name, &index, CPLAT_HASHTABLE_ADD_DELETED_OVERWRITE) != CPLAT_OK)
         {
-            fprintf(stderr, "struct-meta-gen: 索引へ型名を登録できません: %s\n", s->name);
+            fprintf(stderr, "struct-meta-gen: 索引へ型名を登録できません: %s\n", descriptor->name);
             cplat_hashtable_dispose(table);
             return 1;
         }
-        index++;
     }
 
     size_t mgmt_size = 0;
@@ -613,71 +568,65 @@ static int emit_catalog_index_image(FILE *out, const char *prefix, const struct_
     return 0;
 }
 
+
 /**
  *  @brief          型一覧テーブルと取得関数を C ソースへ書き出します。
  *  @return         成功なら 0、失敗なら 1 です。
  *
  *  テーブルの並びはヘッダーの宣言順 (enum と同じ) です。記述子の出力順
- *  (依存順) とは独立です。
+ *  (依存順) とは独立です。\n
+ *  索引への接続とカタログの組み立ては `libstruct_meta` の
+ *  @c struct_meta_catalog_attach_static が行います。実行時に解析して作った
+ *  カタログと同じハンドルになるため、利用側は経路を意識しません。
  */
 static int emit_catalog_source(FILE *out, const char *stem, const char *prefix,
-                               const struct_meta_gen_struct_list *structs)
+                               const struct_meta_catalog *catalog, size_t count)
 {
     fprintf(out, "static const struct_meta_descriptor *const s_descriptors[%s_META_COUNT] = {\n", prefix);
-    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    for (size_t index = 0; index < count; index++)
     {
-        fprintf(out, "    &g_%s_desc,\n", s->name);
+        const struct_meta_descriptor *descriptor = NULL;
+        (void)struct_meta_catalog_get(catalog, index, &descriptor);
+        fprintf(out, "    &g_%s_desc,\n", descriptor->name);
     }
     fprintf(out, "};\n\n");
 
-    if (emit_catalog_index_image(out, prefix, structs) != 0)
+    if (emit_catalog_index_image(out, prefix, catalog, count) != 0)
     {
         return 1;
     }
 
-    fprintf(out, "static cplat_once_flag s_index_once;\n");
-    fprintf(out, "static cplat_hashtable *s_index;\n\n");
+    fprintf(out, "static cplat_once_flag s_catalog_once;\n");
+    fprintf(out, "static struct_meta_catalog *s_catalog;\n\n");
 
-    fprintf(out, "static void detach_index(const cplat_shutdown_event *event, void *context)\n");
+    fprintf(out, "static void destroy_catalog(const cplat_shutdown_event *event, void *context)\n");
     fprintf(out, "{\n");
     fprintf(out, "    (void)event;\n");
     fprintf(out, "    (void)context;\n");
-    fprintf(out, "    for (size_t i = 0; i < %s_META_COUNT; i++)\n", prefix);
-    fprintf(out, "    {\n");
-    fprintf(out, "        (void)struct_meta_index_unregister(s_descriptors[i]);\n");
-    fprintf(out, "    }\n");
-    fprintf(out, "    /* ハンドルだけを解放する。イメージは静的領域であり解放しない。 */\n");
-    fprintf(out, "    cplat_hashtable_dispose(s_index);\n");
-    fprintf(out, "    s_index = NULL;\n");
+    fprintf(out, "    /* ハンドルだけを解放する。記述子とイメージは静的領域であり解放しない。 */\n");
+    fprintf(out, "    struct_meta_catalog_destroy(s_catalog);\n");
+    fprintf(out, "    s_catalog = NULL;\n");
     fprintf(out, "}\n\n");
 
-    fprintf(out, "static void attach_index(void)\n");
+    fprintf(out, "static void attach_catalog(void)\n");
     fprintf(out, "{\n");
-    fprintf(out, "    /* イメージは読み取り専用。cplat_hashtable_attach() は領域へ書き込まず、\n");
-    fprintf(out, "       この表へ書き込み API を呼ぶこともないため、const を外して渡す。\n");
-    fprintf(out, "       uintptr_t を経由するのは cplat と同じ書き方に揃えるため。\n");
-    fprintf(out, "       see: app/c-platform/prod/libsrc/cplat/hashtable/hashtable_create.c の\n");
-    fprintf(out, "            cplat_hashtable_attach() */\n");
-    fprintf(out, "    if (cplat_hashtable_attach((void *)(uintptr_t)s_index_mgmt, sizeof(s_index_mgmt),\n");
-    fprintf(out, "                               (void *)(uintptr_t)s_index_data, sizeof(s_index_data),\n");
-    fprintf(out, "                               &s_index) != CPLAT_OK)\n");
+    fprintf(out, "    if (struct_meta_catalog_attach_static(s_descriptors, %s_META_COUNT,\n", prefix);
+    fprintf(out, "                                          s_index_mgmt, sizeof(s_index_mgmt),\n");
+    fprintf(out, "                                          s_index_data, sizeof(s_index_data),\n");
+    fprintf(out, "                                          &s_catalog) != CPLAT_OK)\n");
     fprintf(out, "    {\n");
     fprintf(out, "        /* 同一ビルドで作ったイメージが読めないという不変条件の破れ。\n");
     fprintf(out, "           線形走査へ縮退させず、その場で落とす。 */\n");
     fprintf(out, "        (void)fprintf(stderr, \"%s: 埋め込み索引へ接続できません\\n\");\n", stem);
     fprintf(out, "        abort();\n");
     fprintf(out, "    }\n");
-    fprintf(out, "    for (size_t i = 0; i < %s_META_COUNT; i++)\n", prefix);
-    fprintf(out, "    {\n");
-    fprintf(out, "        /* 登録は検索を速くするだけで、失敗しても未登録の記述子として\n");
-    fprintf(out, "           正しく動作する。確保失敗で異常終了はさせず、原因だけ残す。 */\n");
-    fprintf(out, "        if (struct_meta_index_register(s_descriptors[i]) != CPLAT_OK)\n");
-    fprintf(out, "        {\n");
-    fprintf(out, "            (void)fprintf(stderr, \"%s: 記述子を索引へ登録できません: %%s\\n\",\n", stem);
-    fprintf(out, "                          s_descriptors[i]->name);\n");
-    fprintf(out, "        }\n");
-    fprintf(out, "    }\n");
-    fprintf(out, "    (void)cplat_shutdown_register(detach_index, NULL);\n");
+    fprintf(out, "    (void)cplat_shutdown_register(destroy_catalog, NULL);\n");
+    fprintf(out, "}\n\n");
+
+    fprintf(out, "const struct_meta_catalog *%s_meta_catalog(void)\n", stem);
+    fprintf(out, "{\n");
+    fprintf(out, "    cplat_call_once(&s_catalog_once, attach_catalog);\n");
+    fprintf(out, "    return s_catalog;\n");
     fprintf(out, "}\n\n");
 
     fprintf(out, "size_t %s_meta_count(void)\n", stem);
@@ -696,31 +645,32 @@ static int emit_catalog_source(FILE *out, const char *stem, const char *prefix,
 
     fprintf(out, "const struct_meta_descriptor *%s_meta_find(const char *name)\n", stem);
     fprintf(out, "{\n");
-    fprintf(out, "    if (name == NULL)\n");
+    fprintf(out, "    const struct_meta_descriptor *descriptor = NULL;\n");
+    fprintf(out, "    if (struct_meta_catalog_find(%s_meta_catalog(), name, &descriptor) != CPLAT_OK)\n", stem);
     fprintf(out, "    {\n");
     fprintf(out, "        return NULL;\n");
     fprintf(out, "    }\n");
-    fprintf(out, "    cplat_call_once(&s_index_once, attach_index);\n\n");
-    fprintf(out, "    const void *value = NULL;\n");
-    fprintf(out, "    if (cplat_hashtable_find_value_ref(s_index, name, &value) != CPLAT_OK)\n");
-    fprintf(out, "    {\n");
-    fprintf(out, "        return NULL;\n");
-    fprintf(out, "    }\n");
-    fprintf(out, "    /* value_align に sizeof(size_t) を指定しているため、型付きで参照できる。 */\n");
-    fprintf(out, "    return s_descriptors[*(const size_t *)value];\n");
+    fprintf(out, "    return descriptor;\n");
     fprintf(out, "}\n");
     return 0;
 }
 
-int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char *header_path, const char *out_path)
+
+int struct_meta_gen_emit(const struct_meta_catalog *catalog, const char *header_path, const char *out_path)
 {
     char stem[STRUCT_META_GEN_EMIT_PATH_BYTES];
     char prefix[STRUCT_META_GEN_EMIT_PATH_BYTES];
     char header_out[STRUCT_META_GEN_EMIT_PATH_BYTES];
+    size_t count = 0U;
 
-    if ((structs == NULL) || (structs->head == NULL) || (header_path == NULL) || (out_path == NULL))
+    if ((catalog == NULL) || (header_path == NULL) || (out_path == NULL))
     {
         fprintf(stderr, "struct-meta-gen: 生成に必要な引数がありません\n");
+        return 1;
+    }
+    if ((struct_meta_catalog_get_count(catalog, &count) != CPLAT_OK) || (count == 0U))
+    {
+        fprintf(stderr, "struct-meta-gen: 構造体が見つかりません: %s\n", header_path);
         return 1;
     }
     if (header_stem(header_path, stem, sizeof(stem)) != 0)
@@ -749,6 +699,7 @@ int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char 
     fprintf(out, "/* このファイルは struct-meta-gen が自動生成しました。手編集しないでください。 */\n");
     fprintf(out, "#include \"../%s\"\n", header_path);
     fprintf(out, "#include \"%s\"\n\n", generated_header_include(header_out));
+    fprintf(out, "#include <struct_meta/catalog/catalog.h>\n");
     fprintf(out, "#include <struct_meta/meta/index.h>\n\n");
     fprintf(out, "#include <cplat/base/result.h>\n");
     fprintf(out, "#include <cplat/hashtable/hashtable.h>\n");
@@ -766,16 +717,25 @@ int struct_meta_gen_emit(const struct_meta_gen_struct_list *structs, const char 
             "_Static_assert(CHAR_MAX == INT8_MAX, \"struct-meta は char と int8_t の同じ範囲を前提とします\");\n\n");
 
     emitted_name *emitted = NULL;
-    for (const struct_meta_gen_struct *s = structs->head; s != NULL; s = s->next)
+    for (size_t index = 0; index < count; index++)
     {
-        emit_struct(out, s, &emitted);
+        const struct_meta_descriptor *descriptor = NULL;
+        (void)struct_meta_catalog_get(catalog, index, &descriptor);
+        emit_struct(out, descriptor, &emitted);
     }
-    int catalog_ret = emit_catalog_source(out, stem, prefix, structs);
+    while (emitted != NULL)
+    {
+        emitted_name *next = emitted->next;
+        free(emitted);
+        emitted = next;
+    }
+
+    int catalog_ret = emit_catalog_source(out, stem, prefix, catalog, count);
     fclose(out);
     if (catalog_ret != 0)
     {
         return 1;
     }
 
-    return emit_catalog_header(header_out, stem, prefix, structs);
+    return emit_catalog_header(header_out, stem, prefix, catalog);
 }

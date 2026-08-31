@@ -25,7 +25,7 @@
 static int struct_from_json(const struct_meta_descriptor *desc, const cJSON *json, unsigned char *base);
 
 /**
- *  @brief          cJSON アイテム 1 個分をスカラー値としてメモリーへ書き戻します。
+ *  @brief          cJSON アイテム 1 個分をスカラー値としてメモリへ書き戻します。
  */
 static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsigned char *field_ptr,
                             size_t element_size, size_t char_buffer_size)
@@ -109,7 +109,7 @@ static int scalar_from_json(struct_meta_field_kind kind, const cJSON *item, unsi
 }
 
 /**
- *  @brief          cJSON アイテム 1 個分 (配列要素、またはネスト構造体 1 個) をメモリーへ書き戻します。
+ *  @brief          cJSON アイテム 1 個分 (配列要素、またはネスト構造体 1 個) をメモリへ書き戻します。
  */
 static int element_from_json(const struct_meta_field *field, const cJSON *item, unsigned char *elem_ptr)
 {

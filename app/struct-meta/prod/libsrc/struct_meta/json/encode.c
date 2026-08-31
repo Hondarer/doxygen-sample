@@ -26,7 +26,7 @@
 static int struct_to_json(const struct_meta_descriptor *desc, const unsigned char *base, cJSON **json_out);
 
 /**
- *  @brief          スカラー値 1 個分のメモリー内容から cJSON アイテムを作成します。
+ *  @brief          スカラー値 1 個分のメモリ内容から cJSON アイテムを作成します。
  */
 static int scalar_to_json(struct_meta_field_kind kind, const unsigned char *field_ptr, size_t element_size,
                           size_t char_buffer_size, cJSON **item_out)

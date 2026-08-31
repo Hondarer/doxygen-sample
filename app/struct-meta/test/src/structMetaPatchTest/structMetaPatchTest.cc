@@ -313,7 +313,7 @@ TEST_F(StructMetaPatchTest, PromptCreationFailureIsReturned)
     int actual_ret = struct_meta_patch_path_interactive(&kSampleDescriptor, &sample, "id");
     // [手順_異常系] - プロンプトを生成して編集を開始する。
 
-    EXPECT_EQ(CPLAT_ERR_OUT_OF_MEMORY, actual_ret); // [確認_異常系] - メモリー不足エラーを返すこと。
+    EXPECT_EQ(CPLAT_ERR_OUT_OF_MEMORY, actual_ret); // [確認_異常系] - メモリ不足エラーを返すこと。
 }
 
 TEST_F(StructMetaPatchTest, PromptInputFailureIsReturnedAfterDisposal)

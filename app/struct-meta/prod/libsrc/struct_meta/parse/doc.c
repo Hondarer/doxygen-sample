@@ -1,158 +1,22 @@
 /**
  *******************************************************************************
- *  @file           struct_meta_gen_ast.c
- *  @brief          struct-meta-gen の AST 構築ヘルパーを実装します。
- *  @author         Tetsuo Honda
- *  @date           2026/08/16
- *  @version        1.0.0
+ *  @file           doc.c
+ *  @brief          Doxygen コメントから短い説明と汎用属性を取り出します。
  *
  *  @copyright      Copyright (C) Tetsuo Honda. 2026. All rights reserved.
  *
  *******************************************************************************
  */
 
-#include "struct_meta_gen_ast.h"
+#include "doc.h"
+
+#include <struct_meta/parse/diagnostic.h>
 
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/**
- *  対応するスカラー型の表です。
- *
- *  幅が LP64 と LLP64 で一致する型だけを載せます。`long` と `unsigned long` は
- *  幅が異なるため載せず、文法規則で明示的に拒否します。
- *  see: app/struct-meta/docs/architecture.md
- */
-static const struct_meta_gen_scalar_type g_scalar_types[] = {
-    {"char", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(char)"},
-    {"signed char", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(signed char)"},
-    {"unsigned char", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned char)"},
-    {"int", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int)"},
-    {"unsigned", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned int)"},
-    {"long long", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(long long)"},
-    {"unsigned long long", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(unsigned long long)"},
-    {"int8_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int8_t)"},
-    {"int16_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int16_t)"},
-    {"int32_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int32_t)"},
-    {"int64_t", "STRUCT_META_FIELD_SIGNED_INTEGER", "sizeof(int64_t)"},
-    {"uint8_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint8_t)"},
-    {"uint16_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint16_t)"},
-    {"uint32_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint32_t)"},
-    {"uint64_t", "STRUCT_META_FIELD_UNSIGNED_INTEGER", "sizeof(uint64_t)"},
-    {"float", "STRUCT_META_FIELD_FLOAT", "sizeof(float)"},
-    {"double", "STRUCT_META_FIELD_DOUBLE", "sizeof(double)"},
-};
-
 /* Doxygen コメントは、ヘッダーに記載 */
-
-const struct_meta_gen_scalar_type *struct_meta_gen_find_scalar_type(const char *name)
-{
-    if (name == NULL)
-    {
-        return NULL;
-    }
-    for (size_t i = 0; i < (sizeof(g_scalar_types) / sizeof(g_scalar_types[0])); i++)
-    {
-        if (strcmp(g_scalar_types[i].name, name) == 0)
-        {
-            return &g_scalar_types[i];
-        }
-    }
-    return NULL;
-}
-
-struct_meta_gen_field *struct_meta_gen_field_create(char *name, char *type_name, int is_struct_type, long array_count,
-                                                    int line, char *brief, struct_meta_gen_attribute *attributes)
-{
-    struct_meta_gen_field *field = (struct_meta_gen_field *)calloc(1, sizeof(*field));
-    if (field == NULL)
-    {
-        return NULL;
-    }
-    field->name = name;
-    field->type_name = type_name;
-    field->brief = brief;
-    field->attributes = attributes;
-    field->is_struct_type = is_struct_type;
-    field->array_count = array_count;
-    field->line = line;
-    field->next = NULL;
-    return field;
-}
-
-struct_meta_gen_field_list *struct_meta_gen_field_list_create(struct_meta_gen_field *first)
-{
-    struct_meta_gen_field_list *list = (struct_meta_gen_field_list *)calloc(1, sizeof(*list));
-    if (list == NULL)
-    {
-        return NULL;
-    }
-    list->head = first;
-    list->tail = first;
-    return list;
-}
-
-struct_meta_gen_field_list *struct_meta_gen_field_list_append(struct_meta_gen_field_list *list,
-                                                              struct_meta_gen_field *field)
-{
-    list->tail->next = field;
-    list->tail = field;
-    return list;
-}
-
-struct_meta_gen_struct *struct_meta_gen_struct_create(char *name, struct_meta_gen_field_list *fields, char *brief,
-                                                      struct_meta_gen_attribute *attributes)
-{
-    struct_meta_gen_struct *s = (struct_meta_gen_struct *)calloc(1, sizeof(*s));
-    if (s == NULL)
-    {
-        return NULL;
-    }
-    s->name = name;
-    s->brief = brief;
-    s->attributes = attributes;
-    s->fields = fields->head;
-    s->next = NULL;
-    free(fields);
-    return s;
-}
-
-void struct_meta_gen_struct_list_append(struct_meta_gen_struct_list **list, struct_meta_gen_struct *s)
-{
-    if (*list == NULL)
-    {
-        *list = (struct_meta_gen_struct_list *)calloc(1, sizeof(**list));
-    }
-    if ((*list)->head == NULL)
-    {
-        (*list)->head = s;
-        (*list)->tail = s;
-    }
-    else
-    {
-        (*list)->tail->next = s;
-        (*list)->tail = s;
-    }
-}
-
-const struct_meta_gen_struct *struct_meta_gen_struct_list_find(const struct_meta_gen_struct_list *list,
-                                                               const char *name)
-{
-    if (list == NULL)
-    {
-        return NULL;
-    }
-    for (const struct_meta_gen_struct *s = list->head; s != NULL; s = s->next)
-    {
-        if (strcmp(s->name, name) == 0)
-        {
-            return s;
-        }
-    }
-    return NULL;
-}
 
 static const char *skip_doc_open(const char *s)
 {
@@ -412,7 +276,7 @@ static char *extract_brief_tag(const char *stripped)
     return collapse_ws(begin, end);
 }
 
-int struct_meta_gen_doc_has_file_tag(const char *raw)
+int struct_meta_internal_parse_doc_has_file_tag(const char *raw)
 {
     char *stripped;
     int found;
@@ -466,9 +330,9 @@ static int valid_attribute_key(const char *key)
     return key[0] != '\0';
 }
 
-static struct_meta_gen_attribute *find_attribute(struct_meta_gen_attribute *attributes, const char *key)
+static struct_meta_internal_parse_attribute *find_attribute(struct_meta_internal_parse_attribute *attributes, const char *key)
 {
-    for (struct_meta_gen_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
+    for (struct_meta_internal_parse_attribute *attribute = attributes; attribute != NULL; attribute = attribute->next)
     {
         if (strcmp(attribute->key, key) == 0)
         {
@@ -478,7 +342,7 @@ static struct_meta_gen_attribute *find_attribute(struct_meta_gen_attribute *attr
     return NULL;
 }
 
-static void append_attribute(struct_meta_gen_attribute **attributes, struct_meta_gen_attribute *attribute)
+static void append_attribute(struct_meta_internal_parse_attribute **attributes, struct_meta_internal_parse_attribute *attribute)
 {
     if (*attributes == NULL)
     {
@@ -486,7 +350,7 @@ static void append_attribute(struct_meta_gen_attribute **attributes, struct_meta
         return;
     }
 
-    struct_meta_gen_attribute *tail = *attributes;
+    struct_meta_internal_parse_attribute *tail = *attributes;
     while (tail->next != NULL)
     {
         tail = tail->next;
@@ -494,7 +358,8 @@ static void append_attribute(struct_meta_gen_attribute **attributes, struct_meta
     tail->next = attribute;
 }
 
-static int parse_attributes(const char *text, const int line, struct_meta_gen_attribute **attributes_out)
+static int parse_attributes(const char *text, const int line, struct_meta_internal_parse_attribute **attributes_out,
+                            struct_meta_diagnostic *diagnostic)
 {
     static const size_t command_len = sizeof("@struct_meta") - 1U;
     const char *p = text;
@@ -514,21 +379,21 @@ static int parse_attributes(const char *text, const int line, struct_meta_gen_at
         }
         if (*open != '{')
         {
-            fprintf(stderr, "struct-meta-gen: %d: @struct_meta に { がありません\n", line);
+            struct_meta_internal_diagnose(diagnostic, line, "@struct_meta に { がありません");
             return 1;
         }
 
         const char *close = strchr(open + 1, '}');
         if (close == NULL)
         {
-            fprintf(stderr, "struct-meta-gen: %d: @struct_meta に } がありません\n", line);
+            struct_meta_internal_diagnose(diagnostic, line, "@struct_meta に } がありません");
             return 1;
         }
         for (const char *q = open + 1; q < close; q++)
         {
             if ((*q == '{') || (*q == '\n') || (*q == '\r'))
             {
-                fprintf(stderr, "struct-meta-gen: %d: @struct_meta の属性は 1 行で記載してください\n", line);
+                struct_meta_internal_diagnose(diagnostic, line, "@struct_meta の属性は 1 行で記載してください");
                 return 1;
             }
         }
@@ -553,7 +418,7 @@ static int parse_attributes(const char *text, const int line, struct_meta_gen_at
         char *key = copy_range(begin, key_end);
         if ((key == NULL) || (valid_attribute_key(key) == 0))
         {
-            fprintf(stderr, "struct-meta-gen: %d: @struct_meta の属性名が不正です\n", line);
+            struct_meta_internal_diagnose(diagnostic, line, "@struct_meta の属性名が不正です");
             free(key);
             return 1;
         }
@@ -568,7 +433,7 @@ static int parse_attributes(const char *text, const int line, struct_meta_gen_at
             }
             if (value_begin == end)
             {
-                fprintf(stderr, "struct-meta-gen: %d: @struct_meta{%s=} の属性値が空です\n", line, key);
+                struct_meta_internal_diagnose(diagnostic, line, "@struct_meta{%s=} の属性値が空です", key);
                 free(key);
                 return 1;
             }
@@ -582,13 +447,13 @@ static int parse_attributes(const char *text, const int line, struct_meta_gen_at
 
         if (find_attribute(*attributes_out, key) != NULL)
         {
-            fprintf(stderr, "struct-meta-gen: %d: 属性が重複しています: %s\n", line, key);
+            struct_meta_internal_diagnose(diagnostic, line, "属性が重複しています: %s", key);
             free(value);
             free(key);
             return 1;
         }
 
-        struct_meta_gen_attribute *attribute = (struct_meta_gen_attribute *)calloc(1, sizeof(*attribute));
+        struct_meta_internal_parse_attribute *attribute = (struct_meta_internal_parse_attribute *)calloc(1, sizeof(*attribute));
         if (attribute == NULL)
         {
             free(value);
@@ -638,7 +503,7 @@ static char *copy_without_meta_cmds(const char *text)
     return out;
 }
 
-char *struct_meta_gen_brief_from_doc(const char *raw, int is_postfix)
+char *struct_meta_internal_parse_brief_from_doc(const char *raw, int is_postfix)
 {
     char *stripped;
     char *without_meta;
@@ -671,9 +536,11 @@ char *struct_meta_gen_brief_from_doc(const char *raw, int is_postfix)
     return brief;
 }
 
-struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_from_raw(const char *raw, const int is_postfix, const int line)
+struct_meta_internal_parse_doc_attrs struct_meta_internal_parse_doc_attrs_from_raw(const char *raw, const int is_postfix,
+                                                                                  const int line,
+                                                                                  struct_meta_diagnostic *diagnostic)
 {
-    struct_meta_gen_doc_attrs attrs = {0};
+    struct_meta_internal_parse_doc_attrs attrs = {0};
     char *stripped;
 
     if (raw == NULL)
@@ -686,19 +553,20 @@ struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_from_raw(const char *raw, co
         return attrs;
     }
 
-    attrs.invalid = parse_attributes(stripped, line, &attrs.attributes);
+    attrs.invalid = parse_attributes(stripped, line, &attrs.attributes, diagnostic);
     if (attrs.invalid == 0)
     {
-        attrs.brief = struct_meta_gen_brief_from_doc(raw, is_postfix);
+        attrs.brief = struct_meta_internal_parse_brief_from_doc(raw, is_postfix);
     }
     free(stripped);
     return attrs;
 }
 
-struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_choose(struct_meta_gen_doc_attrs prefix,
-                                                           struct_meta_gen_doc_attrs postfix, const int line)
+struct_meta_internal_parse_doc_attrs struct_meta_internal_parse_doc_attrs_choose(
+    struct_meta_internal_parse_doc_attrs prefix, struct_meta_internal_parse_doc_attrs postfix, const int line,
+    struct_meta_diagnostic *diagnostic)
 {
-    struct_meta_gen_doc_attrs out = prefix;
+    struct_meta_internal_parse_doc_attrs out = prefix;
 
     if (postfix.brief != NULL)
     {
@@ -706,11 +574,11 @@ struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_choose(struct_meta_gen_doc_a
         out.brief = postfix.brief;
     }
     out.invalid = (prefix.invalid != 0) || (postfix.invalid != 0);
-    for (struct_meta_gen_attribute *attribute = postfix.attributes; attribute != NULL; attribute = attribute->next)
+    for (struct_meta_internal_parse_attribute *attribute = postfix.attributes; attribute != NULL; attribute = attribute->next)
     {
         if (find_attribute(prefix.attributes, attribute->key) != NULL)
         {
-            fprintf(stderr, "struct-meta-gen: %d: 属性が重複しています: %s\n", line, attribute->key);
+            struct_meta_internal_diagnose(diagnostic, line, "属性が重複しています: %s", attribute->key);
             out.invalid = 1;
         }
     }
@@ -720,7 +588,7 @@ struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_choose(struct_meta_gen_doc_a
     }
     else
     {
-        struct_meta_gen_attribute *tail = prefix.attributes;
+        struct_meta_internal_parse_attribute *tail = prefix.attributes;
         while (tail->next != NULL)
         {
             tail = tail->next;
@@ -730,7 +598,7 @@ struct_meta_gen_doc_attrs struct_meta_gen_doc_attrs_choose(struct_meta_gen_doc_a
     return out;
 }
 
-char *struct_meta_gen_brief_choose(char *prefix_brief, char *postfix_brief)
+char *struct_meta_internal_parse_brief_choose(char *prefix_brief, char *postfix_brief)
 {
     if (postfix_brief != NULL)
     {
@@ -740,7 +608,7 @@ char *struct_meta_gen_brief_choose(char *prefix_brief, char *postfix_brief)
     return prefix_brief;
 }
 
-char *struct_meta_gen_doc_concat(char *first, char *second)
+char *struct_meta_internal_parse_doc_concat(char *first, char *second)
 {
     size_t first_len;
     size_t second_len;

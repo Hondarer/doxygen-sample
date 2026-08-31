@@ -1,2 +1,2 @@
 # ライブラリの指定
-LIBS += cplat
+LIBS += cplat struct_meta
