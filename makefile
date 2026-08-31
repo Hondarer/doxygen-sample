@@ -255,8 +255,9 @@ docs :
 # docsfw の発行 (make docs) とは独立した、執筆中の確認用ビルドです。
 # 設計は framework/docsfw/docs/mkdocs-preview-design.md を参照してください。
 #
-# PREVIEW_ADDR    mkdocs serve のアドレス (既定 127.0.0.1:8000)
-# PREVIEW_STRICT  1 を指定すると mkdocs build --strict で実行する
+# PREVIEW_ADDR     mkdocs serve のアドレス (既定 127.0.0.1:8000)
+# PREVIEW_STRICT   1 を指定すると mkdocs build --strict で実行する
+# PREVIEW_VARIANT  ja / ja-details / en / en-details (既定 ja-details)
 # ---------------------------------------------------------------------------
 PREVIEW_HOME := $(CURDIR)/framework/docsfw/mkdocs
 PREVIEW_VENV := $(PREVIEW_HOME)/.venv
@@ -265,6 +266,7 @@ PREVIEW_MKDOCS := $(PREVIEW_VENV)/bin/mkdocs
 PREVIEW_DIR := $(CURDIR)/pages/preview
 PREVIEW_STOP := $(PREVIEW_HOME)/bin/stop_preview_serve.sh
 PREVIEW_ADDR ?= 127.0.0.1:8000
+PREVIEW_VARIANT ?= ja-details
 
 # Windows (Git Bash) では venv の実行ファイルが Scripts/ に置かれる。
 ifeq ($(OS),Windows_NT)
@@ -283,12 +285,14 @@ preview-venv :
 
 .PHONY: preview-stage
 preview-stage : preview-venv
-	@python3 "$(PREVIEW_HOME)/bin/stage_preview_docs.py" --workspaceFolder="$(CURDIR)"
-	@python3 "$(PREVIEW_HOME)/bin/vendor_assets.py" --workspaceFolder="$(CURDIR)"
+	@python3 "$(PREVIEW_HOME)/bin/stage_preview_docs.py" --workspaceFolder="$(CURDIR)" --variant="$(PREVIEW_VARIANT)"
+	@python3 "$(PREVIEW_HOME)/bin/vendor_assets.py" --workspaceFolder="$(CURDIR)" --variant="$(PREVIEW_VARIANT)"
 
 .PHONY: preview
-preview : preview-stage
-	@printf 'INFO: mkdocs serve on http://%s/\n' "$(PREVIEW_ADDR)"
+preview : preview-venv
+	@"$(BASH)" "$(PREVIEW_STOP)" --venv "$(PREVIEW_VENV)" --require-stopped
+	@$(MAKE) --no-print-directory preview-stage
+	@printf 'INFO: mkdocs serve on http://%s/ (variant %s)\n' "$(PREVIEW_ADDR)" "$(PREVIEW_VARIANT)"
 	@cd "$(PREVIEW_DIR)" && trap 'exit 0' INT && "$(PREVIEW_MKDOCS)" serve --dev-addr "$(PREVIEW_ADDR)"
 
 .PHONY: preview-build
