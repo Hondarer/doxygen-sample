@@ -19,7 +19,6 @@
 ```plantuml
 @startuml 学習ステップ
     caption 学習ステップ
-    skinparam backgroundColor #FAFAFA
     skinparam roundcorner 8
 
     rectangle "ステップ1\n導入" as P1 #EDE7F6 {
