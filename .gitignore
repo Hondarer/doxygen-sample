@@ -75,7 +75,9 @@ __pycache__/
 
 ## 成果物
 lib
+# 中間階層の bin は管理対象外
 bin
+# ルート直下の bin は管理対象
 !/bin
 *.exe
 *.pdb
