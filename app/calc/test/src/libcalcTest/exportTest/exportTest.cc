@@ -66,7 +66,7 @@ TEST_F(exportTest, symbol_names_match)
     // Assert
     testing::expectExportNamesMatch(
         expected, actual,
-        kExpectedExportSignatures); // [確認] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致)。
+        kExpectedExportSignatures); // [確認_正常系] - 期待シンボルとの不足/想定外がないこと (Windows / Linux とも完全一致)。
 }
 
 // 公開ヘッダー (calc/ サブディレクトリのみ) の変数宣言が dllexport マクロ (CALC_EXPORT) を
@@ -88,5 +88,6 @@ TEST_F(exportTest, public_header_variables_declare_export_macro)
 
     // Assert
     EXPECT_TRUE(undecorated.empty()) << "CALC_EXPORT を伴わない変数宣言: "
-                                     << testing::joinNames(undecorated); // [確認] - 該当する宣言が 1 件もないこと。
+                                     << testing::joinNames(
+                                            undecorated); // [確認_正常系] - 該当する宣言が 1 件もないこと。
 }

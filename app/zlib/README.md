@@ -87,7 +87,7 @@ Windows 専用の `gzopen_w` は Windows の API 表と網羅テストだけに�
 - `zlibTest`: メモリの往復、空・バイナリ、不正入力、バッファー不足、チェックサム、gzip ファイル、size_t 版 API
 - `sampleTest`: サンプルの成功、圧縮・展開エラー、復元内容不一致
 - `mockZlibTest`: 実委譲、既定動作、エラー差し替え、初期化マクロ、可変長引数
-- `exportTest`: 全公開関数と API 表の一致、関数シグネチャの一致
+- `exportTest`: API 表、IDENT manifest、実ライブラリの全エクスポートの一致、関数シグネチャの一致
 
 ## ライセンス
 
