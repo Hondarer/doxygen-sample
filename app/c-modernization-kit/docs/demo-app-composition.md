@@ -18,7 +18,7 @@
 | `calc` | 静的ライブラリ、共有ライブラリ、コマンド、Google Test の組み合わせ例 |
 | `calc.net` | `calc` の共有ライブラリを P/Invoke で利用する .NET 実装例 |
 | `porter` | `cplat` を利用する通信ライブラリ |
-| `cjson`、`lua`、`sqlite` | 外部 OSS を makefw の規約でビルドする例 |
+| `cjson`、`lua`、`sqlite`、`zlib` | 外部 OSS を makefw の規約でビルドする例 |
 | `doxygen-sample` | Doxygen 文書生成の例 |
 | `empty-lib` | ソースが空のライブラリを扱う例 |
 | `override-sample` | ライブラリ関数を差し替える例 |
@@ -33,7 +33,7 @@
 
 - `calc`、`porter`、`empty-lib`、`override-sample`、`service-sample`、`subfolder-sample`、`tutorial` は `cplat` に依存します。
 - `calc.net` は `calc` に依存し、推移的に `cplat` も利用します。
-- `cjson`、`lua`、`sqlite`、`doxygen-sample` は、ほかの app に依存しません。
+- `cjson`、`lua`、`sqlite`、`zlib`、`doxygen-sample` は、ほかの app に依存しません。
 - `general` と `c-modernization-kit` は文書だけを持つため、ビルド依存関係を定義しません。
 
 makefw はこの依存グラフから app の実行順序を決定します。  

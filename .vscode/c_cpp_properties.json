@@ -33,12 +33,15 @@
                 "${workspaceFolder}/app/struct-meta/prod/src/cmd/struct-meta-sample/gen",
                 "${workspaceFolder}/app/subfolder-sample/prod/include",
                 "${workspaceFolder}/app/tutorial/test/src/static-access/sample-static-lib",
+                "${workspaceFolder}/app/zlib/prod/include",
+                "${workspaceFolder}/app/zlib/test/include",
                 "${workspaceFolder}/framework/testfw/gtest/include",
                 "${workspaceFolder}/framework/testfw/include"
             ],
             "defines": [
                 "TARGET_ARCH=target_arch", // framework/makefw/makefiles/prepare.mk で定義される TARGET_ARCH をインテリセンスで模擬するため (コンパイル時には環境に応じて適切な値が渡される)
-                "_DEFAULT_SOURCE"
+                "_DEFAULT_SOURCE",
+                "_LARGEFILE64_SOURCE=1"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
@@ -78,6 +81,8 @@
                 "${workspaceFolder}/app/struct-meta/prod/src/cmd/struct-meta-sample/gen",
                 "${workspaceFolder}/app/subfolder-sample/prod/include",
                 "${workspaceFolder}/app/tutorial/test/src/static-access/sample-static-lib",
+                "${workspaceFolder}/app/zlib/prod/include",
+                "${workspaceFolder}/app/zlib/test/include",
                 "${workspaceFolder}/framework/testfw/gtest/include",
                 "${workspaceFolder}/framework/testfw/include"
             ],
