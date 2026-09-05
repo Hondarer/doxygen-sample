@@ -8,8 +8,7 @@ description: Hondarer 配下の対象リポジトリ群へ日付ベースのタ�
 ## 目的
 
 対象リポジトリ群の origin における既定ブランチの HEAD に対して、日付ベースのバージョン タグ  
-(`vYYYYMMDD.<major>.<minor>` 形式、例: `v20260817.0.0`) と、同名の GitHub Release を  
-一括で作成します。  
+(`vYYYYMMDD.<major>.<minor>` 形式、例: `v20260817.0.0`) と、同名の GitHub Release を一括で作成します。
 直近の GitHub Release がすでに HEAD と同じコミットを指している場合は、そのリポジトリのタグと Release の作成をスキップします。
 
 ## 対象リポジトリ

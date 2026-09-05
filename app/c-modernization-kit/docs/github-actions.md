@@ -169,14 +169,12 @@ docs_artifact -down-> warns
 deploy -down-> pages : アーティファクト統合
 
 note right of deploy
-  アーティファクトストレージ経由で
-  異なる OS 環境のファイルを統合
+  アーティファクトストレージ経由で異なる OS 環境のファイルを統合
   すべてのジョブ成功時のみ実行
 end note
 
 note right of warns
-  warning artifact の有無を検知し
-  ジョブは成功のまま
+  warning artifact の有無を検知し、ジョブは成功のまま
   annotation と Step Summary で通知
 end note
 

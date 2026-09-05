@@ -2,8 +2,7 @@
 
 ## 概要
 
-`fix-if-comments.py` は、C/C++ ソース コード中のプリプロセッサ条件分岐について、  
-`#else` / `#endif` コメントと Linux/Windows 二択分岐の書式を機械的に標準化する保守コマンドです。
+`fix-if-comments.py` は、C/C++ ソース コード中のプリプロセッサ条件分岐について、`#else` / `#endif` コメントと Linux/Windows 二択分岐の書式を機械的に標準化する保守コマンドです。
 
 本コマンドは **C/C++ 用** です。  
 makefile の `ifdef` / `else ifdef` 整形は対象に含めません。

@@ -2909,8 +2909,7 @@ rg -n '\b(restrict|_Restrict)\b|\bvolatile\b|\b(static[[:space:]]+)?inline\b|\bF
 
 ## 関数引数の const 付与と Doxygen 方向タグ
 
-対象ワークスペースのすべての C コード (`app/` 配下) で、関数引数には次のルールで `const` を付与し、  
-Doxygen の `@param[in/out/in,out]` を厳密化します。新規関数だけでなく、既存関数の変更時にも適用します。
+対象ワークスペースのすべての C コード (`app/` 配下) で、関数引数には次のルールで `const` を付与し、Doxygen の `@param[in/out/in,out]` を厳密化します。新規関数だけでなく、既存関数の変更時にも適用します。
 
 ### 引数の分類
 
