@@ -305,7 +305,10 @@ end note
 
 **処理フロー**:
 
-1. **アーティファクトのダウンロード**
+1. **リポジトリの sparse checkout**
+    - `index.html` のタイトル解決に必要な `bin` と `.vscode` だけを取得 (サブモジュールは取得しない)
+
+2. **アーティファクトのダウンロード**
     - Linux OL8 テスト結果アーティファクト (`linux-ol8-test-results`) をダウンロード
     - Linux OL9 テスト結果アーティファクト (`linux-ol9-test-results`) をダウンロード
     - Linux OL10 テスト結果アーティファクト (`linux-ol10-test-results`) をダウンロード
@@ -317,7 +320,7 @@ end note
     - Windows ログ アーティファクト (`windows-logs`) をダウンロード
     - ビルド警告アーティファクト (`linux-ol8-warns` / `linux-ol9-warns` / `linux-ol10-warns` / `windows-warns`) は、存在する場合のみダウンロード
 
-2. **アーティファクトの整理と統合**
+3. **アーティファクトの整理と統合**
     - Linux OL8 テスト結果と `make test` ログを `linux-ol8-test-results.zip` にアーカイブ
     - Linux OL9 テスト結果と `make test` ログを `linux-ol9-test-results.zip` にアーカイブ
     - Linux OL10 テスト結果と `make test` ログを `linux-ol10-test-results.zip` にアーカイブ
@@ -330,7 +333,7 @@ end note
     - アーカイブを `pages/artifacts/` に配置
     - `pages/` 配下のドキュメントと統合
 
-3. **GitHub Pages へのデプロイ**
+4. **GitHub Pages へのデプロイ**
     - 閲覧用の HTML は `pages/` に残す
     - 未圧縮の `docx` ディレクトリは Pages artifact から外し、DOCX は `pages/artifacts/docs-docx-*.zip` で配布する
     - 統合した `pages/` を GitHub Pages artifact として公開する
@@ -429,6 +432,9 @@ https://<username>.github.io/<repository>/
 
 Pages の `index.html` では、通常アーティファクト一覧とは別に、存在する場合のみ「ビルド・ドキュメント警告詳細」として `.warn` アーカイブを表示します。  
 `docs-warns.zip` には `docs.warn` と `app/**/doxy*.warn` がまとめて格納されます。
+
+`index.html` のタイトルは `bin/resolve-site-name.sh` が `.vscode/pub_markdown.config.yaml` の `siteName` から解決した名前を使います。mkdocs による動的発行のサイト名と源泉が同じであり、`deploy-pages` ジョブはこの解決のために `bin` と `.vscode` だけを sparse checkout します。  
+同じ解決を `.jenkins/inner-build.sh` も使うため、GitHub Actions と Jenkins のエントリ ページは同じ名前になります。
 
 ### GitHub リポジトリ設定
 

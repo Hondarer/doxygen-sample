@@ -565,6 +565,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # index.html のタイトルを .vscode/pub_markdown.config.yaml から解決するため、
+      # このジョブでも bin/ と .vscode/ を取得する。
+      # checkout は作業ディレクトリを掃除するため、アーティファクトの取得より前に置く。
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+          sparse-checkout: |
+            bin
+            .vscode
+
       - name: Download Linux OL8 test results
         uses: actions/download-artifact@v8
         with:
@@ -730,14 +741,15 @@ jobs:
 
       - name: Create Pages root index.html
         run: |
+          SITE_NAME="$(bash bin/resolve-site-name.sh --workspace "$GITHUB_WORKSPACE")"
           {
-            cat <<'INDEX_TOP'
+            cat <<INDEX_TOP
           <!DOCTYPE html>
           <html lang="ja">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>c-modernization-kit ドキュメント</title>
+            <title>${SITE_NAME} ドキュメント</title>
             <style>
               body { font-family: sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; }
               h1 { border-bottom: 2px solid #333; padding-bottom: 0.3em; }
@@ -750,7 +762,7 @@ jobs:
             </style>
           </head>
           <body>
-            <h1>c-modernization-kit ドキュメント</h1>
+            <h1>${SITE_NAME} ドキュメント</h1>
           INDEX_TOP
 
             # Doxygen サブフォルダを自動探索してリンク生成

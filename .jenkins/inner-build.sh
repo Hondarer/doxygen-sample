@@ -105,14 +105,17 @@ if [ "${BUILD_DOCS}" = "1" ]; then
 fi
 
 # pages/index.html の生成 (GitHub Actions と同じ構造, HTML Publisher Plugin のエントリ ページ)
+# タイトルは .vscode/pub_markdown.config.yaml の siteName を源泉とする。
+SITE_NAME="$(bash /workspace/bin/resolve-site-name.sh --workspace /workspace)"
+
 {
-    cat <<'INDEX_TOP'
+    cat <<INDEX_TOP
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>c-modernization-kit ドキュメント</title>
+  <title>${SITE_NAME} ドキュメント</title>
   <style>
     body { font-family: sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; }
     h1 { border-bottom: 2px solid #333; padding-bottom: 0.3em; }
@@ -125,7 +128,7 @@ fi
   </style>
 </head>
 <body>
-  <h1>c-modernization-kit ドキュメント</h1>
+  <h1>${SITE_NAME} ドキュメント</h1>
 INDEX_TOP
 
     if [ "${BUILD_DOCS}" = "1" ]; then

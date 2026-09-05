@@ -179,6 +179,7 @@ make docs 2>&1 | tee "logs/linux-${OS_NAME}-docs.log"
 
 生成ロジック:
 
+- タイトルは `bin/resolve-site-name.sh` が `.vscode/pub_markdown.config.yaml` の `siteName` から解決した名前を使います。`siteName` が未指定の場合はワークスペース フォルダー名 (コンテナー内のマウント先は `/workspace`) になります
 - `pages/doxygen/` 配下のサブディレクトリを自動探索してリンクを生成します
 - `pages/` 配下の `html` ディレクトリを検出した場合に言語別ドキュメントのリンクを出力します
 - `pages/artifacts/*.zip` を自動探索してリンクを生成します
