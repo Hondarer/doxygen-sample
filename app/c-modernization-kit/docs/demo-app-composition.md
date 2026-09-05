@@ -32,6 +32,7 @@
 現在の依存関係は次のとおりです。
 
 - `calc`、`porter`、`empty-lib`、`override-sample`、`service-sample`、`subfolder-sample`、`tutorial` は `cplat` に依存します。
+- `cplat` は JSON 設定解析に `cjson`、圧縮・展開に `zlib` を利用します。
 - `calc.net` は `calc` に依存し、推移的に `cplat` も利用します。
 - `cjson`、`lua`、`sqlite`、`zlib`、`doxygen-sample` は、ほかの app に依存しません。
 - `general` と `c-modernization-kit` は文書だけを持つため、ビルド依存関係を定義しません。
@@ -52,8 +53,8 @@ Linux と Windows で同じ .NET API を提供し、ネイティブ ライブラ
 `cplat` は動的ライブラリだけを生成し、すべての製品利用者が同じライブラリを共有します。  
 これにより、トレース レジストリや既定パーサーなどのプロセス グローバルな状態がプロセス内で一つになります。
 
-同梱 CLI、`service-sample`、`tutorial` には `libcplat` と `libcjson` を実行ファイルと同じ `prod/cbin` へコピーします。  
-Linux では `$ORIGIN` の RUNPATH、Windows では実行ファイルと同じディレクトリの DLL 探索を使うため、開発環境のライブラリ探索パスに依存せず実行できます。
+同梱 CLI、`service-sample`、`tutorial` には `libcplat`、`libcjson`、`libzlib` を実行ファイルと同じ `prod/cbin` へコピーします。  
+Linux では `$ORIGIN` の実行時探索パス、Windows では実行ファイルと同じディレクトリの DLL 探索を使うため、開発環境のライブラリ探索パスに依存せず実行できます。
 
 記述方法と配布時の要件は、[リンク方式の規約](../../c-platform/docs/link-policy.md) に従います。
 
