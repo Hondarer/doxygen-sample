@@ -4,7 +4,9 @@
 
 この app は、`makechild.mk` とサブディレクトリ走査を使うビルド構成のサンプルです。
 
-## 必須参照
+## 参照先
+
+作業に関係する文書の該当節を参照してください。
 
 - [README.md](README.md)
 - [サブフォルダー コンパイル](../../framework/makefw/docs/subfolder-compilation.md)

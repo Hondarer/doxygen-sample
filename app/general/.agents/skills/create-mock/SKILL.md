@@ -1,17 +1,15 @@
 ---
 name: create-mock
-description: app 配下の C ライブラリ関数に通常の Google Mock 対応 mock を追加または変更するときに使用します。include_override、Mock クラス、ON_CALL、MOCK_WEAK_IMPL、makepart.mk、局所テストを扱います。
+description: 通常の app C 関数へ Google Mock 対応 mock を追加・変更します。専用の委譲方式や API 表生成には対象固有の手順を使います。
 ---
 
 # app mock の作成
 
-1. `app/general/docs/testing-tutorial.md` の mock 節を読んでください。
-2. `framework/testfw/docs/how-to-mock.md` を読んでください。mock 関数本体の中継は `mock_ret`、テスト本体の受けは `actual_ret` です。
-3. 対象パスに適用される `AGENTS.md` と既存の同種 mock を確認してください。
-4. override ヘッダー、Mock クラス、`ON_CALL`、関数ラッパーを更新してください。
-5. app 関数と同名のラッパーには `MOCK_WEAK_IMPL` を使用してください。
-6. `makepart.mk` のソースとリンク先を確認してください。
-7. 対象 app の局所テストを実行してください。
+対象パスに専用スキルの指定があれば、その手順を使用してください。  
+API 表から生成する第三者共有ライブラリには `create-mock-shared-lib` を使用してください。
 
-`mock_cplat` には `create-mock-cplat-mock` を優先してください。  
-API 表から生成する第三者共有ライブラリには `create-mock-shared-lib` を優先してください。
+通常の app 関数では、`framework/testfw/docs/how-to-mock.md` の宣言、既定動作、ラッパーの該当節を確認してください。  
+配置が不明な場合は `app/general/docs/testing-tutorial.md` の mock 節を参照してください。
+
+override ヘッダー、Mock クラス、`ON_CALL`、関数ラッパーのシグネチャを一致させ、app 関数と同名のラッパーには `MOCK_WEAK_IMPL` を使用してください。  
+ソースやリンク先を変える場合は `makepart.mk` も更新し、変更した mock を使う局所テストで確認してください。

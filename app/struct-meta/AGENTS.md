@@ -1,65 +1,32 @@
 # AGENTS.md
 
-## 対象
+## 対象と参照先
 
-本書は `app/struct-meta/` 以下の変更に適用します。  
-作業前にルートの `AGENTS.md`、本書、`README.md`、作業内容に該当するスキル、[アーキテクチャー](docs/architecture.md) の順に確認してください。
+構造体メタデータを扱う app です。  
+利用方法は [README.md](README.md)、設計を変更する場合は [アーキテクチャー](docs/architecture.md) の該当節を参照してください。
 
-## 責務と依存方向
+## 変更時の制約
 
-- `layout` は対応する型の表と x86_64 のレイアウト規則を定義し、他のカテゴリへ依存しません。
-- `parse` は C ヘッダーを構文解析して AST を作り、他のカテゴリへ依存しません。
-- `catalog` は `layout` と `parse` と `meta` を使い、記述子の構築、索引、寿命を担います。
-- `meta` は記述子、汎用属性、記述子の索引を定義し、他のカテゴリへ依存しません。
-- `access` は `meta` のみに依存し、ポインター演算を集約します。
-- `json`、`patch`、`print` は `meta` と `access` を利用します。
-- JSON ファイル入出力は cJSON 変換を利用します。
-- `parse` は汎用 Doxygen 属性を解析し、属性名の意味は解釈しません。
+- カテゴリ間の依存や責務を変更する場合は、アーキテクチャーの「依存方向」を確認してください。
+- 新しい機能は事前組み込み型と事後解析型の両方から利用できるカタログ API 上に配置してください。
+- 解析器の対応範囲を変更する場合は、アーキテクチャーも更新してください。
+- 型やレイアウトを変更する場合は、LP64 / LLP64 の互換性と `struct_meta_internal_layout_find_type()` の正本を維持し、生成コードの `_Static_assert` をビルドで確認してください。
+- `parse` は診断と結果コードを返し、プロセスを終了させないでください。flex / bison の再入可能な構成を維持してください。
 - 公開入口では、構造体の内容へアクセスする前に記述子を検査してください。
-- Doxygen は公開 API 用と内部用の 2 系統で生成します。`prod/Doxyfile.part.public` は `prod/include/` だけを、`prod/Doxyfile.part.internal` は `prod/` 全体を対象とします。
-- `docs/doxybook2_public/` と `docs/doxybook2_internal/` は自動生成物です。手作業で変更せず、Doxygen コメントを変更してから `make doxy` で再生成してください。
-
-記述子を得る経路は、生成 C ソースを組み込む事前組み込み型と、実行時に構文解析する事後解析型の 2 系統です。  
-どちらも `struct_meta_catalog` を返すため、利用側は経路を意識しません。  
-新しい機能は、片方だけで使える形にせず、カタログ API の上に載せてください。
-
-解析器はフル C パーサーではありません。  
-対応範囲を変更するときは [アーキテクチャー](docs/architecture.md) も更新してください。  
-受け付ける型を増やすときは、LP64 と LLP64 で幅が一致することを必ず確認してください。  
-型の表と大きさ・アラインメントの正本は `struct_meta_internal_layout_find_type()` の 1 箇所だけです。  
-生成物は x86_64 の Linux と Windows の間でバイト互換であることを契約としています。  
-`long` と `unsigned long` は幅が異なるため、解析器が拒否します。
-
-レイアウトの計算は `layout` に集約し、生成コードへ `_Static_assert` を出力してコンパイラの実レイアウトと照合します。  
-この照合を外すと、事後解析型の正しさを検証する手段が無くなります。  
-`layout` の規則や表を変えたときは、`make` が通ることを必ず確認してください。
-
-`parse` はライブラリの一部です。プロセスを終了させず、`struct_meta_diagnostic` へ書いて結果コードを返してください。  
-flex と bison は再入可能な構成 (`reentrant` と `api.pure`) を維持し、状態をグローバル変数へ戻さないでください。
-
-`prod/src/cmd/makelocal.mk` の順序は、`struct-meta-gen`、`struct-meta-sample` のまま維持してください。
+- `prod/src/cmd/makelocal.mk` の順序は `struct-meta-gen`、`struct-meta-sample` を維持してください。
+- Doxygen は公開 API 用と内部用の 2 系統です。生成済み `docs/doxybook2_public/` と `docs/doxybook2_internal/` は直接編集しないでください。
 
 ## 局所確認
 
-```sh
-make clean
-make
-make test
-make doxy
-```
+振る舞いを変更した場合は影響する局所テスト、app 全体への影響がある場合は app 直下の `make test` を実行してください。  
+`make clean` は構成変更などで再生成が必要な場合に限定し、Doxygen の記法や出力を変更した場合は `make doxy` を実行してください。  
+ビルド後は対象範囲の内容がある `.warn` を確認してください。
 
-ビルド後は `app/struct-meta/` 以下の `.warn` ファイルを確認してください。  
-サンプルを手動確認する場合は、`init` で 2 系統の経路をそれぞれ選んでください。
-
-```sh
-./prod/cbin/struct-meta-sample
-```
+カタログの取得や切り替えを変更した場合は、`./prod/cbin/struct-meta-sample` で次の 2 経路を確認してください。
 
 ```text
-init sample_types                                       事前組み込み型
-init prod/src/cmd/struct-meta-sample/sample_types.h     事後解析型
+init sample_types
+init prod/src/cmd/struct-meta-sample/sample_types.h
 ```
 
-同じ構造体一覧が出て、`dump` までの結果が一致することを確認してください。  
-1 プロセス内で `init` を繰り返して対象を切り替えられること、および `init` が失敗したときに
-直前の対象がそのまま残ることもあわせて確認してください。
+構造体一覧と `dump` の結果が一致すること、同じプロセスで対象を切り替えられること、`init` 失敗時に直前の対象が残ることを確認してください。

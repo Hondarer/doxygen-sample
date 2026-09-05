@@ -4,7 +4,9 @@
 
 この app は zlib の公式配布アーカイブを makefw へ取り込むラッパーと、利用側の単体テスト用 API モックを管理します。
 
-## 必須参照
+## 参照先
+
+作業に関係する文書の該当節を参照してください。
 
 - [README.md](README.md)
 - 展開と更新では [packages/README.md](packages/README.md)

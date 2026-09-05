@@ -16,6 +16,10 @@
 Linux では正本へのシンボリック リンクを作り、Windows ではディレクトリをコピーします。  
 `.claude/skills` も同じ集約結果を参照します。
 
+Windows のルート `.agents/skills/` の Markdown には、発行時に正本へリンクするため `git-origin` が追加されます。  
+これは生成コピーだけのメタデータであり、正本の frontmatter には追加しません。  
+`.claude/skills/` には付与しないため、コピー比較では改行コードとこのキーを区別して確認します。
+
 前回生成した名前は `.agents/skills/.sync-state` に記録されます。  
 `.agents/skills/.gitignore` は README.md と .gitignore 以外を管理対象外にする固定設定であり、同期処理が生成する一覧ではありません。
 

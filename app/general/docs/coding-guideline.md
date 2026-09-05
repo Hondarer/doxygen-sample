@@ -929,7 +929,7 @@ grep -rnE '^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\(' \
 | `src/cmd/trace-cli/trace-cli.h` | `TRACE_CLI_PRIVATE_H` |
 | `src/cmd/bench-io/bench_case.h` | `BENCH_CASE_PRIVATE_H` |
 
-モジュール名にハイフンやキャメルケースが含まれる場合は、アンダースコア区切りの全大文字へ直します (例: `tcpServer.h` は `TCP_SERVER_PRIVATE_H`)。
+モジュール名にハイフンやキャメル ケースが含まれる場合は、アンダースコア区切りの全大文字へ直します (例: `tcpServer.h` は `TCP_SERVER_PRIVATE_H`)。
 
 `_PRIVATE_H` は、同名の公開ヘッダーとガード名が衝突しないことと、私有ヘッダーであることの両方を表します。  
 公開ヘッダーのガードは配置パス全体に由来するため (例: `CPLAT_HASHTABLE_HASHTABLE_H`)、同名でも衝突しません。
@@ -3199,7 +3199,7 @@ cd <module-dir> && make test
 cd <module-dir> && make doxy 2>&1 | grep -i warning
 ```
 
-全体リファクタリング完了後は、リポジトリ ルートでも `make` / `make test` を実行し、他モジュールへの影響がないことを確認します。
+全体リファクタリング完了後は、他モジュールへの影響を確認するため、ワークスペースの許可条件に従ってルートの `make` / `make test` を実行します。
 
 > [!NOTE]
 > 非 const から const への変更は、呼び出し側で暗黙変換が可能なため、通常は他モジュールへ影響しません。
@@ -3211,7 +3211,8 @@ cd <module-dir> && make doxy 2>&1 | grep -i warning
 
 ### mock 追従 (test 配下を持つモジュールの場合)
 
-ヘッダーの const 化 / Doxygen 変更を行う commit には、対応する mock のシグネチャ追従を必ず含めます。
+ヘッダーの const 化などでシグネチャを変更する場合は、対応する mock の追従を同じ変更に含めます。  
+Doxygen 本文だけの変更では mock のシグネチャ変更を必要としません。
 
 `delegate_real_*` 宣言、`MOCK_METHOD(...)` 宣言、および `MOCK_WEAK_IMPL(...)` の引数型を、ヘッダー宣言と完全一致させます。
 

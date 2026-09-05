@@ -7,6 +7,7 @@
 
 - [エージェントの参照順序](workspace-agent-workflow.md)
 - [スキルの配置と同期](skill-sync.md)
+- [リリース タグと GitHub Release](release-workflow.md)
 - [GitHub Actions](github-actions.md)
 - [CI 警告への対応](ci-warning-remediation.md)
 - [Markdown の一括スタイル確認](markdown-style-bulk-check.md)

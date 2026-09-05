@@ -4,12 +4,12 @@
 
 この app は、統合ワークスペースの構成、CI/CD、スキル同期に固有の文書とスキルを管理します。
 
-## 必須参照
+## 作業別の参照先
 
-- [README.md](README.md)
-- [ワークスペース作業ガイド](docs/workspace-agent-workflow.md)
-- [GitHub Actions](docs/github-actions.md)
-- [スキル同期](docs/skill-sync.md)
+- 対象の目的を確認する場合は [README.md](README.md)
+- ビルドや構成の運用を変更する場合は [ワークスペース作業ガイド](docs/workspace-agent-workflow.md) の該当節
+- CI を変更する場合は [GitHub Actions](docs/github-actions.md) の該当ジョブ
+- スキルの配置や同期を変更する場合は [スキル同期](docs/skill-sync.md)
 
 ## 注意点
 

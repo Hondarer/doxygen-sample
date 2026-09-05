@@ -1,16 +1,15 @@
 ---
 name: create-mock-shared-lib
-description: 第三者共有ライブラリの公開 API を API 表から Google Mock 対応 mock にするときに使用します。real delegate、動的シンボル解決、Windows の dllimport 解除、実ライブラリとの同時リンク禁止を扱います。
+description: 第三者共有ライブラリの公開 API 表から、実関数へ既定委譲する Google Mock 対応 mock を追加・変更します。
 ---
 
 # 第三者共有ライブラリの mock
 
-1. `app/general/docs/shared-library-mock-guideline.md` を読んでください。
-2. 対象パスに適用される `AGENTS.md` と README.md でライブラリ固有設定を確認してください。
-3. API 表から宣言、`MOCK_METHOD`、real delegate、ラッパー、`ON_CALL` を生成してください。
-4. 可変長引数関数と公開変数を別扱いにしてください。
-5. Windows の import 属性を解除する定義を確認してください。
-6. 利用側が実ライブラリと mock を同時リンクしていないことを確認してください。
-7. 対象 app の公開 API 網羅テストと局所テストを実行してください。
+`app/general/docs/shared-library-mock-guideline.md` の API 表と実委譲の節、および対象ライブラリの README にある固有設定を確認してください。  
+可変長引数、公開変数、Windows の import 属性を扱う場合は、対応する節も参照してください。
 
-既定動作は実ライブラリへの委譲とし、解決失敗時は理由を出力して終了してください。
+API 表から宣言、`MOCK_METHOD`、real delegate、ラッパー、`ON_CALL` を生成してください。  
+既定動作は実ライブラリへの委譲とし、解決失敗時は理由を出力して終了してください。  
+利用側は実ライブラリと mock を同時リンクせず、Windows では import 属性を解除してください。
+
+変更した API の網羅テストと、実委譲および差し替えを確認する局所テストを実行してください。

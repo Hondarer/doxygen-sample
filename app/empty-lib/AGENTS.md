@@ -4,7 +4,9 @@
 
 この app は、実装を持たないライブラリ構成の最小サンプルです。
 
-## 必須参照
+## 参照先
+
+作業に関係する文書の該当節を参照してください。
 
 - [README.md](README.md)
 - [makeparts](../../framework/makefw/docs/makeparts.md)

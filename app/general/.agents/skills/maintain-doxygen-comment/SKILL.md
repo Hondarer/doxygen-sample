@@ -1,17 +1,16 @@
 ---
 name: maintain-doxygen-comment
-description: app 配下の C または C++ ヘッダーやソースへ Doxygen コメントを追加、変更、レビューするときに使用します。コメントの配置、タグ、方向指定、スレッド安全性、生成確認を扱います。
+description: app の C/C++ Doxygen コメントを作成・変更・レビューする際に、宣言側の契約と生成規則を確認します。
 ---
 
 # Doxygen コメントの保守
 
-1. `app/general/docs/doxygen-comment-guideline.md` を読んでください。
-2. タグ仕様は `framework/doxyfw/docs/commands.md`、雛形は `framework/doxyfw/docs/cheatsheet.md` を確認してください。
-3. 対象パスに適用される `AGENTS.md` と公開ヘッダーを確認してください。
-4. 宣言側を正本とし、定義側へ同じ説明を複製しないでください。
-5. 公開関数の定義ごと、直前にマーカー `/* Doxygen コメントは、ヘッダーに記載 */` を置いてください。
-6. 引数方向、NULL、所有権、戻り値、スレッド安全性を実装と一致させてください。
-7. ソース整形後にコメントの字下げを確認してください。
-8. 対象 app の `make doxy` を実行し、警告と生成結果を確認してください。
+`app/general/docs/doxygen-comment-guideline.md` を参照し、宣言側を正本として実装と契約を照合してください。  
+タグの仕様が必要なら `framework/doxyfw/docs/commands.md`、新しい形式の雛形が必要なら `framework/doxyfw/docs/cheatsheet.md` の該当節を確認してください。
 
+公開関数の定義直前には `/* Doxygen コメントは、ヘッダーに記載 */` を置き、同じ説明を複製しないでください。  
+変更する契約に応じて引数方向、NULL、所有権、戻り値、スレッド安全性を確認してください。
+
+タグ、参照、公開契約、出力構造を変更した場合は対象 app の `make doxy` で警告と生成結果を確認してください。  
+誤字や字下げだけの修正は差分確認を基本とし、レビューでは必要な場合に生成してください。  
 生成済み Doxybook2 Markdown は直接編集しないでください。

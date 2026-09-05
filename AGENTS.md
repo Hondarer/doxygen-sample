@@ -18,34 +18,13 @@
 - 階層の深さに上限はありません。`app/<name>/` や `framework/<name>/` に限らず、より深い階層の `AGENTS.md` も同じ規則で適用します。
 - 複数の対象を変更する場合は、対象ごとに同じ走査を行ってください。
 
-例として `framework/testfw/gtest/lib/` を変更する場合は、`AGENTS.md`、`framework/testfw/AGENTS.md`、`framework/testfw/gtest/AGENTS.md` を、この順に重ねて適用します。
-
-サブモジュール境界は、Git のコミット単位を分けるためのものです。  
-`AGENTS.md` の適用範囲には影響しません。
-
 `CLAUDE.md` は `AGENTS.md` への転送であり、規則の正本ではありません。  
 `CLAUDE.md` の有無にかかわらず、階層上の `AGENTS.md` を適用してください。
 
 ### 探索の方法
 
-`AGENTS.md` の有無は、戻り値が非 0 にならない方法で確認してください。  
-`ls path/AGENTS.md` や `test -f path/AGENTS.md` を単体で実行すると、ファイルが無い場合に戻り値が非 0 となり、正常な走査であるにもかかわらずエラー表示を伴います。
-
-対象パス上の `AGENTS.md` は、次のようにまとめて列挙します。  
-一致が無くても戻り値は 0 です。
-
-```bash
-target=framework/testfw/gtest/lib
-dir=.
-if [ -f "$dir/AGENTS.md" ]; then echo "$dir/AGENTS.md"; fi
-for part in $(echo "$target" | tr '/' ' '); do
-    dir="$dir/$part"
-    if [ -f "$dir/AGENTS.md" ]; then echo "$dir/AGENTS.md"; fi
-done
-```
-
-リポジトリ全体を見る場合は `find . -name AGENTS.md | sort` を使用します。  
-個別に確認する場合は、`ls -d path/AGENTS.md 2>/dev/null || true` のように、戻り値を 0 に正規化してください。
+対象パス上の `AGENTS.md` を列挙し、存在しない階層をエラーとして扱わないでください。  
+確認済みの指示は再利用し、対象パスや指示が変わった場合に追加確認してください。
 
 ### 差分の解釈
 
@@ -56,12 +35,9 @@ done
 
 ## 作業時の参照順
 
-作業を始める前に、次の順序で文書を確認してください。
-
-1. 適用範囲の規則で決まる `AGENTS.md` を、ルート側から順に
-2. 各 `AGENTS.md` と同じディレクトリの `README.md`
-3. 作業内容に該当する `SKILL.md`
-4. `AGENTS.md` または `SKILL.md` が示す正本ドキュメント
+適用される `AGENTS.md` をルート側から確認し、作業に該当するスキルを使用してください。  
+README は対象の目的や入口が必要な場合に、正本文書は変更や判断に必要な節だけ参照してください。  
+誤字修正などの局所変更で、文書一覧や設計全体を一律に読み込む必要はありません。
 
 ## 文書とスキルの役割
 
@@ -71,7 +47,7 @@ done
 - SKILL.md は発火条件と作業手順の要点だけを持ち、詳細は正本ドキュメントを参照します。
 - framework や `app/general` などの汎用層から、実在する個別 app の実装を規範として参照しないでください。
 
-詳細は [AGENTS とスキルの設計指針](app/general/docs/agents-and-skills-guideline.md) を参照してください。
+指示やスキルを変更する場合は [AGENTS とスキルの設計指針](app/general/docs/agents-and-skills-guideline.md) を参照してください。
 
 ## リポジトリ概要
 
@@ -83,7 +59,7 @@ done
 - `framework/docsfw` - Markdown 発行フレームワーク (Pandoc による静的発行と mkdocs による動的発行)
 - `app/<name>` - ライブラリ、コマンド、サンプル、ワークスペース共通文書
 
-ワークスペース固有の作業手順は [ワークスペース作業ガイド](app/c-modernization-kit/docs/workspace-agent-workflow.md) を参照してください。
+ビルド、構成、CI の運用手順が必要な場合は [ワークスペース作業ガイド](app/c-modernization-kit/docs/workspace-agent-workflow.md) の該当節を参照してください。
 
 ## 主要な正本
 
@@ -97,11 +73,17 @@ done
 
 ## 変更後の確認
 
-- C/C++ の変更は、対象パスに適用される `AGENTS.md` とコーディング規範が指定する局所テストを実行してください。
+- 振る舞い、ABI、ビルド構成を変更した場合は、影響範囲の局所テストを実行してください。コメントや文書だけの変更は、記法や生成結果への影響に応じて確認方法を選んでください。
 - framework または複数 app にまたがる全体テストは、コストを説明してからユーザーに確認してください。
 - ビルド後は、対象範囲の内容がある `.warn` ファイルを確認してください。
 - Markdown の変更は、対象ファイルごとに `text_style_jp.py --dry-run` を先に実行し、問題がなければ `--in-place` を実行してください。
 - `text_style_jp.py` が付与する行末の半角空白 2 個は Markdown の強制改行であり、`git diff --check` の指摘だけを理由に削除しないでください。
+
+依頼に含まれる変更と局所検証は、実装だけで止めず、変更起因の失敗修正と影響範囲の再検証まで進めてください。  
+同じ変更に対する検証結果は再利用し、新しい変更や未解決の懸念がない限り繰り返さないでください。  
+レビューや調査だけの依頼では変更を行わず、判断に必要な検証を選んでください。  
+既存の無関係な問題、環境不足、追加の権限が必要な操作は、確認済みの結果と分けて報告してください。  
+この継続条件は、Git 操作や全体テストの許可条件を変更しません。
 
 ## 共通の実装条件
 

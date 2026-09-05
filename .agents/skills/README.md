@@ -8,7 +8,8 @@
 作業内容に該当するスキルがある場合は、`SKILL.md` の `description` で適用条件を確認してから本文と参照先を読みます。  
 複数のスキルが該当する場合は、各スキルの必須事項を併用します。
 
-各 `SKILL.md` の YAML front matter には、`name` と `description` だけを記載します。  
+管理対象の YAML front matter は `name` と `description` を基本とし、既存メタデータは用途を確認して保持します。  
+Windows の生成コピーに付く `git-origin` は発行用の例外であり、正本へ転記しません。  
 適用条件は `description` に含め、詳細な規範や手順は正本ドキュメントへ集約します。
 
 ## 正本の配置

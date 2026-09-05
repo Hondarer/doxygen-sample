@@ -1,16 +1,17 @@
 ---
 name: create-unit-test
-description: app 配下の C または C++ 単体テストを作成、変更、レビューするときに使用します。テスト配置、TEST_SRCS、main のラップ、Google Mock、テスト フェーズ、エビデンス コメントを扱います。
+description: app 配下の C/C++ 単体テストを作成・変更・レビューする際に、testfw 固有の配置とエビデンス規則を適用します。
 ---
 
 # app 単体テストの作成
 
-1. `framework/testfw/docs/how-to-test.md` を読んでください。
-2. `framework/testfw/docs/about-test-phase.md` と `framework/testfw/docs/how-to-expect.md` を読んでください。
-3. app 向けの配置例は `app/general/docs/testing-tutorial.md` を確認してください。
-4. 対象パスに適用される `AGENTS.md` と近いテストを確認してください。
-5. テスト対象ソース、mock、`TEST_SRCS`、`ADD_SRCS`、`LIBS` を決定してください。
-6. Arrange、Pre-Assert、Act、Assert と、必要な場合だけ Cleanup を記載してください。
-7. 対象 app の局所テストを実行し、結果とカバレッジを確認してください。
+作業に応じて次の節を参照してください。
 
-mock を新設する場合は、対象に応じた mock 作成スキルも使用してください。
+- 配置やビルド対象を変える場合は `framework/testfw/docs/how-to-test.md` の `TEST_SRCS`、`ADD_SRCS`、main の扱いと、必要なら `app/general/docs/testing-tutorial.md` の配置例
+- フェーズやエビデンス コメントを変える場合は `framework/testfw/docs/about-test-phase.md` の該当するテスト形式
+- 期待値や照合方法を変える場合は `framework/testfw/docs/how-to-expect.md` の該当するマクロ
+- mock を新設する場合は、対象パスの指示にある専用スキル、または通常の app 関数向け `create-mock`
+
+既存の近いテストと対象の契約を確認し、要求された振る舞いを検証してください。  
+変更後は影響する局所テストを実行し、網羅性の判断に必要ならカバレッジを確認してください。  
+レビューだけの場合は、指摘を裏付ける確認を選び、テストの追加や全面的な再実行を前提にしないでください。

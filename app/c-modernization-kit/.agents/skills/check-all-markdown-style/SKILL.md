@@ -1,17 +1,15 @@
 ---
 name: check-all-markdown-style
-description: リポジトリ内の第一者管理 Markdown 全体へ text_style_jp.py を適用するときに使用します。Git 状態、動的な対象列挙、外部 OSS と生成物の除外、dry-run、差分確認、in-place 適用を扱います。
+description: 第一者管理 Markdown 全体の機械的な表記確認、または一括整形を依頼された場合に使います。
 ---
 
 # Markdown 全体のスタイル確認
 
-1. `app/c-modernization-kit/docs/markdown-style-bulk-check.md` を読んでください。
-2. ルートと全サブモジュールの Git 状態がクリーンであることを確認してください。
-3. 各 Git ルートの tracked Markdown を動的に列挙してください。
-4. 外部 OSS と自動生成物を除外してください。
-5. 全対象へ `text_style_jp.py --dry-run` を実行してください。
-6. 不自然な変換がないことを確認してください。
-7. 問題がなく、変更が許可されている場合だけ `--in-place` を実行してください。
-8. 各 Git ルートの差分を読み、Markdown 構造と日本語を確認してください。
+`app/c-modernization-kit/docs/markdown-style-bulk-check.md` の対象列挙と除外条件に従ってください。  
+単一ファイルや変更ファイルだけの確認には、この一括手順を使わないでください。
 
-ステージング、コミット、アンステージを行わないでください。
+読み取り確認では既存差分を記録してから対象を列挙し、`text_style_jp.py --dry-run` の結果を報告してください。  
+一括変更が依頼されている場合は、変更対象と既存差分の重なりを確認し、不自然な変換がなければ同じ対象へ `--in-place` を実行してください。  
+依頼に含まれない既存差分を巻き込む場合だけ、そのファイルを保留して継続方法を確認してください。
+
+各 Git ルートの差分で Markdown 構造と日本語を確認してください。
