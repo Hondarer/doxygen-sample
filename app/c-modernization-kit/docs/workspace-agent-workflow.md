@@ -26,9 +26,9 @@ make skills
 make sync-app-env
 ```
 
-`make docs` は Pandoc による静的発行、`make livedocs` と `make servedocs` は mkdocs による動的発行です。  
+`make docs` は Pandoc による静的発行、`make livedocs` と `make servedocs` は MkDocs による動的発行です。  
 `make servedocs` はローカル配信を開始し、`make stopdocs` で停止します。  
-詳細は [動的発行 (mkdocs)](../../../framework/docsfw/livedocs/README.md) を参照してください。
+詳細は [動的発行 (MkDocs)](../../../framework/docsfw/livedocs/README.md) を参照してください。
 
 app を追加または削除した場合は、`.vscode`、GitHub Actions、Jenkins の環境変数を手編集せず、`make sync-app-env` を実行します。  
 詳細は [VS Code 環境変数](../../general/docs/vscode-variables.md) を参照してください。

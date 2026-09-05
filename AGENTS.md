@@ -56,7 +56,7 @@ README は対象の目的や入口が必要な場合に、正本文書は変更�
 - `framework/makefw` - C/C++ と .NET 向けの Make テンプレート
 - `framework/testfw` - Google Test ベースのテスト フレームワーク
 - `framework/doxyfw` - Doxygen と Doxybook2 による生成フレームワーク
-- `framework/docsfw` - Markdown 発行フレームワーク (Pandoc による静的発行と mkdocs による動的発行)
+- `framework/docsfw` - Markdown 発行フレームワーク (Pandoc による静的発行と MkDocs による動的発行)
 - `app/<name>` - ライブラリ、コマンド、サンプル、ワークスペース共通文書
 
 ビルド、構成、CI の運用手順が必要な場合は [ワークスペース作業ガイド](app/c-modernization-kit/docs/workspace-agent-workflow.md) の該当節を参照してください。
