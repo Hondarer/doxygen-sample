@@ -80,7 +80,7 @@ done
 - `framework/makefw` - C/C++ と .NET 向けの Make テンプレート
 - `framework/testfw` - Google Test ベースのテスト フレームワーク
 - `framework/doxyfw` - Doxygen と Doxybook2 による生成フレームワーク
-- `framework/docsfw` - Pandoc ベースの Markdown 発行フレームワーク
+- `framework/docsfw` - Markdown 発行フレームワーク (Pandoc による静的発行と mkdocs による動的発行)
 - `app/<name>` - ライブラリ、コマンド、サンプル、ワークスペース共通文書
 
 ワークスペース固有の作業手順は [ワークスペース作業ガイド](app/c-modernization-kit/docs/workspace-agent-workflow.md) を参照してください。

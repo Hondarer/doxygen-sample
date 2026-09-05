@@ -118,7 +118,7 @@ clean :
 	rm -f "$(APP_ENV_WARN_FILE)"
 	$(MAKE) cleandocs
 
-# Windows では preview-stop 直後でも pages/preview のハンドルが残ることがある。
+# Windows では stopdocs 直後でも pages/livedocs のハンドルが残ることがある。
 # 短い間隔で最大 5 回削除を試み、残った場合だけ失敗する。
 # 呼び出し側は削除対象をシェル変数 path に入れてからこの断片を展開する。
 define _RM_RF_RETRY
@@ -138,7 +138,7 @@ define _RM_RF_RETRY
 endef
 
 .PHONY: cleandocs
-cleandocs : preview-stop
+cleandocs : stopdocs
 	@if [ -d pages ]; then \
 		set -e; \
 		set -o pipefail; \
@@ -250,64 +250,66 @@ docs :
 	fi
 
 # ---------------------------------------------------------------------------
-# mkdocs 簡易プレビュー
+# mkdocs による動的発行 (livedocs)
 #
-# docsfw の発行 (make docs) とは独立した、執筆中の確認用ビルドです。
-# 設計は framework/docsfw/docs/mkdocs-preview-design.md を参照してください。
+# Pandoc による静的発行 (make docs) と並ぶ、もう 1 本の発行系です。
+# 図はブラウザー上でレンダリングし、docx は出力しません。
+# 設計は framework/docsfw/docs/livedocs-design.md を参照してください。
 #
-# PREVIEW_ADDR     mkdocs serve のアドレス (既定 127.0.0.1:8000)
-# PREVIEW_STRICT   1 を指定すると mkdocs build --strict で実行する
-# PREVIEW_VARIANT  ja / ja-details / en / en-details (既定 ja-details)
+# LIVEDOCS_ADDR     mkdocs serve のアドレス (既定 127.0.0.1:8000)
+# LIVEDOCS_STRICT   1 を指定すると mkdocs build --strict で実行する
+# LIVEDOCS_VARIANT  ja / ja-details / en / en-details (既定 ja-details)
 # ---------------------------------------------------------------------------
-PREVIEW_HOME := $(CURDIR)/framework/docsfw/mkdocs
-PREVIEW_VENV := $(PREVIEW_HOME)/.venv
-PREVIEW_PYTHON := $(PREVIEW_VENV)/bin/python
-PREVIEW_MKDOCS := $(PREVIEW_VENV)/bin/mkdocs
-PREVIEW_DIR := $(CURDIR)/pages/preview
-PREVIEW_STOP := $(PREVIEW_HOME)/bin/stop_preview_serve.sh
-PREVIEW_ADDR ?= 127.0.0.1:8000
-PREVIEW_VARIANT ?= ja-details
+LIVEDOCS_HOME := $(CURDIR)/framework/docsfw/livedocs
+LIVEDOCS_VENV := $(LIVEDOCS_HOME)/.venv
+LIVEDOCS_PYTHON := $(LIVEDOCS_VENV)/bin/python
+LIVEDOCS_MKDOCS := $(LIVEDOCS_VENV)/bin/mkdocs
+LIVEDOCS_DIR := $(CURDIR)/pages/livedocs
+LIVEDOCS_STOP := $(LIVEDOCS_HOME)/bin/stop_livedocs_serve.sh
+LIVEDOCS_ADDR ?= 127.0.0.1:8000
+LIVEDOCS_VARIANT ?= ja-details
+LIVEDOCS_STRICT ?=
 
 # Windows (Git Bash) では venv の実行ファイルが Scripts/ に置かれる。
 ifeq ($(OS),Windows_NT)
-    PREVIEW_PYTHON := $(PREVIEW_VENV)/Scripts/python.exe
-    PREVIEW_MKDOCS := $(PREVIEW_VENV)/Scripts/mkdocs.exe
+    LIVEDOCS_PYTHON := $(LIVEDOCS_VENV)/Scripts/python.exe
+    LIVEDOCS_MKDOCS := $(LIVEDOCS_VENV)/Scripts/mkdocs.exe
 endif
 
-.PHONY: preview-venv
-preview-venv :
-	@if [ ! -x "$(PREVIEW_PYTHON)" ]; then \
-		printf 'INFO: Creating preview venv at %s\n' "$(PREVIEW_VENV)"; \
-		python3 -m venv "$(PREVIEW_VENV)"; \
-		"$(PREVIEW_PYTHON)" -m pip install --quiet --upgrade pip; \
-		"$(PREVIEW_PYTHON)" -m pip install --quiet -r "$(PREVIEW_HOME)/requirements.txt"; \
+.PHONY: livedocs-venv
+livedocs-venv :
+	@if [ ! -x "$(LIVEDOCS_PYTHON)" ]; then \
+		printf 'INFO: Creating livedocs venv at %s\n' "$(LIVEDOCS_VENV)"; \
+		python3 -m venv "$(LIVEDOCS_VENV)"; \
+		"$(LIVEDOCS_PYTHON)" -m pip install --quiet --upgrade pip; \
+		"$(LIVEDOCS_PYTHON)" -m pip install --quiet -r "$(LIVEDOCS_HOME)/requirements.txt"; \
 	fi
 
-.PHONY: preview-stage
-preview-stage : preview-venv
-	@python3 "$(PREVIEW_HOME)/bin/stage_preview_docs.py" --workspaceFolder="$(CURDIR)" --variant="$(PREVIEW_VARIANT)"
-	@python3 "$(PREVIEW_HOME)/bin/vendor_assets.py" --workspaceFolder="$(CURDIR)" --variant="$(PREVIEW_VARIANT)"
+.PHONY: livedocs-stage
+livedocs-stage : livedocs-venv
+	@python3 "$(LIVEDOCS_HOME)/bin/stage_livedocs.py" --workspaceFolder="$(CURDIR)" --variant="$(LIVEDOCS_VARIANT)"
+	@python3 "$(LIVEDOCS_HOME)/bin/vendor_assets.py" --workspaceFolder="$(CURDIR)" --variant="$(LIVEDOCS_VARIANT)"
 
-.PHONY: preview
-preview : preview-venv
-	@"$(BASH)" "$(PREVIEW_STOP)" --venv "$(PREVIEW_VENV)" --require-stopped
-	@$(MAKE) --no-print-directory preview-stage
-	@printf 'INFO: mkdocs serve on http://%s/ (variant %s)\n' "$(PREVIEW_ADDR)" "$(PREVIEW_VARIANT)"
-	@cd "$(PREVIEW_DIR)" && trap 'exit 0' INT && "$(PREVIEW_MKDOCS)" serve --dev-addr "$(PREVIEW_ADDR)"
+.PHONY: servedocs
+servedocs : livedocs-venv
+	@"$(BASH)" "$(LIVEDOCS_STOP)" --venv "$(LIVEDOCS_VENV)" --require-stopped
+	@$(MAKE) --no-print-directory livedocs-stage
+	@printf 'INFO: mkdocs serve on http://%s/ (variant %s)\n' "$(LIVEDOCS_ADDR)" "$(LIVEDOCS_VARIANT)"
+	@cd "$(LIVEDOCS_DIR)" && trap 'exit 0' INT && "$(LIVEDOCS_MKDOCS)" serve --dev-addr "$(LIVEDOCS_ADDR)"
 
-.PHONY: preview-build
-preview-build : preview-stage
-	@cd "$(PREVIEW_DIR)" && \
-	if [ "$(PREVIEW_STRICT)" = "1" ]; then \
-		"$(PREVIEW_MKDOCS)" build --strict; \
+.PHONY: livedocs
+livedocs : livedocs-stage
+	@cd "$(LIVEDOCS_DIR)" && \
+	if [ "$(LIVEDOCS_STRICT)" = "1" ]; then \
+		"$(LIVEDOCS_MKDOCS)" build --strict; \
 	else \
-		"$(PREVIEW_MKDOCS)" build; \
+		"$(LIVEDOCS_MKDOCS)" build; \
 	fi
 
-.PHONY: preview-stop
-preview-stop :
-	@"$(BASH)" "$(PREVIEW_STOP)" --venv "$(PREVIEW_VENV)"
+.PHONY: stopdocs
+stopdocs :
+	@"$(BASH)" "$(LIVEDOCS_STOP)" --venv "$(LIVEDOCS_VENV)"
 
-.PHONY: cleanpreview
-cleanpreview : preview-stop
-	@path="$(PREVIEW_DIR)"; $(_RM_RF_RETRY)
+.PHONY: cleanlivedocs
+cleanlivedocs : stopdocs
+	@path="$(LIVEDOCS_DIR)"; $(_RM_RF_RETRY)

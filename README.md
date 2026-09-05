@@ -19,7 +19,8 @@ C および C++ の開発、ビルド、自動テスト、ドキュメント生�
 - Linux では GCC、Windows では MSVC を使用し、共通の Make インターフェースからビルドします。
 - Google Test を利用し、プロダクション コードから分離したテストとエビデンスを生成します。
 - Doxygen と Doxybook2 を利用して、C および C++ の API 資料を生成します。
-- Pandoc を利用して、Markdown から HTML と DOCX を生成します。
+- Pandoc を利用して、Markdown から HTML と DOCX を静的発行します。
+- mkdocs を利用して、Markdown を動的発行します。図はブラウザー上でレンダリングし、保存に追従して再生成します。
 - C ライブラリと連携する .NET プロジェクトを、C および C++ と同じワークスペースで管理できます。
 
 ## Windows 環境における注意事項
@@ -40,7 +41,7 @@ Clone 後にサブモジュールを初期化してください。
 git submodule update --init --recursive
 ```
 
-- `framework/docsfw` - Markdown ドキュメント発行フレームワーク ([https://github.com/Hondarer/pub_markdown](https://github.com/Hondarer/pub_markdown))
+- `framework/docsfw` - Markdown 発行フレームワーク。静的発行 (Pandoc) と動的発行 (mkdocs) ([https://github.com/Hondarer/pub_markdown](https://github.com/Hondarer/pub_markdown))
 - `framework/doxyfw` - Doxygen ドキュメント生成フレームワーク ([https://github.com/Hondarer/doxygen-framework](https://github.com/Hondarer/doxygen-framework))
 - `framework/makefw` - Make ビルド フレームワーク ([https://github.com/Hondarer/make-framework](https://github.com/Hondarer/make-framework))
 - `framework/testfw` - Google Test ベースのテスト フレームワーク ([https://github.com/Hondarer/googletest-c-framework](https://github.com/Hondarer/googletest-c-framework))
