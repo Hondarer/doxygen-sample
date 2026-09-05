@@ -7,7 +7,7 @@ description: app 配下の C または C++ ヘッダーやソースへ Doxygen �
 
 1. `app/general/docs/doxygen-comment-guideline.md` を読んでください。
 2. タグ仕様は `framework/doxyfw/docs/commands.md`、雛形は `framework/doxyfw/docs/cheatsheet.md` を確認してください。
-3. 対象 app の AGENTS.md と公開ヘッダーを確認してください。
+3. 対象パスに適用される `AGENTS.md` と公開ヘッダーを確認してください。
 4. 宣言側を正本とし、定義側へ同じ説明を複製しないでください。
 5. 公開関数の定義ごと、直前にマーカー `/* Doxygen コメントは、ヘッダーに記載 */` を置いてください。
 6. 引数方向、NULL、所有権、戻り値、スレッド安全性を実装と一致させてください。

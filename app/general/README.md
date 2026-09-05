@@ -9,4 +9,5 @@
 - [テスト チュートリアル](docs/testing-tutorial.md)
 - [VS Code 環境変数](docs/vscode-variables.md)
 
-個別 app 固有の情報は、対象 app の AGENTS.md、README.md、`docs/` に記載します。
+個別 app 固有の情報は、その app の `AGENTS.md`、README.md、`docs/` に記載します。  
+さらに狭い範囲だけに適用する規則は、対象ディレクトリの `AGENTS.md` に記載できます。

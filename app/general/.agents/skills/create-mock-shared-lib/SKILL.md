@@ -6,7 +6,7 @@ description: 第三者共有ライブラリの公開 API を API 表から Googl
 # 第三者共有ライブラリの mock
 
 1. `app/general/docs/shared-library-mock-guideline.md` を読んでください。
-2. 対象 app の AGENTS.md と README.md でライブラリ固有設定を確認してください。
+2. 対象パスに適用される `AGENTS.md` と README.md でライブラリ固有設定を確認してください。
 3. API 表から宣言、`MOCK_METHOD`、real delegate、ラッパー、`ON_CALL` を生成してください。
 4. 可変長引数関数と公開変数を別扱いにしてください。
 5. Windows の import 属性を解除する定義を確認してください。
