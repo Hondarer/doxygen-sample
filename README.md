@@ -2,12 +2,14 @@
 
 既存の C コードを継続的に改善するための統合ワークスペースです。
 
-## 入口
+## "c-modernization-kit" リポジトリ特化事項
 
-- [作業規則](AGENTS.md)
-- [文書一覧](docs/README.md)
-- [全 app 共通の規範](app/general/docs/README.md)
 - [ワークスペース固有の運用](app/c-modernization-kit/docs/README.md)
+
+### 公開ドキュメント
+
+- [c-modernization-kit ドキュメント](https://hondarer.github.io/c-modernization-kit/)
+    - [Documentation Home](https://hondarer.github.io/c-modernization-kit/ja/html/index.html)
 
 ## 概要
 
@@ -66,17 +68,28 @@ git submodule update --init --recursive
     component "framework/makefw\nmake-framework" as makefw
     component "framework/doxyfw\ndoxygen-framework" as doxyfw
     component "framework/docsfw\npub_markdown" as docsfw
-    component "利用側ワークスペース" as this
+    component "app/general" as general
+    component "利用者プロジェクト" as this
 
     testfw --> gtest
     testfw ..> makefw : (CI 時に参照)
+    general --> doxyfw
+    general --> docsfw
+    general --> makefw
+    general --> testfw : (テスト時に参照)
     this --> doxyfw
     this --> docsfw
     this --> makefw
     this --> testfw : (テスト時に参照)
-
+    this --> general
 @enduml
 ```
+
+## 入口
+
+- [作業規則](AGENTS.md)
+- [文書一覧](docs/README.md)
+- [全 app 共通の資源](app/general/docs/README.md)
 
 ## ライセンス
 
